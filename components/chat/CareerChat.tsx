@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useProfileStore } from '@/store/useProfileStore';
-import { MessageSquare, Send, X, Bot, Sparkles, Loader2, ChevronRight, MessageCircle } from 'lucide-react';
+import { Send, X, Bot, Sparkles, Loader2, ChevronRight, MessageCircle } from 'lucide-react';
 
 interface ChatMessage {
   id: string;
@@ -110,7 +110,7 @@ Be concise (max 3 paragraphs or bullet points). Be encouraging but honest. Do NO
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-bold text-xs shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all hover:scale-105 active:scale-95"
+          className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-bold text-xs shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all hover:scale-105 active:scale-95 border border-indigo-400/30"
         >
           <Bot className="h-4 w-4" />
           <span>Ask CareerPilot</span>
@@ -122,11 +122,11 @@ Be concise (max 3 paragraphs or bullet points). Be encouraging but honest. Do NO
       )}
 
       {isOpen && (
-        <div className="w-96 h-[540px] bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="w-96 h-[540px] bg-[#0E0E12] border border-indigo-500/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200 select-none">
           {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between shrink-0">
+          <div className="p-4 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border-b border-slate-800 text-white flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/40">
+              <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 border border-indigo-400/30">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div>
@@ -147,55 +147,55 @@ Be concise (max 3 paragraphs or bullet points). Be encouraging but honest. Do NO
               >
                 <MessageCircle className="h-4 w-4" />
               </a>
-              <button onClick={() => setIsOpen(false)} className="p-1 rounded text-slate-400 hover:text-white transition-colors">
+              <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50">
+          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-[#0E0E12] custom-scrollbar">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.sender === 'ai' && (
-                  <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0 text-xs mt-0.5">
+                  <div className="h-7 w-7 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 text-xs mt-0.5">
                     <Bot className="h-4 w-4" />
                   </div>
                 )}
                 <div
-                  className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
+                  className={`max-w-[84%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
                     msg.sender === 'user'
-                      ? 'bg-indigo-600 text-white rounded-br-none font-medium'
-                      : 'bg-white text-slate-800 border border-slate-200 shadow-xs rounded-bl-none'
+                      ? 'bg-indigo-600 text-white rounded-br-none font-medium shadow-md'
+                      : 'bg-[#161622] text-slate-200 border border-slate-800 rounded-bl-none shadow-xs'
                   }`}
                 >
                   <p>{msg.text}</p>
-                  <span className="text-[9px] opacity-60 block text-right mt-1 font-mono">{msg.timestamp}</span>
+                  <span className="text-[9px] opacity-60 block text-right mt-1 font-mono text-slate-400">{msg.timestamp}</span>
                 </div>
               </div>
             ))}
             {loading && (
-              <div className="flex items-center gap-2 text-xs text-slate-500 p-2">
-                <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+              <div className="flex items-center gap-2 text-xs text-indigo-400 p-2 font-medium">
+                <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
                 <span>Analyzing your profile & crafting response...</span>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Quick Prompts — shown until user has chatted a bit */}
+          {/* Quick Prompts */}
           {messages.length < 4 && (
-            <div className="p-2 border-t border-slate-100 bg-white shrink-0">
+            <div className="p-2.5 border-t border-slate-800 bg-[#12121A] shrink-0">
               <p className="text-[9px] uppercase font-bold text-slate-400 px-1 mb-1.5 tracking-wider">Quick Ask</p>
               <div className="space-y-1">
                 {quickPrompts.slice(0, 2).map((prompt, i) => (
                   <button
                     key={i}
                     onClick={() => handleSend(prompt)}
-                    className="w-full text-left text-[10px] px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-700 border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors font-semibold flex items-center gap-1.5 truncate"
+                    className="w-full text-left text-[10px] px-2.5 py-1.5 rounded-lg bg-[#161622] text-slate-300 border border-slate-800 hover:bg-indigo-950/60 hover:text-indigo-300 hover:border-indigo-500/40 transition-colors font-semibold flex items-center gap-1.5 truncate"
                   >
                     <ChevronRight className="h-3 w-3 shrink-0 text-indigo-400" />
                     <span className="truncate">{prompt}</span>
@@ -206,19 +206,19 @@ Be concise (max 3 paragraphs or bullet points). Be encouraging but honest. Do NO
           )}
 
           {/* Input */}
-          <div className="p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
+          <div className="p-3 bg-[#12121A] border-t border-slate-800 flex items-center gap-2 shrink-0">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Ask about interview, resume, skills..."
-              className="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 font-medium"
+              className="flex-1 bg-[#161622] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/60 font-medium"
             />
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || loading}
-              className="p-2 rounded-xl bg-indigo-600 text-white disabled:opacity-50 hover:bg-indigo-700 transition-colors"
+              className="p-2 rounded-xl bg-indigo-600 text-white disabled:opacity-50 hover:bg-indigo-500 transition-colors shadow-sm"
             >
               <Send className="h-4 w-4" />
             </button>
