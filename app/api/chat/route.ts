@@ -1,6 +1,8 @@
 // This file has been disabled because it references packages (like @ai-sdk/openai and next-api-zod) 
 // that are not installed in the project. The active AI chat route is located at app/api/ai/chat/route.ts.
 
+export {};
+
 /*
 import { OpenAI } from '@ai-sdk/openai';
 import { embed } from 'ai';

@@ -134,10 +134,10 @@ export default function ApplicationsPage() {
                       {card.salary}
                     </p>
 
-                    {card.alert && (
+                    {(card as any).alert && (
                       <div className="mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-2">
                         <Clock className="h-3.5 w-3.5 text-amber-600" />
-                        <span className="text-[11px] font-extrabold text-amber-800">{card.alert}</span>
+                        <span className="text-[11px] font-extrabold text-amber-800">{(card as any).alert}</span>
                       </div>
                     )}
 
