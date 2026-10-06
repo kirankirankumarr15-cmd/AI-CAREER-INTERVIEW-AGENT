@@ -23,14 +23,14 @@ export function RecommendedNextStep() {
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">
               AI Recommendation
             </span>
-            <span className="text-[10px] text-[#71717A] flex items-center gap-1 font-mono">
+            <span className="text-[10px] text-slate-500 flex items-center gap-1 font-mono">
               <Clock className="h-3 w-3" /> 20 min
             </span>
           </div>
-          <h4 className="text-base font-bold text-[#FAFAFA] leading-snug">
+          <h4 className="text-base font-bold text-indigo-900 leading-snug">
             Practice "{topWeakness}" for 20 minutes
           </h4>
-          <p className="text-xs text-[#A1A1AA] mt-1 max-w-lg">
+          <p className="text-xs text-indigo-700 mt-1 max-w-lg font-medium">
             Focusing on this weak spot will increase your Interview Readiness from {progress.dbmsScore}% to ~75%.
           </p>
         </div>

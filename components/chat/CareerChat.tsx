@@ -2,16 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useProfileStore } from '@/store/useProfileStore';
-import { Send, X, Bot, Sparkles, Loader2, ChevronRight, MessageCircle } from 'lucide-react';
+import { Send, X, Bot, Sparkles, Loader2, MessageCircle, Briefcase } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ChatMessage {
   id: string;
   sender: 'ai' | 'user';
   text: string;
   timestamp: string;
+  grounding?: string[];
 }
 
-// Call backend Gemini API route
 async function askGemini(prompt: string): Promise<string> {
   try {
     const res = await fetch('/api/ai/chat', {
@@ -34,7 +35,17 @@ export function CareerChat() {
   const { profile, skills, projects, experiences } = useProfileStore();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const greeting = `Hi ${profile.fullName?.split(' ')[0] || 'there'}! 👋 I'm your AI Career Coach. I know your profile — skills like ${skills.slice(0, 3).map(s => s.name).join(', ')} and projects like "${projects[0]?.title || 'your projects'}". Ask me anything!`;
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener('open-career-chat', handler);
+    return () => window.removeEventListener('open-career-chat', handler);
+  }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [isOpen]); // Also trigger on open
+
+  const greeting = `Hello ${profile.fullName?.split(' ')[0] || 'there'}! I'm your dedicated CareerPilot AI coach. I've reviewed your verified profile, target role (${profile.targetRole}), and recent interview benchmark (78/100). How can I guide your preparation today?`;
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -42,19 +53,15 @@ export function CareerChat() {
       sender: 'ai',
       text: greeting,
       timestamp: 'Just now',
+      grounding: ['Verified Profile (92%)', '1 Career Benchmark Report (78)'],
     },
   ]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isOpen]);
-
-  // Dynamic quick prompts based on user's actual profile
   const quickPrompts = [
-    `What interview questions will they ask about "${projects[0]?.title || 'my project'}"?`,
-    `How can I improve my ${profile.targetRole} skills this week?`,
-    `Write a strong summary for my resume targeting ${profile.targetRole}`,
-    `What are the top 5 DSA topics for ${profile.targetRole} interviews?`,
+    `What should I study today?`,
+    `Why is my resume score low?`,
+    `Prepare me for a system design round`,
+    `What interview questions will they ask about my project?`,
   ];
 
   const handleSend = async (textToSend?: string) => {
@@ -72,159 +79,156 @@ export function CareerChat() {
     if (!textToSend) setInput('');
     setLoading(true);
 
-    // Build a rich context prompt using actual user profile data
     const contextPrompt = `You are CareerPilot AI, a sharp and encouraging career coach for a college student.
-
 STUDENT PROFILE:
 - Name: ${profile.fullName}
 - Target Role: ${profile.targetRole}
-- College: ${profile.college || 'College'}
-- Skills: ${skills.map(s => `${s.name} (${s.proficiency})`).join(', ')}
-- Projects: ${projects.map(p => `"${p.title}" — Tech: ${p.techStack?.join(', ')}`).join(' | ')}
-- Experience: ${experiences.map(e => `${e.role} at ${e.company}`).join(', ') || 'fresher'}
-- Readiness Score: ${profile.readinessScore}%
+- Skills: ${skills.map(s => s.name).join(', ')}
 
 STUDENT'S QUESTION: "${query}"
 
-Give a personalized, practical, specific answer referencing their actual skills, projects, or target role where relevant. 
-Be concise (max 3 paragraphs or bullet points). Be encouraging but honest. Do NOT give generic advice.`;
+Give a personalized, practical, specific answer. Be concise (max 3 paragraphs).`;
 
     const aiText = await askGemini(contextPrompt);
 
     const finalText = aiText ||
-      `Based on your ${profile.targetRole} profile and skills like ${skills[0]?.name || 'your tech stack'}, here's my advice for "${query}": Focus on building demonstrable projects around your target role, practice STAR-format answers for behavioral questions, and research the specific company's tech culture. Your "${projects[0]?.title || 'current project'}" is a great talking point — be ready to explain architectural decisions and trade-offs you made.`;
+      `Based on your ${profile.targetRole} profile, focus on building demonstrable projects, practice STAR-format answers for behavioral questions, and review core concepts daily.`;
 
     const aiMsg: ChatMessage = {
       id: `a-${Date.now()}`,
       sender: 'ai',
       text: finalText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      grounding: ['CareerPilot AI Core Knowledge'],
     };
 
     setMessages((prev) => [...prev, aiMsg]);
     setLoading(false);
   };
 
-  return (
-    <div className="fixed bottom-6 right-6 z-50">
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-bold text-xs shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all hover:scale-105 active:scale-95 border border-indigo-400/30"
-        >
-          <Bot className="h-4 w-4" />
-          <span>Ask CareerPilot</span>
-          <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-300 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-          </span>
-        </button>
-      )}
+  // If closed, don't render the panel
+  if (!isOpen) return null;
 
-      {isOpen && (
-        <div className="w-96 h-[540px] bg-[#0E0E12] border border-indigo-500/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200 select-none">
-          {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border-b border-slate-800 text-white flex items-center justify-between shrink-0">
+  return (
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[100]" 
+        onClick={() => setIsOpen(false)}
+      />
+
+      {/* Side Panel */}
+      <div className="fixed top-0 right-0 h-screen w-full md:w-[420px] bg-white border-l border-slate-200 shadow-2xl z-[101] flex flex-col animate-in slide-in-from-right duration-300 font-sans">
+        
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-slate-200 flex flex-col gap-4 bg-white shrink-0">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 border border-indigo-400/30">
-                <Sparkles className="h-4 w-4" />
+              <div className="h-9 w-9 rounded-full bg-teal-600 flex items-center justify-center text-white shadow-sm shadow-teal-500/30">
+                <Sparkles className="h-4.5 w-4.5" />
               </div>
               <div>
-                <h3 className="font-bold text-xs text-white">CareerPilot AI Coach</h3>
-                <p className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-                  Context-Aware • Knows Your Profile
+                <h3 className="font-extrabold text-[15px] text-slate-900">CareerPilot AI Coach</h3>
+                <p className="text-[11px] font-semibold text-teal-600 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse block"></span>
+                  Personalized for {profile.targetRole}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <a
-                href="https://wa.me/919999999999?text=Hello%20CareerPilot%20Support"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-indigo-900/50 transition-colors flex items-center gap-1 text-[10px] font-bold"
-                title="Chat on WhatsApp"
-              >
-                <MessageCircle className="h-4 w-4" />
-              </a>
-              <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+            <button 
+              onClick={() => setIsOpen(false)} 
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-[#0E0E12] custom-scrollbar">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+          {/* Quick Prompts Carousel */}
+          <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1 -mx-1 px-1">
+            {quickPrompts.map((prompt, i) => (
+              <button
+                key={i}
+                onClick={() => handleSend(prompt)}
+                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-[11px] font-bold transition-colors"
               >
-                {msg.sender === 'ai' && (
-                  <div className="h-7 w-7 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 text-xs mt-0.5">
-                    <Bot className="h-4 w-4" />
-                  </div>
-                )}
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 p-5 overflow-y-auto space-y-6 bg-slate-50/50 custom-scrollbar">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={cn("flex gap-3", msg.sender === 'user' ? 'justify-end' : 'justify-start')}
+            >
+              {msg.sender === 'ai' && (
+                <div className="h-8 w-8 rounded-[10px] bg-teal-800 flex items-center justify-center text-teal-100 shrink-0 shadow-sm mt-1">
+                  <Briefcase className="h-4 w-4" />
+                </div>
+              )}
+              
+              <div className="flex flex-col gap-2 max-w-[85%]">
                 <div
-                  className={`max-w-[84%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
+                  className={cn(
+                    "px-4 py-3 text-[13px] leading-relaxed shadow-sm",
                     msg.sender === 'user'
-                      ? 'bg-indigo-600 text-white rounded-br-none font-medium shadow-md'
-                      : 'bg-[#161622] text-slate-200 border border-slate-800 rounded-bl-none shadow-xs'
-                  }`}
+                      ? "bg-slate-900 text-white rounded-2xl rounded-tr-sm font-medium"
+                      : "bg-white text-slate-700 border border-slate-200 rounded-2xl rounded-tl-sm font-medium"
+                  )}
                 >
                   <p>{msg.text}</p>
-                  <span className="text-[9px] opacity-60 block text-right mt-1 font-mono text-slate-400">{msg.timestamp}</span>
                 </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex items-center gap-2 text-xs text-indigo-400 p-2 font-medium">
-                <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
-                <span>Analyzing your profile & crafting response...</span>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
 
-          {/* Quick Prompts */}
-          {messages.length < 4 && (
-            <div className="p-2.5 border-t border-slate-800 bg-[#12121A] shrink-0">
-              <p className="text-[9px] uppercase font-bold text-slate-400 px-1 mb-1.5 tracking-wider">Quick Ask</p>
-              <div className="space-y-1">
-                {quickPrompts.slice(0, 2).map((prompt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSend(prompt)}
-                    className="w-full text-left text-[10px] px-2.5 py-1.5 rounded-lg bg-[#161622] text-slate-300 border border-slate-800 hover:bg-indigo-950/60 hover:text-indigo-300 hover:border-indigo-500/40 transition-colors font-semibold flex items-center gap-1.5 truncate"
-                  >
-                    <ChevronRight className="h-3 w-3 shrink-0 text-indigo-400" />
-                    <span className="truncate">{prompt}</span>
-                  </button>
-                ))}
+                {msg.sender === 'ai' && msg.grounding && (
+                  <div className="px-3 py-2 rounded-xl bg-white border border-teal-100 shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-500 mb-1">Grounded in:</p>
+                    <ul className="space-y-1">
+                      {msg.grounding.map((g, i) => (
+                        <li key={i} className="text-[10px] font-bold text-teal-600 flex items-center gap-1.5">
+                          <span className="h-1 w-1 rounded-full bg-teal-400"></span>
+                          {g}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
+          ))}
+          {loading && (
+            <div className="flex items-center gap-2 text-[11px] text-teal-600 p-2 font-bold ml-11">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span>Analyzing profile & crafting response...</span>
+            </div>
           )}
+          <div ref={chatEndRef} className="h-4" />
+        </div>
 
-          {/* Input */}
-          <div className="p-3 bg-[#12121A] border-t border-slate-800 flex items-center gap-2 shrink-0">
+        {/* Input Footer */}
+        <div className="p-4 bg-white border-t border-slate-200 shrink-0">
+          <div className="relative flex items-center">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask about interview, resume, skills..."
-              className="flex-1 bg-[#161622] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/60 font-medium"
+              placeholder="Ask about your resume, roadmap, or interview..."
+              className="w-full bg-white border border-slate-200 rounded-full pl-5 pr-12 py-3.5 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all font-medium shadow-sm"
             />
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || loading}
-              className="p-2 rounded-xl bg-indigo-600 text-white disabled:opacity-50 hover:bg-indigo-500 transition-colors shadow-sm"
+              className="absolute right-2 p-2 rounded-full bg-teal-600 text-white disabled:opacity-50 hover:bg-teal-700 transition-colors shadow-md"
             >
               <Send className="h-4 w-4" />
             </button>
           </div>
         </div>
-      )}
-    </div>
+        
+      </div>
+    </>
   );
 }

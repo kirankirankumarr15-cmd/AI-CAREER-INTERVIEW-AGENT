@@ -18,13 +18,13 @@ export function TodayMissionCard() {
               <Dumbbell className="h-4 w-4 text-indigo-400" />
             </div>
             <div>
-              <h3 className="font-bold text-xs uppercase tracking-wider text-[#FAFAFA]">Today's Mission</h3>
-              <p className="text-[10px] text-[#71717A] font-medium">10–20 min daily workout</p>
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-900">Today's Mission</h3>
+              <p className="text-[10px] text-slate-500 font-medium">10–20 min daily workout</p>
             </div>
           </div>
           <div className="text-right">
             <span className="text-xs font-black text-indigo-400 tabular-nums">{completed}/{total}</span>
-            <div className="w-16 h-1.5 bg-[#27272F] rounded-full mt-1 overflow-hidden">
+            <div className="w-16 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500"
                 style={{ width: `${pct}%` }}
@@ -41,18 +41,18 @@ export function TodayMissionCard() {
               className={`w-full text-left p-2.5 rounded-xl border text-xs flex items-center justify-between transition-all ${
                 task.done
                   ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 line-through opacity-70'
-                  : 'bg-white/3 border-[#27272F] text-[#FAFAFA] hover:border-indigo-500/40 hover:bg-indigo-500/5'
+                  : 'bg-white border-slate-200 text-slate-900 hover:border-indigo-500/40 hover:bg-indigo-50 shadow-sm'
               }`}
             >
               <div className="flex items-center gap-2.5">
                 {task.done ? (
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                 ) : (
-                  <Circle className="h-4 w-4 text-[#52525B] shrink-0" />
+                  <Circle className="h-4 w-4 text-slate-400 shrink-0" />
                 )}
                 <span className="font-semibold">{task.text}</span>
               </div>
-              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-white/8 text-[#71717A] shrink-0 uppercase tracking-wider">
+              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0 uppercase tracking-wider">
                 {task.category}
               </span>
             </button>
@@ -60,8 +60,8 @@ export function TodayMissionCard() {
         </div>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-[#1F1F27] flex items-center justify-between text-xs">
-        <span className="text-[#71717A]">Streaks boost placement rate by 2.4×</span>
+      <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
+        <span className="text-slate-500">Streaks boost placement rate by 2.4×</span>
         <Link href="/practice" className="font-bold text-indigo-400 hover:text-indigo-300">
           Start Workout →
         </Link>

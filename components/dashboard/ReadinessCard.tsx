@@ -23,22 +23,22 @@ export function ReadinessCard() {
 
   return (
     <div className="card p-6 rounded-2xl relative overflow-hidden animate-fade-in-up">
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-[#1F1F27]">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1.5">
             <Award className="h-4 w-4" />
             AI Career Readiness Estimate
           </div>
-          <h2 className="text-2xl font-extrabold text-[#FAFAFA] tracking-tight">
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Overall Placement Readiness
           </h2>
-          <p className="text-xs text-[#71717A] mt-1 max-w-md font-medium">
+          <p className="text-xs text-slate-500 mt-1 max-w-md font-medium">
             Calculated across 9 technical, communication, resume & interview metrics.
           </p>
         </div>
 
         {/* Radial Gauge */}
-        <div className="flex items-center gap-5 bg-white/4 border border-[#27272F] rounded-2xl px-6 py-4">
+        <div className="flex items-center gap-5 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4">
           <RadialProgressRing
             score={profile.readinessScore}
             size={110}
@@ -62,10 +62,10 @@ export function ReadinessCard() {
         {breakdown.map((item) => (
           <div
             key={item.label}
-            className="p-3.5 rounded-xl bg-white/3 border border-[#1F1F27] hover:border-[#3A3A45] transition-colors group"
+            className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 shadow-sm transition-colors group"
           >
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-semibold text-[#A1A1AA] truncate pr-2">{item.label}</span>
+              <span className="text-xs font-semibold text-slate-600 truncate pr-2">{item.label}</span>
               <span
                 className="text-xs font-extrabold tabular-nums"
                 style={{ color: item.score >= 80 ? '#34D399' : item.score >= 65 ? '#FBBF24' : '#F87171' }}
@@ -73,7 +73,7 @@ export function ReadinessCard() {
                 {item.score}%
               </span>
             </div>
-            <div className="w-full h-1.5 rounded-full bg-[#27272F] overflow-hidden">
+            <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{ width: `${item.score}%`, backgroundColor: item.color }}

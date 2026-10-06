@@ -1,166 +1,169 @@
 'use client';
 
 import { useState } from 'react';
-import { useProfileStore } from '@/store/useProfileStore';
-import { prepareApplicationAnswers, ApplicationPrepOutput } from '@/lib/ai/agents/application-agent';
-import { Send, CheckCircle2, ShieldAlert, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, ChevronDown, Clock } from 'lucide-react';
+
+const initialColumns = [
+  {
+    id: 'saved',
+    title: 'Saved',
+    count: 1,
+    cards: [
+      {
+        id: 1,
+        company: 'Uber Technologies',
+        role: 'Software Engineer 1 - Mobility',
+        type: 'SDE',
+        salary: '₹22 - 28 LPA',
+        date: '30 Sep 2026',
+        status: 'Saved',
+      }
+    ]
+  },
+  {
+    id: 'ready',
+    title: 'Ready to Apply',
+    count: 1,
+    cards: [
+      {
+        id: 2,
+        company: 'Swiggy',
+        role: 'Junior Backend Developer',
+        type: 'SDE',
+        salary: '₹14 - 18 LPA',
+        date: '28 Sep 2026',
+        status: 'Ready to Apply',
+      }
+    ]
+  },
+  {
+    id: 'applied',
+    title: 'Applied',
+    count: 1,
+    cards: [
+      {
+        id: 3,
+        company: 'Atlassian',
+        role: 'Associate Software Engineer (Platform)',
+        type: 'SDE',
+        salary: '₹16 - 22 LPA',
+        date: '24 Sep 2026',
+        status: 'Applied',
+      }
+    ]
+  },
+  {
+    id: 'assessment',
+    title: 'Assessment',
+    count: 1,
+    cards: [
+      {
+        id: 4,
+        company: 'Razorpay',
+        role: 'Software Development Engineer - I',
+        type: 'SDE',
+        salary: '₹15 - 20 LPA',
+        date: '19 Sep 2026',
+        status: 'Assessment',
+        alert: 'Interview: OA in 3 days'
+      }
+    ]
+  }
+];
 
 export default function ApplicationsPage() {
-  const { profile, skills, projects, experiences } = useProfileStore();
-
-  const [company, setCompany] = useState('TechNovation Corp');
-  const [role, setRole] = useState('Full Stack Engineer');
-  const [loading, setLoading] = useState(false);
-  const [prepData, setPrepData] = useState<ApplicationPrepOutput | null>(null);
-  const [isStudentApproved, setIsStudentApproved] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const handlePrepareApplication = async () => {
-    setLoading(true);
-    const res = await prepareApplicationAnswers(company, role, '', profile, skills, projects, experiences);
-    setPrepData(res);
-    setIsStudentApproved(false);
-    setIsSubmitted(false);
-    setLoading(false);
-  };
-
-  const handleFinalSubmit = () => {
-    if (!isStudentApproved) return;
-    setIsSubmitted(true);
-  };
+  const [columns] = useState(initialColumns);
 
   return (
-    <div className="space-y-8 pb-16 animate-fade-in-up">
-      {/* Header */}
-      <div className="white-card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
-            <Send className="h-4 w-4" /> AI Job Application Assistant
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Application Prep & Approval Safety</h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium">
-            Generates verified application answers. Requires explicit student approval before final submission.
-          </p>
-        </div>
+    <div className="space-y-8 pb-16 animate-fade-in-up max-w-[1400px] mx-auto">
+      {/* Top Page Header */}
+      <div className="border-b border-slate-200 pb-5">
+        <h1 className="text-2xl font-extrabold text-slate-900">Job Applications</h1>
+        <p className="text-[13px] text-slate-500 font-medium mt-1">Active application pipeline and interview schedule</p>
       </div>
 
-      {/* Target Setup */}
-      <div className="white-card p-6 space-y-4">
-        <h3 className="font-bold text-sm text-slate-900">Prepare New Application</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-medium">
-          <div>
-            <label className="block text-slate-600 font-bold mb-1">Company Name</label>
-            <input
-              type="text"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-semibold"
-            />
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-[11px] font-extrabold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+               Pipeline Management • 4 Active Opportunities
+            </p>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Job Application Tracker</h2>
           </div>
-          <div>
-            <label className="block text-slate-600 font-bold mb-1">Target Role</label>
-            <input
-              type="text"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-semibold"
-            />
-          </div>
+          <button className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-indigo-600/20 transition-all active:scale-95">
+            <Plus className="h-4 w-4" /> Add Opportunity
+          </button>
         </div>
 
-        <button
-          onClick={handlePrepareApplication}
-          disabled={loading}
-          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-indigo-600/20 transition-all active:scale-95"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          <span>Generate Verified Answers & Check Eligibility</span>
-        </button>
+        {/* Kanban Board */}
+        <div className="flex gap-5 overflow-x-auto pb-4 snap-x">
+          {columns.map((col) => (
+            <div key={col.id} className="w-[320px] shrink-0 snap-start flex flex-col max-h-[75vh]">
+              
+              {/* Column Header */}
+              <div className="flex items-center justify-between p-3.5 mb-3 rounded-2xl bg-slate-100 border border-slate-200/60 shadow-sm">
+                <div className="flex items-center gap-2 text-slate-700 font-extrabold text-[13px]">
+                   <span className="h-2 w-2 rounded-full bg-indigo-400"></span>
+                   {col.title}
+                </div>
+                <span className="h-6 w-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-black">
+                  {col.count}
+                </span>
+              </div>
+
+              {/* Cards Container */}
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
+                {col.cards.map((card) => (
+                  <div key={card.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group">
+                    
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="text-[15px] font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">
+                          {card.company}
+                        </h3>
+                        <p className="text-[11px] text-slate-500 font-bold mt-0.5 max-w-[200px] truncate">
+                          {card.role}
+                        </p>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200/50">
+                        {card.type}
+                      </span>
+                    </div>
+
+                    <p className="text-[12px] font-bold text-slate-700 mb-4">
+                      {card.salary}
+                    </p>
+
+                    {card.alert && (
+                      <div className="mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5 text-amber-600" />
+                        <span className="text-[11px] font-extrabold text-amber-800">{card.alert}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {card.date}
+                      </span>
+                      
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors">
+                        <span className="text-[11px] font-extrabold">{card.status}</span>
+                        <ChevronDown className="h-3 w-3 text-slate-400" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Empty Drop Zone Style */}
+                <div className="h-24 rounded-2xl border-2 border-dashed border-slate-200/70 bg-slate-50/50 flex items-center justify-center">
+                  <span className="text-[11px] font-bold text-slate-400">Drop application here</span>
+                </div>
+              </div>
+
+            </div>
+          ))}
+        </div>
       </div>
-
-      {/* Application Review & Student Approval Flow */}
-      {prepData && (
-        <div className="white-card p-6 space-y-6 animate-fade-in-up">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <span className="text-[10px] uppercase font-bold text-indigo-600 tracking-wider">Step 2: Student Review</span>
-              <h2 className="text-lg font-bold text-slate-900">Application Answers for {company}</h2>
-            </div>
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-              {prepData.completenessPercentage}% Complete
-            </span>
-          </div>
-
-          {/* Answers */}
-          <div className="space-y-4">
-            {prepData.fieldAnswers.map((item, i) => (
-              <div key={i} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900">{item.questionLabel}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    {item.category}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-700 font-medium bg-white p-3 rounded-lg border border-slate-200 leading-relaxed font-sans">
-                  {item.generatedAnswer}
-                </p>
-                <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-700">
-                  <CheckCircle2 className="h-3 w-3" /> Generated using 100% verified student profile data.
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Mandatory Approval Section */}
-          <div className="p-5 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-4">
-            <div className="flex items-start gap-3">
-              <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-bold text-slate-900">Student Approval Required Before Submission</h4>
-                <p className="text-xs text-slate-600 mt-0.5 font-medium">
-                  CareerPilot AI will NEVER automatically submit applications without explicit human review and sign-off.
-                </p>
-              </div>
-            </div>
-
-            <label className="flex items-center gap-3 p-3 rounded-xl bg-white border border-indigo-200 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isStudentApproved}
-                onChange={(e) => setIsStudentApproved(e.target.checked)}
-                className="h-4 w-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600"
-              />
-              <span className="text-xs font-bold text-slate-800">
-                I have reviewed all generated application answers and declare them accurate and truthful.
-              </span>
-            </label>
-
-            <button
-              onClick={handleFinalSubmit}
-              disabled={!isStudentApproved || isSubmitted}
-              className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                isSubmitted
-                  ? 'bg-emerald-600 text-white'
-                  : isStudentApproved
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 active:scale-[0.99]'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              {isSubmitted ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 text-white" />
-                  <span>Application Status Updated to "Applied"!</span>
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  <span>Approve & Record Application as Ready / Applied</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

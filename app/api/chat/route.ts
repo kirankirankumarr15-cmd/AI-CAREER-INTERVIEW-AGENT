@@ -1,0 +1,129 @@
+// This file has been disabled because it references packages (like @ai-sdk/openai and next-api-zod) 
+// that are not installed in the project. The active AI chat route is located at app/api/ai/chat/route.ts.
+
+/*
+import { OpenAI } from '@ai-sdk/openai';
+import { embed } from 'ai';
+import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import { withZod } from 'next-api-zod';
+
+// Initialize Supabase client (will use the user's session via cookies for RLS)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// OpenAI client for LLM and embeddings
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// System prompt for Jarvis mode
+const systemPrompt = \`You are CareerPilot, a direct, proactive Jarvis‑mode AI assistant for students.
+Follow the strict rules provided by the product spec and never hallucinate data.\`;
+
+export const POST = withZod(
+  z.object({
+    sessionId: z.string(), // chat_sessions.id
+    userId: z.string(),    // auth user uuid
+    message: z.string(),
+  }),
+  async (body: any, req: any) => {
+    const { sessionId, userId, message } = body;
+    // 1️⃣ Embed user message
+    const { embedding } = await embed({
+      model: openai.embedding('text-embedding-3-small'),
+      value: message,
+    });
+
+    // 2️⃣ Retrieve relevant chunks (top 8)
+    const { data: chunks, error: retrievalError } = await supabase.rpc('match_career_embeddings', {
+      query_embedding: embedding,
+      match_count: 8,
+      filter_user_id: userId,
+    });
+
+    const retrievedTexts = chunks?.map((c: any) => \`Source (\${c.source_type}): \${c.content}\`).join('\\n') || '';
+
+    // 3️⃣ Pull recent chat history (last 6 messages)
+    const { data: recentMessages } = await supabase
+      .from('chat_messages')
+      .select('role, content')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: false })
+      .limit(6);
+
+    const history = recentMessages?.reverse().map((m: any) => \`\${m.role === 'assistant' ? 'Assistant' : 'Student'}: \${m.content}\`).join('\\n') || '';
+
+    // 4️⃣ Assemble final prompt
+    const finalPrompt = \`\${systemPrompt}\\n\\n## Current State\\nReadiness Score: \${await getReadinessScore(userId)}\\nTarget Role: \${await getTargetRole(userId)}\\n\\n## Retrieved Data\\n\${retrievedTexts}\\n\\n## Conversation History\\n\${history}\\n\\n## New Question\\n\${message}\`;
+
+    // 5️⃣ Call LLM with streaming back to client
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini', // medium sized, good balance
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: finalPrompt }],
+        stream: true,
+      });
+
+      // Store user message
+      await supabase.from('chat_messages').insert({
+        session_id: sessionId,
+        user_id: userId,
+        role: 'user',
+        content: message,
+        retrieved_chunk_ids: chunks?.map((c: any) => c.id) ?? [],
+      });
+
+      // Stream response to client while also storing assistant reply when done
+      let assistantReply = '';
+      for await (const chunk of response) {
+        const content = chunk.choices[0]?.delta?.content ?? '';
+        assistantReply += content;
+        // Immediately forward to client (Next.js Edge API streaming)
+        req.res?.write(content);
+      }
+
+      // Close HTTP response
+      req.res?.end();
+
+      // Save assistant reply
+      await supabase.from('chat_messages').insert({
+        session_id: sessionId,
+        user_id: userId,
+        role: 'assistant',
+        content: assistantReply,
+        retrieved_chunk_ids: chunks?.map((c: any) => c.id) ?? [],
+      });
+
+      return { status: 200 } as any;
+    } catch (err: any) {
+      console.error('LLM error', err);
+      // Simple fallback: retry once after short delay
+      await new Promise((r) => setTimeout(r, 1200));
+      try {
+        const retry = await openai.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: finalPrompt }],
+        });
+        const content = retry.choices[0].message.content;
+        // Store both messages as before
+        await supabase.from('chat_messages').insert([
+          { session_id: sessionId, user_id: userId, role: 'assistant', content, retrieved_chunk_ids: chunks?.map((c: any) => c.id) ?? [] },
+        ]);
+        return new Response(content);
+      } catch (e2) {
+        return new Response('Sorry, I am unable to respond right now.', { status: 503 });
+      }
+    }
+  }
+);
+
+// Helper functions to get baseline facts – simple queries
+async function getReadinessScore(userId: string) {
+  const { data } = await supabase.from('profiles').select('readiness_score').eq('id', userId).single();
+  return data?.readiness_score ?? 'N/A';
+}
+async function getTargetRole(userId: string) {
+  const { data } = await supabase.from('profiles').select('target_role').eq('id', userId).single();
+  return data?.target_role ?? 'N/A';
+}
+*/

@@ -20,12 +20,12 @@ export default function DashboardPage() {
           <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-[0.15em] flex items-center gap-1.5 mb-1">
             <Sparkles className="h-3.5 w-3.5" /> Dashboard Overview
           </span>
-          <h1 className="text-2xl font-extrabold text-[#FAFAFA] tracking-tight">
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Welcome back, {firstName}! 👋
           </h1>
-          <p className="text-xs text-[#71717A] mt-1 font-medium">
+          <p className="text-xs text-slate-500 mt-1 font-medium">
             Your AI Career Profile is active. Target role set to{' '}
-            <strong className="text-[#FAFAFA]">{profile.targetRole || 'Full Stack Developer'}</strong>.
+            <strong className="text-slate-900">{profile.targetRole || 'Full Stack Developer'}</strong>.
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             href="/resume"
-            className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#FAFAFA] border border-[#27272F] text-xs font-bold flex items-center gap-2 transition-colors"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-xs font-bold flex items-center gap-2 transition-colors shadow-sm"
           >
             <FileText className="h-4 w-4 text-indigo-400" />
             <span>Build Resume</span>

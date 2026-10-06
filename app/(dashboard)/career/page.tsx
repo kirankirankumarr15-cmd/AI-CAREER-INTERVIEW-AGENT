@@ -1,151 +1,214 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useProfileStore } from '@/store/useProfileStore';
-import { analyzeProfileRole, RoleRequirements } from '@/lib/ai/agents/profile-agent';
-import { Compass, CheckCircle2, Code2, BookOpen, Layers, Loader2, Sparkles } from 'lucide-react';
+import { ChevronRight, Layers, Database, LayoutTemplate, Server, LineChart, BrainCircuit, ShieldCheck, Cloud, Code2 } from 'lucide-react';
 
-const roleList = [
-  'Full Stack Developer',
-  'Software Developer',
-  'Frontend Developer',
-  'Backend Developer',
-  'Data Analyst',
-  'Data Scientist',
-  'AI/ML Engineer',
-  'Cybersecurity Specialist',
-  'Cloud/DevOps Engineer',
-  'UI/UX Engineer',
-  'Mobile Developer',
+const rolesData = [
+  {
+    id: 'backend',
+    title: 'Backend Developer',
+    icon: Server,
+    description: 'Design robust APIs, handle high-traffic systems, microservices, databases, and server-side business logic.',
+    stack: ['Java', 'Spring Boot', 'SQL', 'REST APIs'],
+    extraStack: '+ 3 more',
+    level: 'Intermediate to Advanced',
+    salary: '10 - 18 LPA',
+  },
+  {
+    id: 'sde1',
+    title: 'Software Developer (SDE 1)',
+    icon: Code2,
+    description: 'Core problem solving, data structures, algorithms, system design fundamentals, and enterprise software engineering.',
+    stack: ['DSA', 'OOP', 'Java / C++', 'System Design'],
+    extraStack: '+ 2 more',
+    level: 'Advanced',
+    salary: '16 - 22 LPA',
+  },
+  {
+    id: 'frontend',
+    title: 'Frontend Developer',
+    icon: LayoutTemplate,
+    description: 'Build fast, responsive, accessible, and delightful user interfaces using modern web frameworks and design systems.',
+    stack: ['React', 'TypeScript', 'Tailwind CSS', 'Next.js'],
+    extraStack: '+ 3 more',
+    level: 'Intermediate',
+    salary: '10 - 16 LPA',
+  },
+  {
+    id: 'fullstack',
+    title: 'Full Stack Developer',
+    icon: Layers,
+    description: 'Bridge client interfaces and distributed cloud backends with end-to-end architecture skills.',
+    stack: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'],
+    extraStack: '+ 2 more',
+    level: 'Advanced',
+    salary: '15 - 28 LPA',
+  },
+  {
+    id: 'data-analyst',
+    title: 'Data Analyst',
+    icon: LineChart,
+    description: 'Transform raw institutional datasets into actionable business narratives and executive dashboards.',
+    stack: ['SQL', 'Python', 'Tableau / PowerBI', 'Excel'],
+    extraStack: '+ 1 more',
+    level: 'Intermediate',
+    salary: '7 - 14 LPA',
+  },
+  {
+    id: 'data-scientist',
+    title: 'Data Scientist',
+    icon: Database,
+    description: 'Formulate predictive models, statistical inferences, and machine learning pipelines for complex datasets.',
+    stack: ['Python', 'Machine Learning', 'Linear Algebra', 'Pandas'],
+    extraStack: '+ 1 more',
+    level: 'Advanced',
+    salary: '18 - 24 LPA',
+  },
+  {
+    id: 'aiml',
+    title: 'AI/ML Engineer',
+    icon: BrainCircuit,
+    description: 'Deploy deep learning models, LLM agents, vector embeddings, and production inference architectures.',
+    stack: ['PyTorch', 'Transformers', 'LangChain', 'Python'],
+    extraStack: '+ 2 more',
+    level: 'Advanced',
+    salary: '20 - 32 LPA',
+  },
+  {
+    id: 'cloud',
+    title: 'Cloud / DevOps Engineer',
+    icon: Cloud,
+    description: 'Automate CI/CD pipelines, container orchestration, infrastructure as code, and cloud reliability.',
+    stack: ['Kubernetes', 'Docker', 'AWS / GCP', 'Terraform'],
+    extraStack: '+ 2 more',
+    level: 'Intermediate to Advanced',
+    salary: '15 - 26 LPA',
+  },
+  {
+    id: 'cyber',
+    title: 'Cybersecurity Analyst',
+    icon: ShieldCheck,
+    description: 'Safeguard infrastructure, perform vulnerability assessments, secure protocols, and incident response.',
+    stack: ['Network Security', 'Cryptography', 'Linux', 'Ethical Hacking'],
+    extraStack: '+ 1 more',
+    level: 'Advanced',
+    salary: '12 - 20 LPA',
+  },
 ];
 
 export default function CareerPage() {
-  const { profile, skills, updateProfile } = useProfileStore();
-  const [selectedRole, setSelectedRole] = useState(profile.targetRole || 'Full Stack Developer');
-  const [roleData, setRoleData] = useState<RoleRequirements | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { profile, updateProfile } = useProfileStore();
+  const defaultRole = rolesData.find((r) => r.title === profile.targetRole) || rolesData[1];
+  const [selectedRole, setSelectedRole] = useState(defaultRole);
 
-  useEffect(() => {
-    async function loadRoleInfo() {
-      setLoading(true);
-      try {
-        const data = await analyzeProfileRole(profile, skills, selectedRole);
-        setRoleData(data);
-      } catch (err) {
-        console.error('Error loading role info:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadRoleInfo();
-  }, [selectedRole]);
-
-  const handleSelectTargetRole = (role: string) => {
+  const handleSelectRole = (role: typeof rolesData[0]) => {
     setSelectedRole(role);
-    updateProfile({ targetRole: role });
+    updateProfile({ targetRole: role.title });
   };
 
   return (
-    <div className="space-y-8 pb-16 animate-fade-in-up">
-      {/* Header Banner */}
-      <div className="white-card p-6 flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
-            <Compass className="h-4 w-4" /> Career Intelligence Engine
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Career Role Selector & Analysis</h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium">
-            Explore industry expectations, required skills, interview rounds, and projects for your target role.
+    <div className="space-y-8 pb-16 animate-fade-in-up max-w-7xl mx-auto">
+      {/* Top Page Header */}
+      <div className="border-b border-slate-200 pb-5">
+        <h1 className="text-2xl font-extrabold text-slate-900">Target Roles</h1>
+        <p className="text-[13px] text-slate-500 font-medium mt-1">Choose your desired role and required skill path</p>
+      </div>
+      
+      {/* Main Content */}
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <p className="text-[11px] font-extrabold text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+             Target Alignment Engine • 11 Career Paths
+          </p>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">What role are you targeting?</h2>
+          <p className="text-[13px] text-slate-500 font-medium">
+            Selecting a target role automatically customizes your learning roadmap, interview question banks, and resume ATS keywords.
           </p>
         </div>
-      </div>
 
-      {/* Role Picker horizontal scroll / pills */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-        {roleList.map((r) => (
-          <button
-            key={r}
-            onClick={() => handleSelectTargetRole(r)}
-            className={`px-4 py-2.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
-              selectedRole === r
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-bold'
-                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            {r}
-          </button>
-        ))}
-      </div>
-
-      {loading || !roleData ? (
-        <div className="white-card p-16 text-center text-slate-500 space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-indigo-600" />
-          <p className="text-xs font-medium">Analyzing career requirements for <span className="text-slate-900 font-bold">{selectedRole}</span> via Gemini AI...</p>
+        {/* Hero Selected Role Card */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 transition-all hover:border-emerald-300">
+           <div className="space-y-4 flex-1">
+             <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase tracking-wider rounded-lg border border-emerald-200">
+               Currently Selected Target Role
+             </span>
+             <div>
+               <h3 className="text-2xl font-extrabold text-slate-900">{selectedRole.title}</h3>
+               <p className="text-[13px] text-slate-600 font-medium mt-1.5 max-w-2xl leading-relaxed">
+                 {selectedRole.description}
+               </p>
+             </div>
+             <div className="flex items-center gap-3 pt-2">
+               <span className="text-xs font-bold text-slate-900">Core Stack:</span>
+               <div className="flex flex-wrap gap-2">
+                 {[...selectedRole.stack, selectedRole.extraStack.replace('+', '').replace('more', '').trim()].map((s, i) => (
+                   <span key={i} className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-600 text-[11px] font-bold shadow-sm">
+                     {s}
+                   </span>
+                 ))}
+               </div>
+             </div>
+           </div>
+           <button className="shrink-0 px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-bold flex items-center gap-2 shadow-md shadow-emerald-700/20 transition-all active:scale-95">
+             Build My Roadmap <ChevronRight className="h-4 w-4" />
+           </button>
         </div>
-      ) : (
-        <div className="space-y-6 animate-fade-in-up">
-          {/* Grid 1: Required Skills & Important CS Subjects */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="white-card p-6 space-y-4">
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <Code2 className="h-4 w-4 text-indigo-600" /> Core Required Skills
-              </h3>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {roleData.requiredSkills.map((sk, i) => (
-                  <span key={i} className="px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold">
-                    {sk}
-                  </span>
-                ))}
-              </div>
-            </div>
 
-            <div className="white-card p-6 space-y-4">
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-sky-600" /> Important CS Subjects
-              </h3>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {roleData.importantSubjects.map((sub, i) => (
-                  <span key={i} className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200 text-sky-700 text-xs font-bold">
-                    {sub}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Typical Interview Rounds */}
-          <div className="white-card p-6 space-y-4">
-            <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-amber-600" /> Typical Interview Process Rounds
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {roleData.typicalRounds.map((rnd, i) => (
-                <div key={i} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-xs">
-                  <span className="h-7 w-7 rounded-lg bg-amber-100 text-amber-800 font-bold flex items-center justify-center shrink-0 border border-amber-200">
-                    R{i + 1}
-                  </span>
-                  <span className="text-slate-800 font-semibold">{rnd}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recommended Projects */}
-          <div className="white-card p-6 space-y-4">
-            <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-emerald-600" /> Recommended High-Impact Projects
-            </h3>
-            <div className="space-y-2">
-              {roleData.recommendedProjects.map((proj, i) => (
-                <div key={i} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-semibold flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>{proj}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* Roles Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+           {rolesData.map((role) => {
+             const isSelected = selectedRole.id === role.id;
+             const Icon = role.icon;
+             return (
+               <div 
+                 key={role.id}
+                 onClick={() => handleSelectRole(role)}
+                 className={`cursor-pointer rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between min-h-[220px] ${
+                   isSelected 
+                     ? 'bg-emerald-50/40 border-2 border-emerald-500 shadow-md shadow-emerald-500/10 scale-[1.02]' 
+                     : 'bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                 }`}
+               >
+                 <div className="space-y-4">
+                   <div className="flex items-center gap-3">
+                     <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                       isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-50 border border-slate-200 text-slate-600'
+                     }`}>
+                        <Icon className="h-5 w-5" />
+                     </div>
+                     <h3 className={`font-extrabold text-[15px] ${isSelected ? 'text-emerald-900' : 'text-slate-900'}`}>
+                       {role.title}
+                     </h3>
+                   </div>
+                   <p className="text-[12px] text-slate-500 font-medium leading-relaxed line-clamp-2">
+                     {role.description}
+                   </p>
+                   <div className="flex flex-wrap gap-1.5 pt-1">
+                     {role.stack.map((s, i) => (
+                       <span key={i} className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                         isSelected ? 'bg-slate-700 text-white' : 'bg-slate-700 text-white'
+                       }`}>
+                         {s}
+                       </span>
+                     ))}
+                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                       isSelected ? 'text-emerald-700' : 'text-slate-500'
+                     }`}>
+                       {role.extraStack}
+                     </span>
+                   </div>
+                 </div>
+                 
+                 <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
+                   <span className="text-[10px] text-slate-400 font-medium">{role.level}</span>
+                   <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">{role.salary}</span>
+                 </div>
+               </div>
+             );
+           })}
         </div>
-      )}
+      </div>
     </div>
   );
 }

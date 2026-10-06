@@ -17,7 +17,7 @@ export async function callGeminiJSON<T>(prompt: string, fallbackData: T): Promis
   }
 
   // List of standard Gemini models to attempt in sequence
-  const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  const candidateModels = ['gemini-3.8-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
 
   for (const modelName of candidateModels) {
     try {
@@ -41,7 +41,7 @@ export async function callGeminiText(prompt: string, fallbackText: string): Prom
     return fallbackText;
   }
 
-  const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  const candidateModels = ['gemini-3.8-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
 
   for (const modelName of candidateModels) {
     try {
