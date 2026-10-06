@@ -96,13 +96,13 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
 
   const handleLogout = async () => {
     try { await supabase.auth.signOut(); } catch {}
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   const notifIcon = (type: Notification['type']) => {
     if (type === 'success') return <CheckCircle2 className="h-4 w-4 text-emerald-400" />;
     if (type === 'warning') return <AlertCircle className="h-4 w-4 text-amber-400" />;
-    return <Info className="h-4 w-4 text-indigo-400" />;
+    return <Info className="h-4 w-4 text-emerald-400" />;
   };
 
   return (
@@ -121,9 +121,9 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
         <div className="relative">
           <button
             onClick={() => setShowRoles(!showRoles)}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600 hover:border-indigo-300 hover:text-slate-900 transition-all"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600 hover:border-emerald-300 hover:text-slate-900 transition-all"
           >
-            <Target className="h-3.5 w-3.5 text-indigo-500" />
+            <Target className="h-3.5 w-3.5 text-emerald-500" />
             <span className="text-slate-500">Target:</span>
             <span className="text-slate-900 font-bold">{profile.targetRole}</span>
             <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${showRoles ? 'rotate-180' : ''}`} />
@@ -142,7 +142,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
                     onClick={() => { updateProfile({ targetRole: role }); setShowRoles(false); }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                       profile.targetRole === role
-                        ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200'
+                        ? 'bg-emerald-50 text-emerald-700 font-bold border border-emerald-200'
                         : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
@@ -173,12 +173,12 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
         {/* Keyboard Shortcuts Button */}
         <button
           onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 border border-slate-200 hover:border-indigo-300 text-xs font-semibold transition-all group"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 text-xs font-semibold transition-all group"
           title="Press '?' for Quick Key Shortcuts"
         >
-          <Keyboard className="h-3.5 w-3.5 text-indigo-500 group-hover:scale-110 transition-transform" />
+          <Keyboard className="h-3.5 w-3.5 text-emerald-500 group-hover:scale-110 transition-transform" />
           <span className="font-bold text-[11px]">Shortcuts</span>
-          <span className="font-mono text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-600 border border-indigo-200">
+          <span className="font-mono text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-600 border border-emerald-200">
             ?
           </span>
         </button>
@@ -192,7 +192,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center">
+              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
@@ -207,7 +207,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="text-[10px] text-indigo-600 font-semibold hover:underline">
+                    <button onClick={markAllRead} className="text-[10px] text-emerald-600 font-semibold hover:underline">
                       Mark all read
                     </button>
                   )}
@@ -226,7 +226,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
                       if (notif.link) { router.push(notif.link); setShowNotifications(false); }
                     }}
                     className={`p-3 border-b border-slate-100 flex gap-3 cursor-pointer transition-colors ${
-                      notif.read ? 'hover:bg-slate-50' : 'bg-indigo-50/60 hover:bg-indigo-50'
+                      notif.read ? 'hover:bg-slate-50' : 'bg-emerald-50/60 hover:bg-emerald-50'
                     }`}
                   >
                     <div className="shrink-0 mt-0.5">{notifIcon(notif.type)}</div>
@@ -235,7 +235,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
                         <p className={`text-xs font-bold truncate ${notif.read ? 'text-slate-600' : 'text-slate-900'}`}>
                           {notif.title}
                         </p>
-                        {!notif.read && <span className="h-2 w-2 rounded-full bg-indigo-500 shrink-0" />}
+                        {!notif.read && <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />}
                       </div>
                       <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{notif.message}</p>
                       <p className="text-[10px] text-slate-400 mt-1 font-medium">{notif.time}</p>
@@ -257,9 +257,9 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
                       key={href}
                       href={href}
                       onClick={() => setShowNotifications(false)}
-                      className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                      className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
                     >
-                      <Icon className="h-3.5 w-3.5 text-indigo-500" />
+                      <Icon className="h-3.5 w-3.5 text-emerald-500" />
                       <span className="text-[10px] font-semibold text-slate-600">{label}</span>
                     </Link>
                   ))}

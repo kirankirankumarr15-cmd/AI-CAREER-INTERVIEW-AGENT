@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
@@ -13,7 +13,7 @@ import {
 import {
   Sparkles, Mail, KeyRound, Loader2, ShieldCheck, ArrowLeft,
   CheckCircle2, Lock, Eye, EyeOff, Building2, Award, Copy, Check,
-  ShieldAlert,
+  ShieldAlert, RefreshCw,
 } from 'lucide-react';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'success';
@@ -31,6 +31,15 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [timeLeft, setTimeLeft] = useState(120);
+
+  useEffect(() => {
+    if (step !== 'otp' || timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [step, timeLeft]);
 
   const handleSendResetEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +64,7 @@ export default function ForgotPasswordPage() {
              sessionStorage.setItem('careerpilot_otp_' + email.trim().toLowerCase(), JSON.stringify({
                email: email.trim().toLowerCase(),
                code,
-               expiresAt: Date.now() + 10 * 60 * 1000
+               expiresAt: Date.now() + 120 * 1000
              }));
            }
         }
@@ -75,6 +84,7 @@ export default function ForgotPasswordPage() {
       }
 
       setStep('otp');
+      setTimeLeft(120);
       setTimeout(() => {
         document.getElementById('fp-otp-0')?.focus();
       }, 100);
@@ -158,53 +168,40 @@ export default function ForgotPasswordPage() {
     setStatusMessage('');
 
     try {
-      if (isSupabaseConfigured()) {
-        const { error } = await supabase.auth.verifyOtp({
-          email: email.trim(),
-          token: fullOtp,
-          type: 'email',
+      // Server OTP verification
+      let verifySuccess = false;
+      try {
+        const response = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), code: fullOtp }),
         });
-        if (error) {
-          setErrorMessage(error.message);
-          setLoading(false);
-          return;
-        }
-      } else {
-        // Server OTP verification
-        let verifySuccess = false;
-        try {
-          const response = await fetch('/api/auth/verify-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email.trim(), code: fullOtp }),
-          });
-          const data = await response.json();
-          if (data.success) {
-            verifySuccess = true;
-          } else {
-            const check = verifyOtpCode(email, fullOtp);
-            if (check.success) verifySuccess = true;
-            else {
-              setErrorMessage(data.error || check.error || 'Invalid OTP code.');
-              setLoading(false);
-              return;
-            }
-          }
-        } catch (err: any) {
+        const data = await response.json();
+        if (data.success) {
+          verifySuccess = true;
+        } else {
           const check = verifyOtpCode(email, fullOtp);
           if (check.success) verifySuccess = true;
           else {
-             setErrorMessage(check.error || 'Invalid OTP code.');
-             setLoading(false);
-             return;
+            setErrorMessage(data.error || check.error || 'Invalid OTP code.');
+            setLoading(false);
+            return;
           }
         }
-        
-        if (!verifySuccess) {
-           setErrorMessage('Invalid OTP code. Please retry.');
+      } catch (err: any) {
+        const check = verifyOtpCode(email, fullOtp);
+        if (check.success) verifySuccess = true;
+        else {
+           setErrorMessage(check.error || 'Invalid OTP code.');
            setLoading(false);
            return;
         }
+      }
+      
+      if (!verifySuccess) {
+         setErrorMessage('Invalid OTP code. Please retry.');
+         setLoading(false);
+         return;
       }
 
       setStatusMessage('Code verified! Please create your new password.');
@@ -417,14 +414,35 @@ export default function ForgotPasswordPage() {
                 <span>Verify Reset Code</span>
               </button>
 
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => { setStep('email'); setOtpCode(['', '', '', '', '', '']); setStatusMessage(''); }}
-                  className="text-[11px] font-bold text-slate-400 hover:text-indigo-400 underline"
-                >
-                  Change Email Address
-                </button>
+              <div className="text-center space-y-3">
+                {timeLeft > 0 ? (
+                  <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-semibold text-slate-400">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-500" />
+                    <span>
+                      Resend code in <span className="text-indigo-400 font-bold">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSendResetEmail}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-[11px] transition-colors active:scale-95 disabled:opacity-60"
+                  >
+                    {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                    <span>Resend Code</span>
+                  </button>
+                )}
+                
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => { setStep('email'); setOtpCode(['', '', '', '', '', '']); setStatusMessage(''); }}
+                    className="text-[11px] font-bold text-slate-400 hover:text-slate-300 underline"
+                  >
+                    Change Email Address
+                  </button>
+                </div>
               </div>
             </form>
           )}

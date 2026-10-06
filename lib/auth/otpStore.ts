@@ -14,7 +14,7 @@ declare global {
 const otpCache = globalThis.__careerpilot_otp_cache || new Map<string, StoredOtp>();
 globalThis.__careerpilot_otp_cache = otpCache;
 
-export function storeServerOtp(email: string, code: string, ttlMs = 10 * 60 * 1000): void {
+export function storeServerOtp(email: string, code: string, ttlMs = 120 * 1000): void {
   const normalized = email.trim().toLowerCase();
   otpCache.set(normalized, {
     code,

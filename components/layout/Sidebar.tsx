@@ -101,13 +101,13 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           {/* Brand */}
           <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 border border-indigo-400/30">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 border border-emerald-400/30">
                 <Sparkles className="h-4.5 w-4.5 text-white" />
               </div>
               <div>
                 <h1 className="font-extrabold text-[15px] text-slate-900 tracking-tight flex items-center gap-1.5">
                   CareerPilot
-                  <span className="text-[9px] font-extrabold px-1.5 py-[2px] rounded bg-indigo-100 text-indigo-600 border border-indigo-200 tracking-wider">
+                  <span className="text-[9px] font-extrabold px-1.5 py-[2px] rounded bg-emerald-100 text-emerald-600 border border-emerald-200 tracking-wider">
                     AI
                   </span>
                 </h1>
@@ -132,7 +132,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search tabs or key..."
-                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 transition-all font-medium"
+                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 transition-all font-medium"
               />
               {searchQuery ? (
                 <button
@@ -165,18 +165,18 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                     className={cn(
                       'group flex items-center justify-between px-3 py-2 rounded-xl text-[12px] font-semibold transition-all duration-150 relative border',
                       isActive
-                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold'
                         : 'text-slate-600 border-transparent hover:text-slate-900 hover:bg-slate-100 hover:border-slate-200'
                     )}
                   >
                     {isActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-indigo-500" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-emerald-500" />
                     )}
                     <div className="flex items-center gap-2.5 min-w-0">
                       <Icon
                         className={cn(
                           'h-4 w-4 shrink-0 transition-colors',
-                          isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-700'
+                          isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-700'
                         )}
                       />
                       <span className="truncate">{item.label}</span>
@@ -184,14 +184,14 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       {item.badge && (
-                        <span className="text-[8.5px] font-bold px-1.5 py-[1px] rounded-full bg-indigo-100 text-indigo-600 border border-indigo-200 tracking-wider">
+                        <span className="text-[8.5px] font-bold px-1.5 py-[1px] rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200 tracking-wider">
                           {item.badge}
                         </span>
                       )}
                       <kbd className={cn(
                         'px-1.5 py-0.5 rounded text-[9.5px] font-mono font-extrabold border transition-colors',
                         isActive
-                          ? 'bg-indigo-600 text-white border-indigo-500'
+                          ? 'bg-emerald-600 text-white border-emerald-500'
                           : 'bg-slate-100 text-slate-500 border-slate-200 group-hover:border-slate-300 group-hover:text-slate-700'
                       )}>
                         {item.shortcut}
@@ -262,7 +262,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity"
             >
               <div className="relative shrink-0">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-xs text-white shadow-md">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-emerald-600 via-emerald-500 to-cyan-400 flex items-center justify-center font-bold text-xs text-white shadow-md">
                   {initials}
                 </div>
                 <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-white" />

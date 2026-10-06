@@ -40,9 +40,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 font-sans bg-slate-900">
+    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 py-12 font-sans bg-slate-900 overflow-y-auto">
       {/* Background Image with Overlay */}
-      <div className="absolute inset-0 z-0">
+      <div className="fixed inset-0 z-0">
         <Image
           src="/images/pes_shivamogga.png"
           alt="Campus Background"
@@ -55,54 +55,60 @@ export default function LoginPage() {
 
       <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center">
         {/* Top Tabs Container */}
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl p-1.5 flex w-full mb-6 shadow-lg">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl p-1.5 flex w-full mb-6 shadow-lg border border-slate-200/50">
           <button
-            onClick={() => { setActiveTab('HOD'); setErrorMsg(''); }}
+            onClick={() => { setActiveTab('HOD'); setErrorMsg(''); setEmail(''); setPassword(''); }}
             className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all ${
-              activeTab === 'HOD' ? 'bg-white border-2 border-[#0A9056] shadow-sm' : 'text-slate-400 hover:bg-slate-100/50'
+              activeTab === 'HOD' 
+                ? 'bg-emerald-50 border-2 border-emerald-200 shadow-sm text-emerald-700' 
+                : 'border-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <Shield className={`h-5 w-5 mb-1 ${activeTab === 'HOD' ? 'text-[#0A9056]' : 'text-slate-400'}`} />
-            <span className={`text-[10px] font-extrabold uppercase tracking-widest ${activeTab === 'HOD' ? 'text-[#0A9056]' : 'text-slate-400'}`}>
+            <Shield className={`h-5 w-5 mb-1 ${activeTab === 'HOD' ? 'text-emerald-600' : 'text-slate-400'}`} />
+            <span className={`text-[10px] font-extrabold uppercase tracking-widest ${activeTab === 'HOD' ? 'text-emerald-700' : 'text-slate-500'}`}>
               HOD
             </span>
           </button>
           
           <button
-            onClick={() => { setActiveTab('FACULTY'); setErrorMsg(''); }}
+            onClick={() => { setActiveTab('FACULTY'); setErrorMsg(''); setEmail(''); setPassword(''); }}
             className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all ${
-              activeTab === 'FACULTY' ? 'bg-white border-2 border-[#0A9056] shadow-sm' : 'text-slate-400 hover:bg-slate-100/50'
+              activeTab === 'FACULTY' 
+                ? 'bg-emerald-50 border-2 border-emerald-200 shadow-sm text-emerald-700' 
+                : 'border-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <BookOpen className={`h-5 w-5 mb-1 ${activeTab === 'FACULTY' ? 'text-[#0A9056]' : 'text-slate-400'}`} />
-            <span className={`text-[10px] font-extrabold uppercase tracking-widest ${activeTab === 'FACULTY' ? 'text-[#0A9056]' : 'text-slate-400'}`}>
+            <BookOpen className={`h-5 w-5 mb-1 ${activeTab === 'FACULTY' ? 'text-emerald-600' : 'text-slate-400'}`} />
+            <span className={`text-[10px] font-extrabold uppercase tracking-widest ${activeTab === 'FACULTY' ? 'text-emerald-700' : 'text-slate-500'}`}>
               FACULTY
             </span>
           </button>
 
           <button
-            onClick={() => { setActiveTab('STUDENT'); setErrorMsg(''); }}
+            onClick={() => { setActiveTab('STUDENT'); setErrorMsg(''); setEmail(''); setPassword(''); }}
             className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all ${
-              activeTab === 'STUDENT' ? 'bg-white border-2 border-[#0A9056] shadow-sm' : 'text-slate-400 hover:bg-slate-100/50'
+              activeTab === 'STUDENT' 
+                ? 'bg-emerald-50 border-2 border-emerald-200 shadow-sm text-emerald-700' 
+                : 'border-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <GraduationCap className={`h-5 w-5 mb-1 ${activeTab === 'STUDENT' ? 'text-[#0A9056]' : 'text-slate-400'}`} />
-            <span className={`text-[10px] font-extrabold uppercase tracking-widest ${activeTab === 'STUDENT' ? 'text-[#0A9056]' : 'text-slate-400'}`}>
+            <GraduationCap className={`h-5 w-5 mb-1 ${activeTab === 'STUDENT' ? 'text-emerald-600' : 'text-slate-400'}`} />
+            <span className={`text-[10px] font-extrabold uppercase tracking-widest ${activeTab === 'STUDENT' ? 'text-emerald-700' : 'text-slate-500'}`}>
               STUDENT
             </span>
           </button>
         </div>
 
         {/* Main Form Card */}
-        <div className="w-full bg-[#FAFAFA] rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in-up">
+        <div className="w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in-up">
           {/* Header Section */}
           <div className="flex flex-col items-center mb-8">
-            <div className="h-12 w-12 rounded-[14px] bg-[#E8F5EE] flex items-center justify-center mb-4 shadow-sm border border-[#D1EAD9]">
-              {activeTab === 'STUDENT' && <GraduationCap className="h-6 w-6 text-[#0A9056]" />}
-              {activeTab === 'FACULTY' && <BookOpen className="h-6 w-6 text-[#0A9056]" />}
-              {activeTab === 'HOD' && <Shield className="h-6 w-6 text-[#0A9056]" />}
+            <div className="h-12 w-12 rounded-[14px] bg-emerald-50 flex items-center justify-center mb-4 shadow-sm border border-emerald-100">
+              {activeTab === 'STUDENT' && <GraduationCap className="h-6 w-6 text-emerald-600" />}
+              {activeTab === 'FACULTY' && <BookOpen className="h-6 w-6 text-emerald-600" />}
+              {activeTab === 'HOD' && <Shield className="h-6 w-6 text-emerald-600" />}
             </div>
-            <h1 className="text-xl font-extrabold text-slate-800 tracking-tight capitalize">
+            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight capitalize">
               {activeTab.toLowerCase()} Login
             </h1>
             <p className="text-[13px] font-medium text-slate-500 mt-1">
@@ -112,14 +118,14 @@ export default function LoginPage() {
 
           <form className="space-y-5" onSubmit={handleLogin}>
             {errorMsg && (
-              <div className="bg-red-50 text-red-500 text-xs font-bold p-3 rounded-xl border border-red-100 text-center">
+              <div className="bg-red-50 text-red-600 text-[13px] font-bold p-3 rounded-xl border border-red-200 text-center">
                 {errorMsg}
               </div>
             )}
 
             {/* Email / USN Address */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pl-1">
+              <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest pl-1">
                 {activeTab === 'STUDENT' ? 'Email Address or USN' : 'Email Address'}
               </label>
               <div className="relative flex items-center">
@@ -130,7 +136,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder={activeTab === 'STUDENT' ? 'Email or USN (e.g. 4PM22CS001)' : 'name@college.edu'}
-                  className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-medium"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold shadow-sm"
                 />
               </div>
             </div>
@@ -138,10 +144,10 @@ export default function LoginPage() {
             {/* Password */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center pl-1 pr-1">
-                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">
                   Password
                 </label>
-                <Link href="/forgot-password" className="text-[10px] font-extrabold text-[#0A9056] hover:underline">
+                <Link href="/forgot-password" className="text-[10px] font-extrabold text-emerald-600 hover:text-emerald-700 hover:underline transition-colors">
                   Forgot password?
                 </Link>
               </div>
@@ -153,17 +159,17 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="Enter your password"
-                  className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-medium"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold shadow-sm"
                 />
               </div>
             </div>
 
             {/* Submit Button */}
-            <div className="pt-2">
+            <div className="pt-3">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-xl bg-[#0A9056] hover:bg-[#087747] text-white text-[14px] font-bold shadow-md shadow-[#0A9056]/20 transition-all active:scale-95 flex items-center justify-center disabled:opacity-70"
+                className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[14px] font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center disabled:opacity-70"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Sign In'}
               </button>
@@ -173,7 +179,7 @@ export default function LoginPage() {
             {activeTab === 'STUDENT' && (
               <div className="text-center pt-2">
                 <span className="text-[12px] font-medium text-slate-500">Don&apos;t have an account? </span>
-                <Link href="/signup" className="text-[12px] font-bold text-blue-600 hover:underline">
+                <Link href="/signup" className="text-[12px] font-bold text-emerald-600 hover:text-emerald-700 hover:underline transition-colors">
                   Sign Up
                 </Link>
               </div>
