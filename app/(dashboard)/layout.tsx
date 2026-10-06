@@ -1,15 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { CareerChat } from '@/components/chat/CareerChat';
 import { GlobalShortcuts } from '@/components/common/GlobalShortcuts';
+import { useProfileStore } from '@/store/useProfileStore';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const syncWithSupabase = useProfileStore((state) => state.syncWithSupabase);
+
+  useEffect(() => {
+    syncWithSupabase();
+  }, [syncWithSupabase]);
 
   // Chrome-minimal full-bleed mode for the interview room
   const isInterviewRoom = pathname === '/interview/room';

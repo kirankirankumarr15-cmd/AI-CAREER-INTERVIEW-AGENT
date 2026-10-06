@@ -12,6 +12,8 @@ import {
   FileCheck
 } from 'lucide-react';
 
+import { createClient } from '@/utils/supabase/client';
+
 export default function DocumentsPage() {
   const { documents, addDocument, updateDocumentStatus, updateProfile, addSkill, addProject } = useProfileStore();
 
@@ -31,25 +33,45 @@ export default function DocumentsPage() {
 
     setIsProcessing(true);
     const docId = `doc-${Date.now()}`;
-    const docRecord = {
-      id: docId,
-      fileName: file.name,
-      fileUrl: URL.createObjectURL(file),
-      docType: activeCategory as any,
-      status: 'Processing' as const,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    addDocument(docRecord);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      setIsProcessing(false);
+      return;
+    }
 
     try {
-      const simulatedOcrText = `Document: ${file.name}. Alex Morgan, University of Technology, B.S. Computer Science & Engineering. CGPA: 8.7, Graduation: 2025. Skills: React, Node.js, TypeScript, PostgreSQL, Python. Project: Smart Campus Resource Optimization Platform.`;
+      // 1. Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${docId}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from('resumes').upload(filePath, file);
 
+      if (uploadError) throw uploadError;
+
+      // 2. Get public URL
+      const { data: { publicUrl } } = supabase.storage.from('resumes').getPublicUrl(filePath);
+
+      // 3. Add to Database
+      const docRecord = {
+        id: docId,
+        fileName: file.name,
+        fileUrl: publicUrl,
+        docType: activeCategory as any,
+        status: 'Processing' as const,
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+      await addDocument(docRecord);
+
+      // 4. Extract data (AI OCR simulation)
+      const simulatedOcrText = `Document: ${file.name}. Alex Morgan, University of Technology, B.S. Computer Science & Engineering. CGPA: 8.7, Graduation: 2025. Skills: React, Node.js, TypeScript, PostgreSQL, Python. Project: Smart Campus Resource Optimization Platform.`;
       const extraction = await processDocumentText(simulatedOcrText, file.name);
+      
       setActiveExtraction({ docId, fileName: file.name, result: extraction });
-      updateDocumentStatus(docId, 'Extracted');
+      await updateDocumentStatus(docId, 'Extracted');
     } catch (err) {
-      console.error(err);
-      updateDocumentStatus(docId, 'Pending');
+      console.error("Upload error:", err);
+      await updateDocumentStatus(docId, 'Pending');
     } finally {
       setIsProcessing(false);
     }

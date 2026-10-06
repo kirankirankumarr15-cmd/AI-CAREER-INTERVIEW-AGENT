@@ -1,215 +1,307 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { User, Mail, Book, Lock, Hash, GraduationCap, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useProfileStore } from '@/store/useProfileStore';
-import { supabase } from '@/lib/supabase/client';
-import { Sparkles, ArrowRight, Lock, Mail, User, GraduationCap, Loader2 } from 'lucide-react';
 
-import { registerUser } from '@/lib/auth/userStore';
-
-export default function SignupPage() {
+export default function StudentSignUpPage() {
   const router = useRouter();
-  const { updateProfile } = useProfileStore();
+  const supabase = createClient();
 
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [college, setCollege] = useState('');
+  const [department, setDepartment] = useState('');
+  const [usn, setUsn] = useState('');
+  const [semester, setSemester] = useState('');
+  const [scheme, setScheme] = useState('2022');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setErrorMsg('');
 
-    // Save user locally for password verification on login
-    registerUser({
-      fullName: fullName || 'PESITM Student',
-      email: email || 'student@pesitm.edu.in',
-      college: college || 'PESITM Shivamogga',
-      password: password || 'pesitm2025',
-      provider: 'credentials',
+    if (password !== confirmPassword) {
+      setErrorMsg('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          department,
+          usn: '4PM' + usn,
+          semester,
+          scheme,
+        }
+      }
     });
 
-    if (fullName) {
-      updateProfile({
-        fullName,
-        email: email || 'student@pesitm.edu.in',
-        college: college || 'PESITM Shivamogga',
+    if (error) {
+      setErrorMsg(error.message);
+      setLoading(false);
+      return;
+    }
+
+    // Insert into profiles table immediately so they have a DB record
+    if (data.user) {
+      await supabase.from('profiles').insert({
+        id: data.user.id,
+        email: data.user.email,
+        full_name: fullName,
+        branch: department,
+      });
+      // Insert initial progress
+      await supabase.from('user_progress').insert({
+        user_id: data.user.id,
       });
     }
 
-    try {
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')) {
-        await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: fullName, college } },
-        });
-      }
-      setTimeout(() => router.push('/dashboard'), 600);
-    } catch {
-      router.push('/dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOAuthSignup = async (provider: 'google' | 'github') => {
-    setLoading(true);
-    try {
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')) {
-        await supabase.auth.signInWithOAuth({ provider });
-      } else {
-        setTimeout(() => router.push('/dashboard'), 600);
-      }
-    } catch (err) {
-      router.push('/dashboard');
-    }
+    router.push('/dashboard');
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 select-none relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen relative flex items-center justify-center p-4 font-sans bg-slate-900">
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/images/pes_shivamogga.png"
+          alt="Campus Background"
+          fill
+          className="object-cover object-center opacity-40 blur-sm"
+          priority
+        />
+        <div className="absolute inset-0 bg-slate-900/40" />
+      </div>
 
-      <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6 relative z-10">
-        <div className="text-center space-y-2">
-          <div className="inline-flex h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-blue-500 to-cyan-400 p-0.5 shadow-xl shadow-indigo-500/20 mb-1">
-            <div className="h-full w-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-              <Sparkles className="h-6 w-6 text-indigo-400" />
-            </div>
+      {/* Main Form Card */}
+      <div className="relative z-10 w-full max-w-[420px] bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in-up my-8">
+        {/* Header Section */}
+        <div className="flex flex-col items-center mb-6">
+          <div className="h-12 w-12 rounded-[14px] bg-[#E8F5EE] flex items-center justify-center mb-4 shadow-sm border border-[#D1EAD9]">
+            <GraduationCap className="h-6 w-6 text-[#0A9056]" />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight">Create CareerPilot Account</h1>
-          <p className="text-xs text-slate-400">Start your verified AI placement readiness journey</p>
+          <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">Student Sign Up</h1>
+          <p className="text-[13px] font-medium text-slate-500 mt-1">Create your student account</p>
         </div>
 
-        {/* OAuth Social Signup */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => handleOAuthSignup('google')}
-            className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold transition-all"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24">
-              <path
-                fill="#EA4335"
-                d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"
-              />
-              <path
-                fill="#4285F4"
-                d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12 0 14.5s.7 4.8 1.9 7.2l3.7-2.9z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"
-              />
-            </svg>
-            <span>Google</span>
-          </button>
+        <form className="space-y-4" onSubmit={handleSignup}>
+          {errorMsg && (
+            <div className="bg-red-50 text-red-500 text-xs font-bold p-3 rounded-xl border border-red-100 text-center">
+              {errorMsg}
+            </div>
+          )}
 
-          <button
-            type="button"
-            onClick={() => handleOAuthSignup('github')}
-            className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold transition-all"
-          >
-            <svg className="h-4 w-4 fill-current text-white" viewBox="0 0 24 24">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-            </svg>
-            <span>GitHub</span>
-          </button>
-        </div>
-
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-slate-800 w-full" />
-          <span className="bg-slate-900 px-3 text-[10px] text-slate-500 uppercase font-bold tracking-wider absolute">
-            Or register with email
-          </span>
-        </div>
-
-        <form onSubmit={handleSignup} className="space-y-4 text-xs">
-          <div>
-            <label className="block text-slate-300 font-semibold mb-1">Full Name</label>
-            <div className="relative">
-              <User className="h-4 w-4 text-slate-500 absolute left-3 top-3" />
+          {/* Full Name */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pl-1">
+              Full Name
+            </label>
+            <div className="relative flex items-center">
+              <User className="absolute left-3.5 h-4 w-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Alex Morgan"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
                 required
+                placeholder="Enter your full name"
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-medium"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-slate-300 font-semibold mb-1">College / University</label>
-            <div className="relative">
-              <GraduationCap className="h-4 w-4 text-slate-500 absolute left-3 top-3" />
-              <input
-                type="text"
-                placeholder="University of Technology"
-                value={college}
-                onChange={(e) => setCollege(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-slate-300 font-semibold mb-1">Student Email</label>
-            <div className="relative">
-              <Mail className="h-4 w-4 text-slate-500 absolute left-3 top-3" />
+          {/* Email Address */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pl-1">
+              Email Address
+            </label>
+            <div className="relative flex items-center">
+              <Mail className="absolute left-3.5 h-4 w-4 text-slate-400" />
               <input
                 type="email"
-                placeholder="alex@college.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
                 required
+                placeholder="name@example.com"
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-medium"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-slate-300 font-semibold mb-1">Password</label>
-            <div className="relative">
-              <Lock className="h-4 w-4 text-slate-500 absolute left-3 top-3" />
+          {/* Department */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pl-1">
+              Department
+            </label>
+            <div className="relative flex items-center">
+              <Book className="absolute left-3.5 h-4 w-4 text-slate-400" />
+              <select
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-700 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-medium appearance-none"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                required
+              >
+                <option value="" disabled>-- Select Department --</option>
+                <option value="CSE">Computer Science (CSE)</option>
+                <option value="ISE">Information Science (ISE)</option>
+                <option value="ECE">Electronics (ECE)</option>
+              </select>
+              <div className="absolute right-3.5 pointer-events-none text-slate-500">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* USN Field */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between pl-1 pr-0.5">
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                USN (University Seat Number)
+              </label>
+              <span className="text-[9px] font-extrabold text-[#0A9056] bg-[#E8F5EE] px-2 py-0.5 rounded-full border border-[#D1EAD9]">
+                College Code: 4PM
+              </span>
+            </div>
+            <div className="relative flex items-center">
+              <Hash className="absolute left-3.5 h-4 w-4 text-slate-400" />
+              <div className="absolute left-10 flex items-center h-full">
+                <span className="bg-[#0A9056] text-white text-[11px] font-bold px-1.5 py-0.5 rounded">
+                  4PM
+                </span>
+              </div>
+              <input
+                type="text"
+                placeholder="24CE011"
+                value={usn}
+                onChange={(e) => setUsn(e.target.value.toUpperCase())}
+                required
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-[76px] pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-bold tracking-wide uppercase"
+                maxLength={7}
+              />
+            </div>
+            <p className="text-[10px] text-slate-500 font-mono pl-1 mt-1">
+              <span className="font-bold text-[#0A9056]">Format:</span> <span className="text-[#0A9056]">4PM</span> + YY (Year) + <span className="text-[#0A9056]">Dept</span> + Roll (011) e.g. 4PM24CE011
+            </p>
+          </div>
+
+          {/* Semester */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pl-1">
+              Semester
+            </label>
+            <div className="relative flex items-center">
+              <Hash className="absolute left-3.5 h-4 w-4 text-slate-400" />
+              <select
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-700 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-medium appearance-none"
+                value={semester}
+                onChange={(e) => setSemester(e.target.value)}
+                required
+              >
+                <option value="" disabled>-- Select Semester --</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                  <option key={sem} value={sem}>Semester {sem}</option>
+                ))}
+              </select>
+              <div className="absolute right-3.5 pointer-events-none text-slate-500">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* VTU Syllabus Scheme */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pl-1">
+              VTU Syllabus Scheme
+            </label>
+            <div className="relative flex items-center">
+              <Book className="absolute left-3.5 h-4 w-4 text-slate-400" />
+              <select
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-700 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-medium appearance-none"
+                value={scheme}
+                onChange={(e) => setScheme(e.target.value)}
+                required
+              >
+                <option value="2022">2022 Scheme (VTU CBCS)</option>
+                <option value="2021">2021 Scheme (VTU CBCS)</option>
+                <option value="2018">2018 Scheme (VTU CBCS)</option>
+              </select>
+              <div className="absolute right-3.5 pointer-events-none text-slate-500">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Password */}
+          <div className="space-y-1.5 pt-1">
+            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pl-1">
+              Password
+            </label>
+            <div className="relative flex items-center">
+              <Lock className="absolute left-3.5 h-4 w-4 text-slate-400" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 focus:outline-none focus:border-indigo-500"
                 required
+                minLength={6}
+                placeholder="Min 6 characters"
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-medium"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.01]"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-            <span>Create Account & Start Profile</span>
-          </button>
-        </form>
+          {/* Confirm Password */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pl-1">
+              Confirm Password
+            </label>
+            <div className="relative flex items-center">
+              <Lock className="absolute left-3.5 h-4 w-4 text-slate-400" />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                placeholder="Re-enter password"
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0A9056] focus:ring-1 focus:ring-[#0A9056] transition-all font-medium"
+              />
+            </div>
+          </div>
 
-        <div className="text-center text-xs text-slate-400">
-          Already have an account?{' '}
-          <Link href="/login" className="text-indigo-400 font-semibold hover:underline">
-            Log in here
-          </Link>
-        </div>
+          {/* Submit Button */}
+          <div className="pt-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl bg-[#0A9056] hover:bg-[#087747] text-white text-[14px] font-bold shadow-md shadow-[#0A9056]/20 transition-all active:scale-95 flex items-center justify-center disabled:opacity-70"
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Create Account'}
+            </button>
+          </div>
+          
+          <div className="text-center mt-4">
+            <a href="/login" className="text-[11px] font-bold text-slate-500 hover:text-[#0A9056]">
+              Already have an account? Log In
+            </a>
+          </div>
+        </form>
       </div>
     </div>
   );
 }
-

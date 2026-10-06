@@ -1,5 +1,5 @@
-﻿import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { updateSession } from '@/utils/supabase/middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PATHS = [
   '/dashboard',
@@ -16,23 +16,42 @@ const PROTECTED_PATHS = [
   '/onboarding',
 ];
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export async function middleware(request: NextRequest) {
+  // 1. Refresh Supabase session (refreshes auth cookies)
+  const response = await updateSession(request);
 
+  const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PATHS.some((path) => pathname.startsWith(path));
 
+  // If hitting a protected route, we check if the user is logged in
   if (isProtected) {
-    // Check session token or user cookie if set
-    const authCookie =
-      request.cookies.get('sb-access-token') ||
-      request.cookies.get('supabase-auth-token') ||
-      request.cookies.get('careerpilot_session');
+    const { createServerClient } = await import('@supabase/ssr');
+    
+    // Create a temporary client just to check auth status synchronously via cookies
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll() {},
+        },
+      }
+    );
 
-    // Proceed cleanly
-    return NextResponse.next();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      // Redirect to login page
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
+    }
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
