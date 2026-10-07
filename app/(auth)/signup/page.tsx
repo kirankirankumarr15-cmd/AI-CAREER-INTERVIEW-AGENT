@@ -15,8 +15,6 @@ export default function StudentSignUpPage() {
   
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [department, setDepartment] = useState('');
-  const [semester, setSemester] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -38,8 +36,6 @@ export default function StudentSignUpPage() {
       options: {
         data: {
           full_name: fullName,
-          department,
-          semester,
         }
       }
     });
@@ -56,7 +52,6 @@ export default function StudentSignUpPage() {
         id: data.user.id,
         email: data.user.email,
         full_name: fullName,
-        branch: department,
       });
       // Insert initial progress
       await supabase.from('user_progress').insert({
@@ -134,66 +129,6 @@ export default function StudentSignUpPage() {
               />
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Department */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest pl-1">
-                Department
-              </label>
-              <div className="relative flex items-center">
-                <svg className="absolute left-3.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                <select
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-8 text-[13px] text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold appearance-none shadow-sm"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Branch</option>
-                  <option value="CSE">CSE (CS)</option>
-                  <option value="ISE">ISE (IS)</option>
-                  <option value="AIML">AI&ML (AD)</option>
-                  <option value="ECE">ECE (EC)</option>
-                  <option value="EEE">EEE (EE)</option>
-                  <option value="CIVIL">CIVIL (CV)</option>
-                  <option value="MECH">MECH (ME)</option>
-                </select>
-                <div className="absolute right-3 pointer-events-none text-slate-400">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Semester */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest pl-1">
-                Semester
-              </label>
-              <div className="relative flex items-center">
-                <svg className="absolute left-3.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>
-                <select
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-8 text-[13px] text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold appearance-none shadow-sm"
-                  value={semester}
-                  onChange={(e) => setSemester(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                    <option key={sem} value={sem}>Sem {sem}</option>
-                  ))}
-                </select>
-                <div className="absolute right-3 pointer-events-none text-slate-400">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-
-
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Password */}
