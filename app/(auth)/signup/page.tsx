@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Mail, Lock, GraduationCap, Loader2, KeyRound } from 'lucide-react';
+import { User, Mail, Lock, GraduationCap, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -211,7 +211,7 @@ export default function StudentSignUpPage() {
           <form className="space-y-4" onSubmit={handleVerifyOtp}>
             <div className="text-center mb-6">
               <p className="text-[13px] font-medium text-slate-600">
-                We've sent a 6-digit verification code to <span className="font-bold text-slate-900">{email}</span>.
+                We&apos;ve sent a 6-digit verification code to <span className="font-bold text-slate-900">{email}</span>.
               </p>
             </div>
             
@@ -226,7 +226,7 @@ export default function StudentSignUpPage() {
                 Verification Code
               </label>
               <div className="relative flex items-center">
-                <KeyRound className="absolute left-3.5 h-4 w-4 text-slate-400" />
+                <Lock className="absolute left-3.5 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   value={otp}
