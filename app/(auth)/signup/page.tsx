@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Mail, Lock, GraduationCap, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, GraduationCap, Loader2, KeyRound } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -17,8 +17,8 @@ export default function StudentSignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,15 +46,34 @@ export default function StudentSignUpPage() {
       return;
     }
 
-    // Insert into profiles table immediately so they have a DB record
+    setIsOtpSent(true);
+    setLoading(false);
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'signup'
+    });
+
+    if (error) {
+      setErrorMsg(error.message);
+      setLoading(false);
+      return;
+    }
+
     if (data.user) {
-      await supabase.from('profiles').insert({
+      await supabase.from('profiles').upsert({
         id: data.user.id,
         email: data.user.email,
         full_name: fullName,
       });
-      // Insert initial progress
-      await supabase.from('user_progress').insert({
+      await supabase.from('user_progress').upsert({
         user_id: data.user.id,
       });
     }
@@ -87,8 +106,9 @@ export default function StudentSignUpPage() {
           <p className="text-[13px] font-medium text-slate-500 mt-1">Create your academic account</p>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSignup}>
-          {errorMsg && (
+        {!isOtpSent ? (
+          <form className="space-y-4" onSubmit={handleSignup}>
+            {errorMsg && (
             <div className="bg-red-50 text-red-600 text-[13px] font-bold p-3 rounded-xl border border-red-200 text-center">
               {errorMsg}
             </div>
@@ -181,12 +201,65 @@ export default function StudentSignUpPage() {
             </button>
           </div>
           
-          <div className="text-center mt-4">
-            <a href="/login" className="text-[12px] font-bold text-slate-500 hover:text-emerald-600 transition-colors">
-              Already have an account? Log In
-            </a>
-          </div>
-        </form>
+            <div className="text-center mt-4">
+              <a href="/login" className="text-[12px] font-bold text-slate-500 hover:text-emerald-600 transition-colors">
+                Already have an account? Log In
+              </a>
+            </div>
+          </form>
+        ) : (
+          <form className="space-y-4" onSubmit={handleVerifyOtp}>
+            <div className="text-center mb-6">
+              <p className="text-[13px] font-medium text-slate-600">
+                We've sent a 6-digit verification code to <span className="font-bold text-slate-900">{email}</span>.
+              </p>
+            </div>
+            
+            {errorMsg && (
+              <div className="bg-red-50 text-red-600 text-[13px] font-bold p-3 rounded-xl border border-red-200 text-center">
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest pl-1">
+                Verification Code
+              </label>
+              <div className="relative flex items-center">
+                <KeyRound className="absolute left-3.5 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  required
+                  placeholder="Enter 6-digit code"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold shadow-sm text-center tracking-[0.5em]"
+                  maxLength={6}
+                />
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[14px] font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center disabled:opacity-70"
+              >
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Verify & Continue'}
+              </button>
+            </div>
+            
+            <div className="text-center mt-4">
+              <button 
+                type="button" 
+                onClick={() => { setIsOtpSent(false); setOtp(''); }}
+                className="text-[12px] font-bold text-slate-500 hover:text-emerald-600 transition-colors"
+              >
+                Back to Sign Up
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
