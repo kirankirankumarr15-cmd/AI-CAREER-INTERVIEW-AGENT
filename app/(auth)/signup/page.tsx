@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User, Mail, Book, Lock, Hash, GraduationCap, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { User, Mail, Lock, GraduationCap, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -16,31 +16,11 @@ export default function StudentSignUpPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [department, setDepartment] = useState('');
-  const [usn, setUsn] = useState('');
   const [semester, setSemester] = useState('');
-  const [scheme, setScheme] = useState('2022');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Auto-detect scheme based on semester
-  useEffect(() => {
-    if (semester) {
-      const semNum = parseInt(semester);
-      if (semNum <= 4) setScheme('2022');
-      else if (semNum <= 8) setScheme('2021');
-    }
-  }, [semester]);
 
-  const branchMap: Record<string, string> = {
-    CSE: 'CS',
-    ISE: 'IS',
-    ECE: 'EC',
-    EEE: 'EE',
-    MECH: 'ME',
-    CIVIL: 'CV',
-    AIML: 'AD',
-  };
-  const currentBranchCode = department ? branchMap[department] : 'CS';
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +39,7 @@ export default function StudentSignUpPage() {
         data: {
           full_name: fullName,
           department,
-          usn: '4PM' + usn,
           semester,
-          scheme,
         }
       }
     });
@@ -164,7 +142,7 @@ export default function StudentSignUpPage() {
                 Department
               </label>
               <div className="relative flex items-center">
-                <Book className="absolute left-3.5 h-4 w-4 text-slate-400" />
+                <svg className="absolute left-3.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                 <select
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-8 text-[13px] text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold appearance-none shadow-sm"
                   value={department}
@@ -194,7 +172,7 @@ export default function StudentSignUpPage() {
                 Semester
               </label>
               <div className="relative flex items-center">
-                <Hash className="absolute left-3.5 h-4 w-4 text-slate-400" />
+                <svg className="absolute left-3.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>
                 <select
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-8 text-[13px] text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold appearance-none shadow-sm"
                   value={semester}
@@ -215,66 +193,7 @@ export default function StudentSignUpPage() {
             </div>
           </div>
 
-          {/* USN Field */}
-          <div className="space-y-2 pt-1">
-            <div className="flex items-center justify-between pl-1">
-              <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">
-                USN (Seat Number)
-              </label>
-            </div>
-            <div className="relative flex items-center">
-              <Hash className="absolute left-3.5 h-4 w-4 text-slate-400 z-10" />
-              <div className="absolute left-9 flex items-center h-full z-10">
-                <span className="bg-emerald-600 text-white text-[11px] font-extrabold px-2 py-0.5 rounded shadow-sm">
-                  4PM
-                </span>
-              </div>
-              <input
-                type="text"
-                placeholder={`24${currentBranchCode}011`}
-                value={usn}
-                onChange={(e) => setUsn(e.target.value.toUpperCase())}
-                required
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-[80px] pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-bold tracking-widest uppercase shadow-sm"
-                maxLength={7}
-              />
-            </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex items-center gap-1.5 justify-center">
-              <span className="text-[10px] font-bold text-slate-500">Format:</span>
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700">4PM</span>
-              <span className="text-slate-400 text-[10px]">+</span>
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700" title="Year">YY</span>
-              <span className="text-slate-400 text-[10px]">+</span>
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700" title="Department">{currentBranchCode}</span>
-              <span className="text-slate-400 text-[10px]">+</span>
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700" title="Roll Number">XXX</span>
-            </div>
-          </div>
 
-          {/* VTU Syllabus Scheme */}
-          <div className="space-y-1.5 pt-1">
-            <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest pl-1">
-              VTU Syllabus Scheme
-            </label>
-            <div className="relative flex items-center">
-              <Book className="absolute left-3.5 h-4 w-4 text-slate-400" />
-              <select
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold appearance-none shadow-sm"
-                value={scheme}
-                onChange={(e) => setScheme(e.target.value)}
-                required
-              >
-                <option value="2022">2022 Scheme (VTU CBCS)</option>
-                <option value="2021">2021 Scheme (VTU CBCS)</option>
-                <option value="2018">2018 Scheme (VTU CBCS)</option>
-              </select>
-              <div className="absolute right-3.5 pointer-events-none text-slate-400">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Password */}

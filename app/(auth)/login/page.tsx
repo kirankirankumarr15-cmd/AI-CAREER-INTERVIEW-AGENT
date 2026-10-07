@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Mail, Lock, GraduationCap, Shield, BookOpen, Loader2 } from 'lucide-react';
+import { Mail, Lock, GraduationCap, Shield, Loader2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
-type Tab = 'HOD' | 'FACULTY' | 'STUDENT';
+type Tab = 'HOD' | 'STUDENT';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -69,20 +69,6 @@ export default function LoginPage() {
               HOD
             </span>
           </button>
-          
-          <button
-            onClick={() => { setActiveTab('FACULTY'); setErrorMsg(''); setEmail(''); setPassword(''); }}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all ${
-              activeTab === 'FACULTY' 
-                ? 'bg-emerald-50 border-2 border-emerald-200 shadow-sm text-emerald-700' 
-                : 'border-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <BookOpen className={`h-5 w-5 mb-1 ${activeTab === 'FACULTY' ? 'text-emerald-600' : 'text-slate-400'}`} />
-            <span className={`text-[10px] font-extrabold uppercase tracking-widest ${activeTab === 'FACULTY' ? 'text-emerald-700' : 'text-slate-500'}`}>
-              FACULTY
-            </span>
-          </button>
 
           <button
             onClick={() => { setActiveTab('STUDENT'); setErrorMsg(''); setEmail(''); setPassword(''); }}
@@ -105,7 +91,6 @@ export default function LoginPage() {
           <div className="flex flex-col items-center mb-8">
             <div className="h-12 w-12 rounded-[14px] bg-emerald-50 flex items-center justify-center mb-4 shadow-sm border border-emerald-100">
               {activeTab === 'STUDENT' && <GraduationCap className="h-6 w-6 text-emerald-600" />}
-              {activeTab === 'FACULTY' && <BookOpen className="h-6 w-6 text-emerald-600" />}
               {activeTab === 'HOD' && <Shield className="h-6 w-6 text-emerald-600" />}
             </div>
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight capitalize">
