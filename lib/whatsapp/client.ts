@@ -2,14 +2,14 @@
 // Official Meta WhatsApp Business Cloud API only.
 // Docs: https://developers.facebook.com/docs/whatsapp/cloud-api
 
-import type { WaMessage, WaApiResponse, WaDeliveryStatus, WaTemplateId } from './types';
+import type { WaMessage, WaApiResponse, WaTemplateId } from './types';
 import type { TemplateParams } from './templates';
 import { buildTemplate } from './templates';
 
 const WA_API_BASE = 'https://graph.facebook.com/v19.0';
 
 function getCredentials() {
-  const token = process.env.WHATSAPP_TOKEN;
+  const token = process.env.WHATSAPP_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   return { token, phoneId, configured: !!(token && phoneId) };
 }

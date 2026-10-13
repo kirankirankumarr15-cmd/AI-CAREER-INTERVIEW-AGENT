@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { StudentProfile, SkillItem, ProjectItem } from '@/types';
 
 export async function getProfile() {
   const supabase = await createClient();
@@ -20,7 +21,7 @@ export async function getProfile() {
   return { data, error };
 }
 
-export async function updateProfile(profileData: any) {
+export async function updateProfile(profileData: Partial<StudentProfile> | Record<string, unknown>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -53,7 +54,7 @@ export async function getSkills() {
   return { data, error };
 }
 
-export async function addSkill(skillData: any) {
+export async function addSkill(skillData: Omit<SkillItem, 'id'> | Record<string, unknown>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -69,7 +70,7 @@ export async function addSkill(skillData: any) {
   return { data, error };
 }
 
-export async function addProject(projectData: any) {
+export async function addProject(projectData: Omit<ProjectItem, 'id'> | Record<string, unknown>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

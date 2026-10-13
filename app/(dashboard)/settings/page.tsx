@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings2, User, Bell, Shield, KeyRound, Palette, LogOut, CheckCircle2 } from 'lucide-react';
+import { User, Bell, Shield, Palette, LogOut, CheckCircle2, Sun, Moon, Monitor, Sparkles } from 'lucide-react';
 import { useProfileStore } from '@/store/useProfileStore';
+import { useTheme, Theme } from '@/lib/theme/useTheme';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('account');
   const { profile } = useProfileStore();
+  const { theme, resolvedTheme, setTheme, mounted } = useTheme();
   const supabase = createClient();
   const router = useRouter();
 
@@ -182,31 +184,74 @@ export default function SettingsPage() {
               <div className="space-y-8 animate-in fade-in">
                 <div>
                   <h2 className="text-xl font-bold text-slate-900">Appearance</h2>
-                  <p className="text-sm text-slate-500 mt-1">Customize your UI theme</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Customize your UI theme and display mode across CareerPilot AI
+                  </p>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-4 max-w-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl">
                   {[
-                    { id: 'light', name: 'Light', active: true },
-                    { id: 'dark', name: 'Dark', active: false },
-                    { id: 'system', name: 'System', active: false }
-                  ].map((theme) => (
-                    <button
-                      key={theme.id}
-                      className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                        theme.active 
-                          ? 'border-emerald-500 bg-emerald-50/50' 
-                          : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className={`h-8 w-8 rounded-full ${theme.active ? 'bg-emerald-500' : 'bg-slate-200'} flex items-center justify-center`}>
-                        {theme.active && <CheckCircle2 className="h-4 w-4 text-white" />}
-                      </div>
-                      <span className={`text-xs font-bold ${theme.active ? 'text-emerald-700' : 'text-slate-600'}`}>
-                        {theme.name}
-                      </span>
-                    </button>
-                  ))}
+                    { id: 'light', name: 'Light', icon: Sun, desc: 'Crisp daytime view' },
+                    { id: 'dark', name: 'Dark', icon: Moon, desc: 'Sleek dark canvas' },
+                    { id: 'system', name: 'System', icon: Monitor, desc: 'Follow device OS' },
+                  ].map((item) => {
+                    const isSelected = mounted && theme === item.id;
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setTheme(item.id as Theme)}
+                        className={`flex flex-col items-center justify-center text-center gap-3 p-5 rounded-2xl border-2 transition-all cursor-pointer ${
+                          isSelected 
+                            ? 'border-emerald-500 bg-emerald-50/50 shadow-md shadow-emerald-500/10' 
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/80'
+                        }`}
+                      >
+                        <div className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-transform ${
+                          isSelected 
+                            ? 'bg-emerald-500 text-white scale-105 shadow-md shadow-emerald-500/30' 
+                            : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span className={`text-sm font-bold ${isSelected ? 'text-emerald-700' : 'text-slate-800'}`}>
+                              {item.name}
+                            </span>
+                            {isSelected && <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />}
+                          </div>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-1 leading-snug">
+                            {item.desc}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Theme Status Card */}
+                <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 max-w-xl flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">
+                        Active Mode:{' '}
+                        <span className="text-emerald-600 dark:text-emerald-400 font-extrabold capitalize">
+                          {theme === 'system' ? `System (${resolvedTheme})` : theme}
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium mt-0.5">
+                        Preferences sync across browser tabs and persist on page reloads.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+                    Active
+                  </span>
                 </div>
               </div>
             )}

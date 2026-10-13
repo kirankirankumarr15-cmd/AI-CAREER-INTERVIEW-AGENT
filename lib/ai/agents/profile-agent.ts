@@ -1,5 +1,5 @@
 import { callGeminiJSON } from '../gemini';
-import { StudentProfile, SkillItem, ProjectItem } from '@/types';
+import { StudentProfile, SkillItem } from '@/types';
 
 export interface RoleRequirements {
   role: string;

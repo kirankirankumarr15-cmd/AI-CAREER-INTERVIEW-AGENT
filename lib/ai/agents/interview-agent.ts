@@ -26,7 +26,6 @@ export async function generateInitialInterviewQuestions(
   projects: ProjectItem[],
   companyName?: string
 ): Promise<InterviewQuestionItem[]> {
-  const companyPrefix = companyName ? `for ${companyName} ` : '';
   const firstProject = projects[0];
 
   const questions: InterviewQuestionItem[] = [

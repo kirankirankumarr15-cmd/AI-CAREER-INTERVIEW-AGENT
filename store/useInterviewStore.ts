@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { InterviewType, InterviewDifficulty, InterviewMode, InterviewQuestionItem, AnswerEvaluation } from '@/types';
+import { syncInterviewChunkToVectorDB } from '@/lib/rag/sync';
+import { useProfileStore } from '@/store/useProfileStore';
 
 interface InterviewState {
   isActive: boolean;
@@ -45,7 +47,7 @@ interface InterviewState {
   resetInterview: () => void;
 }
 
-export const useInterviewStore = create<InterviewState>((set) => ({
+export const useInterviewStore = create<InterviewState>((set, get) => ({
   isActive: false,
   targetRole: 'Full Stack Developer',
   interviewType: 'Technical',
@@ -93,11 +95,30 @@ export const useInterviewStore = create<InterviewState>((set) => ({
       ),
     })),
 
-  completeInterview: (interviewScore) =>
+  completeInterview: (interviewScore) => {
     set({
       isActive: false,
       interviewScore,
-    }),
+    });
+    try {
+      const profile = useProfileStore.getState().profile;
+      if (profile?.id && interviewScore) {
+        syncInterviewChunkToVectorDB(profile.id, `interview-${Date.now()}`, {
+          targetRole: get().targetRole,
+          interviewType: get().interviewType,
+          difficulty: get().difficulty,
+          mode: get().mode,
+          overallScore: interviewScore.overall,
+          technicalScore: interviewScore.technical,
+          communicationScore: interviewScore.communication,
+          confidenceScore: interviewScore.confidence,
+          strongAreas: interviewScore.strongAreas,
+          weakAreas: interviewScore.weakAreas,
+          recommendations: interviewScore.recommendations,
+        }).catch(() => {});
+      }
+    } catch {}
+  },
 
   resetInterview: () =>
     set({

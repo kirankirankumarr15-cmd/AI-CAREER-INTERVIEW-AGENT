@@ -25,6 +25,9 @@ export async function calculateJobMatch(
   Verified Projects:
   ${projects.map(p => p.title).join(', ')}
 
+  Verified Experiences:
+  ${experiences.map(e => `${e.role} at ${e.company}`).join(', ') || 'None'}
+
   CRITICAL RULE: Never claim a student has a skill unless it exists in verified skills list!
 
   Return JSON:

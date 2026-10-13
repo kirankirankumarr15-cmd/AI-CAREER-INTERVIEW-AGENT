@@ -20,17 +20,17 @@ export function RecommendedNextStep() {
         </div>
         <div>
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
               AI Recommendation
             </span>
-            <span className="text-[10px] text-slate-500 flex items-center gap-1 font-mono">
+            <span className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1 font-mono">
               <Clock className="h-3 w-3" /> 20 min
             </span>
           </div>
-          <h4 className="text-base font-bold text-indigo-900 leading-snug">
-            Practice "{topWeakness}" for 20 minutes
+          <h4 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
+            Practice &quot;{topWeakness}&quot; for 20 minutes
           </h4>
-          <p className="text-xs text-indigo-700 mt-1 max-w-lg font-medium">
+          <p className="text-xs text-indigo-950 dark:text-indigo-200 mt-1 max-w-lg font-medium leading-relaxed">
             Focusing on this weak spot will increase your Interview Readiness from {progress.dbmsScore}% to ~75%.
           </p>
         </div>
@@ -38,7 +38,7 @@ export function RecommendedNextStep() {
 
       <Link
         href="/learn"
-        className="btn-shine px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-indigo-600/25 shrink-0 transition-all active:scale-95"
+        className="btn-shine px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-indigo-600/25 shrink-0 transition-all duration-300 hover:scale-105 active:scale-95"
       >
         <span>Start Drills</span>
         <ArrowRight className="h-4 w-4" />

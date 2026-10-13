@@ -1,6 +1,6 @@
 'use client';
 
-import { Mic, Clock, Sparkles, Volume2, Target, AlertCircle } from 'lucide-react';
+import { Mic, Clock, Sparkles, AlertCircle } from 'lucide-react';
 
 export default function CommunicationCoachPage() {
   return (
@@ -96,15 +96,15 @@ export default function CommunicationCoachPage() {
               <Sparkles className="h-3.5 w-3.5" /> Prompt of the Day:
             </h4>
             <p className="text-[15px] font-bold text-slate-900 leading-relaxed mb-4">
-              "Tell me about a technical trade-off you made in your Campus Placement Hub project."
+              &quot;Tell me about a technical trade-off you made in your Campus Placement Hub project.&quot;
             </p>
             <p className="text-[12px] text-slate-600 font-medium">
-              <strong className="text-emerald-800">Challenge:</strong> Rehearse without saying "um", "like", or "actually". Please deliberately pause for 2 seconds when collecting your thoughts.
+              <strong className="text-emerald-800">Challenge:</strong> Rehearse without saying &quot;um&quot;, &quot;like&quot;, or &quot;actually&quot;. Please deliberately pause for 2 seconds when collecting your thoughts.
             </p>
           </div>
 
           <p className="text-[12px] text-slate-500 font-medium italic mb-8 flex-1">
-            Press "Start Voice Drill" below to begin recording. The AI coach will analyze your pacing, filler words, and sentence conciseness.
+            Press &quot;Start Voice Drill&quot; below to begin recording. The AI coach will analyze your pacing, filler words, and sentence conciseness.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-between pt-5 border-t border-slate-100 gap-4">
@@ -133,7 +133,7 @@ export default function CommunicationCoachPage() {
             ].map((item, idx) => (
               <div key={idx} className="flex flex-col gap-1.5 pb-4 border-b border-slate-50 last:border-0 last:pb-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-black text-slate-900 font-mono tracking-tight">"{item.word}"</span>
+                  <span className="text-[13px] font-black text-slate-900 font-mono tracking-tight">&quot;{item.word}&quot;</span>
                   <span className="text-[11px] font-extrabold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">{item.count} times</span>
                 </div>
                 <p className="text-[11px] text-slate-500 font-medium">{item.context}</p>

@@ -14,6 +14,7 @@ const PROTECTED_PATHS = [
   '/practice',
   '/progress',
   '/onboarding',
+  '/roadmap',
 ];
 
 export async function middleware(request: NextRequest) {

@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProfileStore } from '@/store/useProfileStore';
 import {
-  Sparkles, CheckCircle2, ArrowRight, ArrowLeft, Briefcase,
-  GraduationCap, Upload, Check, ChevronRight, Target, ShieldCheck,
+  Sparkles, CheckCircle2, ArrowRight, ArrowLeft,
+  Upload, Check, ChevronRight, ShieldCheck,
 } from 'lucide-react';
 
 export default function OnboardingPage() {

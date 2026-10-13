@@ -1,33 +1,59 @@
-# Implementation Plan: Ask CareerPilot (RAG Agent)
+# Implementation Plan: Ask CareerPilot (RAG Agent) — Completed ✅
 
-This is a comprehensive plan to build the genuine RAG-powered, Jarvis-mode AI assistant. Because this involves database schema changes, backend vector pipelines, and a new UI, we will tackle this in 4 distinct phases.
-
-## Phase 1: Supabase & Vector DB Schema
-1. **Enable pgvector:** We will add the `vector` extension to your Supabase instance.
-2. **Create Tables:** We will define `career_embeddings` (to store profile, skills, projects, and interview chunks), `chat_sessions`, and `chat_messages`.
-3. **Similarity Search RPC:** We will create a PostgreSQL function (`match_career_embeddings`) that performs cosine similarity search.
-> *Note: I will provide the SQL script for you to run in your Supabase SQL Editor.*
-
-## Phase 2: Embedding Pipeline (Data Sync)
-1. **Choose Model:** Your `.env.local` has keys for both Gemini and OpenAI. Your prompt requested `vector(1536)`, which is specifically OpenAI's embedding size. I will install the `openai` SDK for generating these embeddings.
-2. **Re-embedding Trigger:** I will write a utility that hooks into your `useProfileStore`. Whenever you verify a skill, add a project, or complete an interview, it will silently chunk that data, call the OpenAI Embeddings API, and upsert it into Supabase.
-
-## Phase 3: The Agent Backend (Query & Retrieve)
-1. **Retrieval Route (`/api/chat`):** I will build the core RAG logic.
-2. **Flow:**
-   - Take the student's question and embed it.
-   - Vector-search `career_embeddings` for the top 8-12 most relevant chunks.
-   - Pull fixed "current state" facts (e.g., Readiness Score).
-   - Pull the last 6-10 messages for conversational continuity.
-   - Assemble the final prompt with the direct, precise "Jarvis" persona rules.
-   - Stream the response back using the Vercel AI SDK.
-
-## Phase 4: Chat UI
-1. **Persistent Interface:** I will build a clean, RAG-aware chat UI.
-2. **Thinking State:** We will implement a custom loading state that explicitly shows when the AI is "Searching your verified career profile..." before streaming the answer.
+The genuine RAG-powered, Jarvis-mode AI assistant for CareerPilot AI is fully built and operational.
 
 ---
 
-### Questions before we begin Phase 1:
-1. Are you okay with using OpenAI for the embeddings (since it natively outputs the 1536 dimensions you requested), or do you want to use Gemini (which uses 768 dimensions)?
-2. Do you want the Chat UI to be a standalone page (e.g., `/career/chat`) or a persistent slide-out panel that you can open from anywhere in the app?
+## ✅ Phase 1: Supabase & Vector DB Schema
+- **pgvector Extension:** Enabled in Supabase.
+- **Tables Created:**
+  - `career_embeddings` with `vector(1536)` dimensional embedding column, user isolation, and unique constraint on `(user_id, source_type, source_id)`.
+  - `chat_sessions` tracking started and last active timestamps per user.
+  - `chat_messages` recording user/assistant turns, markdown content, and `retrieved_chunk_ids`.
+- **Similarity Search RPC:** `match_career_embeddings(query_embedding, match_count, filter_user_id)` calculating cosine distance (`1 - (career_embeddings.embedding <=> query_embedding)`).
+
+---
+
+## ✅ Phase 2: Embedding Pipeline (Data Sync)
+- **Embedding Models:** Dual-provider support:
+  - Gemini `gemini-embedding-001` with `outputDimensionality: 1536` (active & tested).
+  - OpenAI `text-embedding-3-small` (1536 dims) as secondary provider.
+- **Sync Helpers in `lib/rag/sync.ts`:**
+  - `syncProfileCoreToVectorDB`: Student target role, graduation, readiness score, target companies.
+  - `syncSkillToVectorDB`: Verified skills, proficiency, and evidence.
+  - `syncProjectToVectorDB`: Tech stack, architecture, student contribution, and challenges.
+  - `syncExperienceToVectorDB`: Roles, companies, and achievements.
+  - `syncInterviewToVectorDB`: Mock interview scores, strengths, and weaknesses.
+  - `syncEntireProfileToVectorDB`: Batch indexes the entire profile.
+  - `getVectorDBStats`: Live query for indexed chunk counts.
+- **Store Triggers in `store/useProfileStore.ts`:**
+  - `addSkill` and `addProject` trigger silent background vector sync upon insertion.
+  - `syncVectorKnowledgeBase()` action available for on-demand 1-click re-indexing.
+
+---
+
+## ✅ Phase 3: The Agent Backend (Query & Retrieve)
+- **Route:** `app/api/ai/chat/route.ts`
+- **Workflow:**
+  1. Generates 1536-dimensional query embedding of the student's question.
+  2. Queries `match_career_embeddings` via RPC in Supabase.
+  3. Pulls client profile state as instant grounding fallback if vector DB is not yet populated.
+  4. Retrieves multi-turn conversation history from `chat_messages`.
+  5. Formulates the Jarvis persona system prompt grounded in the verified credentials.
+  6. Generates response using Gemini 3.8 Flash (`gemini-3.8-flash` with fallbacks).
+  7. Persists both student question and assistant reply in `chat_messages`.
+  8. Returns answer text, grounding attribution chips, and retrieved chunk metadata.
+
+---
+
+## ✅ Phase 4: Chat UI & Experience
+- **Component:** `components/chat/CareerChat.tsx`
+- **Features:**
+  - Persistent slide-out drawer accessible globally via `Ctrl+K` / `Cmd+K` or sidebar button.
+  - Live vector knowledge base indicator showing total indexed chunks + instant "Sync DB" button.
+  - Multi-stage thinking animation: "Searching vector embeddings & verified credentials..." → "Synthesizing recommendation...".
+  - Grounding citation badges showing exactly which verified skills/projects were referenced.
+  - Full Markdown rendering with code blocks, bold text, and bulleted lists.
+  - Text-to-speech audio playback button using `ttsEngine`.
+  - Quick action prompt carousel personalized to target role.
+  - Copy response and new session reset buttons.

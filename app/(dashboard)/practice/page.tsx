@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -167,98 +167,10 @@ const categories: {
   },
 ];
 
-const sampleQuestions: Record<CategoryId, { id: string; title: string; hint: string }[]> = {
-  dbms: [
-    {
-      id: 'q-dbms-1',
-      title: 'Explain the difference between INNER JOIN and LEFT JOIN and optimize PostgreSQL index scans.',
-      hint: 'LEFT JOIN keeps all left-table rows. Indexes help equality/range filters; avoid wrapping indexed columns in functions.',
-    },
-    {
-      id: 'q-dbms-2',
-      title: 'How does indexing speed up SELECT queries, and what is the write trade-off?',
-      hint: 'B-Tree indexes speed lookups but add extra work on INSERT, UPDATE, and DELETE.',
-    },
-  ],
-  dsa: [
-    {
-      id: 'q-dsa-1',
-      title: 'Find the maximum sum of a contiguous subarray (Kadane’s algorithm).',
-      hint: 'Track current sum and reset it when it drops below zero.',
-    },
-  ],
-  oop: [
-    {
-      id: 'q-oop-1',
-      title: 'When would you choose composition over inheritance in a production service?',
-      hint: 'Prefer composition when behavior varies independently and you want looser coupling.',
-    },
-  ],
-  os: [
-    {
-      id: 'q-os-1',
-      title: 'Explain deadlock necessary conditions and one prevention strategy.',
-      hint: 'Mutual exclusion, hold and wait, no preemption, circular wait. Break circular wait with a lock order.',
-    },
-  ],
-  cn: [
-    {
-      id: 'q-cn-1',
-      title: 'What happens when you type a URL in the browser?',
-      hint: 'DNS lookup, TCP handshake, TLS, HTTP request, response, rendering.',
-    },
-  ],
-  web: [
-    {
-      id: 'q-web-1',
-      title: 'How does React re-render, and how do you avoid unnecessary updates?',
-      hint: 'State/prop changes trigger renders. Memoize stable props, split state, and keep lists keyed.',
-    },
-  ],
-  backend: [
-    {
-      id: 'q-be-1',
-      title: 'How would you design pagination and rate limiting for a public API?',
-      hint: 'Cursor pagination scales better than offset. Rate-limit by token bucket keyed on user/IP.',
-    },
-  ],
-  aptitude: [
-    {
-      id: 'q-ap-1',
-      title: 'A train 120 m long crosses a platform 180 m long in 20 seconds. Find its speed.',
-      hint: 'Distance = 300 m in 20 s → 15 m/s = 54 km/h.',
-    },
-  ],
-  communication: [
-    {
-      id: 'q-cm-1',
-      title: 'Deliver a 60-second elevator pitch for a Full Stack Software Engineer role.',
-      hint: 'Cover background, stack, one project with impact, and why this role.',
-    },
-  ],
-  hr: [
-    {
-      id: 'q-hr-1',
-      title: 'Describe a situation where a project deadline was at risk. How did you prioritize?',
-      hint: 'Use STAR: Situation, Task, Action, Result with a measurable outcome.',
-    },
-  ],
-  'system-design': [
-    {
-      id: 'q-sd-1',
-      title: 'Design a URL shortener. Which data store and collision strategy would you use?',
-      hint: 'Hash + unique ID, Redis cache for hot keys, and a relational/NoSQL store for mappings.',
-    },
-  ],
-};
-
 export default function PracticePage() {
   const { progress } = useProgressStore();
-  const [activeCategory, setActiveCategory] = useState<CategoryId>('dbms');
 
   const readinessLevel = Math.min(5, Math.max(1, Math.round(progress.readinessScore / 20)));
-  const questions = sampleQuestions[activeCategory];
-  const activeMeta = categories.find((c) => c.id === activeCategory)!;
 
   const totalSolved = useMemo(
     () => categories.reduce((sum, category) => sum + category.done, 0),
@@ -338,7 +250,7 @@ export default function PracticePage() {
           </p>
         </div>
         <Link
-          href="/interview"
+          href="/practice/technical"
           className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm"
         >
           Start Practice Drill
@@ -350,18 +262,12 @@ export default function PracticePage() {
         {categories.map((category) => {
           const Icon = category.icon;
           const percent = Math.round((category.done / category.total) * 100);
-          const isActive = activeCategory === category.id;
 
           return (
-            <button
+            <Link
               key={category.id}
-              type="button"
-              onClick={() => setActiveCategory(category.id)}
-              className={`text-left bg-white border rounded-2xl p-5 shadow-sm transition-all ${
-                isActive
-                  ? 'border-indigo-300 ring-2 ring-indigo-100'
-                  : 'border-slate-200 hover:border-indigo-200 hover:shadow-md'
-              }`}
+              href={`/practice/${category.id}`}
+              className={`block text-left bg-white border rounded-2xl p-5 shadow-sm transition-all border-slate-200 hover:border-indigo-200 hover:shadow-md hover:ring-2 hover:ring-indigo-50`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className={`h-10 w-10 rounded-xl border flex items-center justify-center ${category.iconClass}`}>
@@ -387,43 +293,11 @@ export default function PracticePage() {
                   <span className="text-slate-900">{percent}%</span>
                 </div>
               </div>
-            </button>
+            </Link>
           );
         })}
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-extrabold text-slate-900">{activeMeta.title} drills</h3>
-          <span className="text-xs font-semibold text-slate-500">
-            {questions.length} question{questions.length === 1 ? '' : 's'}
-          </span>
-        </div>
-        {questions.map((question) => (
-          <div key={question.id} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-3 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                {activeMeta.title}
-              </span>
-              <span className="text-xs text-slate-500 font-mono font-bold">100 Points</span>
-            </div>
-            <h4 className="font-bold text-base text-slate-900">{question.title}</h4>
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-medium">
-              <strong className="text-indigo-600 block mb-1">AI Solution Hint:</strong>
-              {question.hint}
-            </div>
-            <div className="flex justify-end pt-1">
-              <Link
-                href="/interview"
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
-              >
-                Practice Spoken Answer
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

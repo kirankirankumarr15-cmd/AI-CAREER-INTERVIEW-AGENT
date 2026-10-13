@@ -20,7 +20,7 @@ export async function getProgress() {
   return { data, error };
 }
 
-export async function updateProgress(progressData: any) {
+export async function updateProgress(progressData: Record<string, unknown>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

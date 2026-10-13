@@ -18,7 +18,7 @@ export function TodayMissionCard() {
               <Dumbbell className="h-4 w-4 text-indigo-400" />
             </div>
             <div>
-              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-900">Today's Mission</h3>
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-900">Today&apos;s Mission</h3>
               <p className="text-[10px] text-slate-500 font-medium">10–20 min daily workout</p>
             </div>
           </div>

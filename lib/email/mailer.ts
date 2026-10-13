@@ -30,11 +30,15 @@ function getEmailConfig(): EmailCredentials {
     process.env.EMAIL_SERVER_USER ||
     process.env.SMTP_USER;
 
-  const gmailAppPassword =
+  const rawGmailAppPassword =
     fileConfig.gmailAppPassword ||
     process.env.GMAIL_APP_PASSWORD ||
     process.env.EMAIL_SERVER_PASSWORD ||
     process.env.SMTP_PASS;
+
+  const gmailAppPassword = rawGmailAppPassword
+    ? rawGmailAppPassword.trim().replace(/\s+/g, '')
+    : undefined;
 
   const smtpHost =
     fileConfig.smtpHost ||
@@ -136,7 +140,7 @@ export async function sendOtpEmail({
   success: boolean;
   delivered: boolean;
   error?: string;
-  info?: any;
+  info?: unknown;
 }> {
   const config = getEmailConfig();
 
@@ -246,12 +250,13 @@ export async function sendOtpEmail({
       delivered: true,
       info,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Failed to send OTP email via Nodemailer:', err);
+    const errMsg = err instanceof Error ? err.message : 'SMTP delivery failed.';
     return {
       success: false,
       delivered: false,
-      error: err.message || 'SMTP delivery failed.',
+      error: errMsg,
     };
   }
 }

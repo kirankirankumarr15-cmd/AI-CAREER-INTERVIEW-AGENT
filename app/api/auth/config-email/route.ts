@@ -36,11 +36,12 @@ export async function POST(req: NextRequest) {
 
     try {
       await transporter.verify();
-    } catch (verifyErr: any) {
+    } catch (verifyErr: unknown) {
+      const errMsg = verifyErr instanceof Error ? verifyErr.message : 'Invalid credentials';
       return NextResponse.json(
         {
           success: false,
-          error: `Gmail authentication test failed: ${verifyErr.message || 'Invalid credentials'}. Ensure 2-Step Verification is ON and you generated a 16-character "App Password".`,
+          error: `Gmail authentication test failed: ${errMsg}. Ensure 2-Step Verification is ON and you generated a 16-character "App Password".`,
         },
         { status: 400 }
       );
@@ -63,10 +64,11 @@ export async function POST(req: NextRequest) {
       success: true,
       message: `Gmail SMTP connected and verified successfully for ${cleanUser}!`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in config-email:', error);
+    const errMsg = error instanceof Error ? error.message : 'Configuration failed.';
     return NextResponse.json(
-      { success: false, error: error.message || 'Configuration failed.' },
+      { success: false, error: errMsg },
       { status: 500 }
     );
   }

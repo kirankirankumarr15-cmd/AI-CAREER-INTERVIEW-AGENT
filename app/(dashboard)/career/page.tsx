@@ -110,49 +110,49 @@ export default function CareerPage() {
   return (
     <div className="space-y-8 pb-16 animate-fade-in-up max-w-7xl mx-auto">
       {/* Top Page Header */}
-      <div className="border-b border-slate-200 pb-5">
-        <h1 className="text-2xl font-extrabold text-slate-900">Target Roles</h1>
-        <p className="text-[13px] text-slate-500 font-medium mt-1">Choose your desired role and required skill path</p>
+      <div className="border-b border-slate-200 dark:border-slate-800 pb-5">
+        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Target Roles</h1>
+        <p className="text-[13px] text-slate-600 dark:text-slate-400 font-medium mt-1">Choose your desired role and required skill path</p>
       </div>
       
       {/* Main Content */}
       <div className="space-y-8">
         <div className="space-y-2">
-          <p className="text-[11px] font-extrabold text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+          <p className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-2">
              Target Alignment Engine • 11 Career Paths
           </p>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">What role are you targeting?</h2>
-          <p className="text-[13px] text-slate-500 font-medium">
+          <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">What role are you targeting?</h2>
+          <p className="text-[13px] text-slate-600 dark:text-slate-400 font-medium">
             Selecting a target role automatically customizes your learning roadmap, interview question banks, and resume ATS keywords.
           </p>
         </div>
 
         {/* Hero Selected Role Card */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 transition-all hover:border-emerald-300">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 transition-all hover:border-emerald-300">
            <div className="space-y-4 flex-1">
-             <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase tracking-wider rounded-lg border border-emerald-200">
+             <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider rounded-lg border border-emerald-200 dark:border-emerald-500/30">
                Currently Selected Target Role
              </span>
              <div>
-               <h3 className="text-2xl font-extrabold text-slate-900">{selectedRole.title}</h3>
-               <p className="text-[13px] text-slate-600 font-medium mt-1.5 max-w-2xl leading-relaxed">
+               <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">{selectedRole.title}</h3>
+               <p className="text-[13px] text-slate-600 dark:text-slate-400 font-medium mt-1.5 max-w-2xl leading-relaxed">
                  {selectedRole.description}
                </p>
              </div>
              <div className="flex items-center gap-3 pt-2">
-               <span className="text-xs font-bold text-slate-900">Core Stack:</span>
+               <span className="text-xs font-bold text-slate-900 dark:text-white">Core Stack:</span>
                <div className="flex flex-wrap gap-2">
                  {[...selectedRole.stack, selectedRole.extraStack.replace('+', '').replace('more', '').trim()].map((s, i) => (
-                   <span key={i} className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-600 text-[11px] font-bold shadow-sm">
+                   <span key={i} className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold shadow-sm">
                      {s}
                    </span>
                  ))}
                </div>
              </div>
            </div>
-           <button className="shrink-0 px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-bold flex items-center gap-2 shadow-md shadow-emerald-700/20 transition-all active:scale-95">
+           <a href={`/roadmap?role=${encodeURIComponent(selectedRole.title)}`} className="shrink-0 px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-bold flex items-center gap-2 shadow-md shadow-emerald-700/20 transition-all active:scale-95">
              Build My Roadmap <ChevronRight className="h-4 w-4" />
-           </button>
+            </a>
         </div>
 
         {/* Roles Grid */}
@@ -166,43 +166,41 @@ export default function CareerPage() {
                  onClick={() => handleSelectRole(role)}
                  className={`cursor-pointer rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between min-h-[220px] ${
                    isSelected 
-                     ? 'bg-emerald-50/40 border-2 border-emerald-500 shadow-md shadow-emerald-500/10 scale-[1.02]' 
-                     : 'bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                     ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-500 shadow-md shadow-emerald-500/10 scale-[1.02]' 
+                     : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm'
                  }`}
                >
                  <div className="space-y-4">
                    <div className="flex items-center gap-3">
                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                       isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-50 border border-slate-200 text-slate-600'
+                       isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
                      }`}>
                         <Icon className="h-5 w-5" />
                      </div>
-                     <h3 className={`font-extrabold text-[15px] ${isSelected ? 'text-emerald-900' : 'text-slate-900'}`}>
+                     <h3 className={`font-extrabold text-[15px] ${isSelected ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-900 dark:text-white'}`}>
                        {role.title}
                      </h3>
                    </div>
-                   <p className="text-[12px] text-slate-500 font-medium leading-relaxed line-clamp-2">
+                   <p className="text-[12px] text-slate-600 dark:text-slate-400 font-medium leading-relaxed line-clamp-2">
                      {role.description}
                    </p>
                    <div className="flex flex-wrap gap-1.5 pt-1">
                      {role.stack.map((s, i) => (
-                       <span key={i} className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                         isSelected ? 'bg-slate-700 text-white' : 'bg-slate-700 text-white'
-                       }`}>
+                       <span key={i} className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
                          {s}
                        </span>
                      ))}
                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                       isSelected ? 'text-emerald-700' : 'text-slate-500'
+                       isSelected ? 'text-emerald-700 dark:text-emerald-400 font-extrabold' : 'text-slate-500 dark:text-slate-400'
                      }`}>
                        {role.extraStack}
                      </span>
                    </div>
                  </div>
                  
-                 <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
-                   <span className="text-[10px] text-slate-400 font-medium">{role.level}</span>
-                   <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">{role.salary}</span>
+                 <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">{role.level}</span>
+                   <span className="text-[10px] text-slate-900 dark:text-white font-extrabold uppercase tracking-wider">{role.salary}</span>
                  </div>
                </div>
              );

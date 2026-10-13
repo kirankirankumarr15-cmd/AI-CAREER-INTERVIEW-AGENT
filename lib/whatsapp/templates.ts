@@ -21,24 +21,24 @@ export function buildTemplate<T extends WaTemplateId>(
   params: TemplateParams[T],
   languageCode = 'en_US'
 ): WaTemplatePayload {
-  const p = params as any;
+  let bodyParams: string[] = [];
 
-  const bodyParams: string[] = (() => {
-    switch (templateId) {
-      case 'resume_ready':
-        return [p.studentName, p.role, String(p.atsScore)];
-      case 'interview_report':
-        return [p.studentName, p.role, String(p.overallScore), String(p.confidence)];
-      case 'job_match':
-        return [p.studentName, p.companyName, p.role, String(p.matchScore)];
-      case 'application_update':
-        return [p.studentName, p.companyName, p.role, p.status];
-      case 'daily_practice':
-        return [p.studentName, p.topic, String(p.questionCount)];
-      default:
-        return [];
-    }
-  })();
+  if (templateId === 'resume_ready') {
+    const p = params as TemplateParams['resume_ready'];
+    bodyParams = [p.studentName, p.role, String(p.atsScore)];
+  } else if (templateId === 'interview_report') {
+    const p = params as TemplateParams['interview_report'];
+    bodyParams = [p.studentName, p.role, String(p.overallScore), String(p.confidence)];
+  } else if (templateId === 'job_match') {
+    const p = params as TemplateParams['job_match'];
+    bodyParams = [p.studentName, p.companyName, p.role, String(p.matchScore)];
+  } else if (templateId === 'application_update') {
+    const p = params as TemplateParams['application_update'];
+    bodyParams = [p.studentName, p.companyName, p.role, p.status];
+  } else if (templateId === 'daily_practice') {
+    const p = params as TemplateParams['daily_practice'];
+    bodyParams = [p.studentName, p.topic, String(p.questionCount)];
+  }
 
   return {
     name: templateId,

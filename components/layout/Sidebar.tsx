@@ -23,7 +23,7 @@ import {
   MessageCircle,
   X,
   Search,
-  Keyboard,
+  Route,
   Settings,
   Bot
 } from 'lucide-react';
@@ -45,6 +45,7 @@ const navItems = [
   { label: 'Documents',      href: '/documents',     icon: FolderOpen,      shortcut: 'O' },
   { label: 'Progress',       href: '/progress',      icon: LineChart,       shortcut: 'G' },
   { label: 'Learn Roadmap',  href: '/learn',         icon: BookOpen,        shortcut: 'L' },
+  { label: 'Roadmap Agent',  href: '/roadmap',       icon: Route,           shortcut: 'M', badge: 'Live AI' },
   { label: 'Practice Hub',   href: '/practice',      icon: Dumbbell,        shortcut: 'X',
     subItems: [
       { label: 'Categories',      href: '/practice' },

@@ -15,7 +15,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -28,12 +28,7 @@ export async function updateSession(request: NextRequest) {
   )
 
   // This will refresh the session if expired.
-  // We can just call getUser to refresh tokens.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Here you can add route protection logic based on `user`
+  await supabase.auth.getUser()
 
   return supabaseResponse
 }

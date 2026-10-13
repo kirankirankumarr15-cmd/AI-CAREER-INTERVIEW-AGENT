@@ -53,38 +53,14 @@ export async function processDocumentText(rawOcrText: string, docName: string): 
   const fallback: DocumentExtractionResult = {
     docType: docName.toLowerCase().includes('resume') ? 'Resume' : 'Certificate',
     extractedInformation: {
-      college: 'University of Technology',
-      degree: 'B.S. Computer Science & Engineering',
-      branch: 'Computer Science',
-      graduationYear: 2025,
-      cgpa: 8.7,
-      skillsExtracted: ['React.js', 'Node.js', 'TypeScript', 'PostgreSQL', 'Python', 'Tailwind CSS', 'Git'],
-      projectsExtracted: [
-        {
-          title: 'Smart Campus Resource Optimization Platform',
-          tech: ['React', 'Node.js', 'PostgreSQL', 'Express'],
-          summary: 'Full-stack platform optimizing university lab seat allocations and scheduling.',
-        },
-        {
-          title: 'AI Resume & ATS Parser Engine',
-          tech: ['Python', 'FastAPI', 'SpaCy NLP', 'Next.js'],
-          summary: 'Automated NLP resume parser scoring keyword density against job descriptions.',
-        },
-      ],
-      experienceExtracted: [
-        {
-          company: 'TechNovation Labs',
-          role: 'Full Stack Software Intern',
-          summary: 'Developed cloud analytics microservices, optimized SQL queries by 35%.',
-        },
-      ],
-      certificationsExtracted: ['AWS Certified Solutions Architect – Associate'],
-      achievementsExtracted: ['1st Place in University Hackathon 2024'],
+      skillsExtracted: [],
+      projectsExtracted: [],
+      experienceExtracted: [],
+      certificationsExtracted: [],
     },
-    confidenceScore: 94,
+    confidenceScore: 50,
     unverifiedNotes: [
-      'Extracted CGPA 8.7 — Please confirm with official transcript.',
-      'Extracted 7 skills — Review proficiency levels in profile editor.',
+      'Document uploaded to private storage. Please review and confirm extracted fields manually.',
     ],
   };
 

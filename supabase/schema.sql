@@ -220,3 +220,65 @@ CREATE TABLE IF NOT EXISTS user_progress (
   resume_ats_score INT DEFAULT 85,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
+
+-- =========================================================================
+-- Role-Based Roadmap Agent (Live Web Research & Adaptive Progress)
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS roadmap_role_cache (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  role_key TEXT UNIQUE NOT NULL,
+  requirements JSONB NOT NULL,
+  fetched_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS roadmap_sources (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  role_cache_id UUID REFERENCES roadmap_role_cache(id) ON DELETE CASCADE NOT NULL,
+  url TEXT NOT NULL,
+  title TEXT NOT NULL,
+  fetched_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS roadmaps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  role TEXT NOT NULL,
+  target_company TEXT,
+  timeline_weeks INT DEFAULT 12 NOT NULL,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'archived')),
+  generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  based_on_cache_id UUID REFERENCES roadmap_role_cache(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS roadmap_phases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  roadmap_id UUID REFERENCES roadmaps(id) ON DELETE CASCADE NOT NULL,
+  order_index INT NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS roadmap_tasks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  phase_id UUID REFERENCES roadmap_phases(id) ON DELETE CASCADE NOT NULL,
+  roadmap_id UUID REFERENCES roadmaps(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  est_hours NUMERIC(4, 1) DEFAULT 4.0 NOT NULL,
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('high', 'medium', 'low')),
+  linked_skill TEXT NOT NULL,
+  resource_url TEXT,
+  source_type TEXT DEFAULT 'from sources' CHECK (source_type IN ('from sources', 'AI-suggested', 'CareerPilot Practice', 'CareerPilot Mock Interview', 'CareerPilot Quiz')),
+  status TEXT DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'done')),
+  due_week INT DEFAULT 1 NOT NULL,
+  completed_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_roadmap_role_cache_key ON roadmap_role_cache(role_key);
+CREATE INDEX IF NOT EXISTS idx_roadmaps_user_status ON roadmaps(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_roadmap_phases_roadmap ON roadmap_phases(roadmap_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_roadmap_tasks_user_status ON roadmap_tasks(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_roadmap_tasks_phase ON roadmap_tasks(phase_id);
+

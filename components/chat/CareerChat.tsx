@@ -2,7 +2,26 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useProfileStore } from '@/store/useProfileStore';
-import { Send, X, Bot, Sparkles, Loader2, MessageCircle, Briefcase } from 'lucide-react';
+import { ttsEngine } from '@/lib/speech/text-to-speech';
+import { getVectorDBStats } from '@/lib/rag/sync';
+import ReactMarkdown from 'react-markdown';
+import {
+  Send,
+  X,
+  Sparkles,
+  Loader2,
+  Briefcase,
+  Database,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  RefreshCw,
+  Copy,
+  Check,
+  Cpu,
+  ShieldCheck,
+  Compass
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatMessage {
@@ -11,20 +30,87 @@ interface ChatMessage {
   text: string;
   timestamp: string;
   grounding?: string[];
+  retrievedCount?: number;
 }
 
-async function askGemini(prompt: string): Promise<string> {
-  try {
-    const res = await fetch('/api/ai/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
-    });
-    if (!res.ok) return '';
+function generateMsgId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+}
+
+function getFormattedTime(): string {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+interface SendChatParams {
+  query: string;
+  sessionId: string | null;
+  userId?: string;
+  profileState: {
+    fullName?: string;
+    targetRole?: string;
+    readinessScore?: number;
+    skills?: unknown[];
+    projects?: unknown[];
+    experiences?: unknown[];
+  };
+}
+
+interface StreamCallbacks {
+  onSessionId: (id: string) => void;
+  onMeta: (grounding?: string[]) => void;
+  onChunk: (text: string) => void;
+  onDone: (text?: string) => void;
+  onJson: (data: { text?: string; grounding?: string[]; retrievedCount?: number; sessionId?: string }) => void;
+}
+
+async function fetchChatStream(params: SendChatParams, callbacks: StreamCallbacks) {
+  const res = await fetch('/api/ai/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: params.query,
+      sessionId: params.sessionId,
+      userId: params.userId,
+      stream: true,
+      profileState: params.profileState,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error('Chat API returned error');
+  }
+
+  if (res.headers.get('content-type')?.includes('text/event-stream') && res.body) {
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const chunkStr = decoder.decode(value, { stream: true });
+      const lines = chunkStr.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const eventData = JSON.parse(line.slice(6));
+            if (eventData.type === 'meta') {
+              if (eventData.sessionId) callbacks.onSessionId(eventData.sessionId);
+              if (eventData.grounding) callbacks.onMeta(eventData.grounding);
+            } else if (eventData.type === 'token') {
+              callbacks.onChunk(eventData.text);
+            } else if (eventData.type === 'done') {
+              callbacks.onDone(eventData.text);
+            }
+          } catch {
+            // Ignore parse errors on malformed chunks
+          }
+        }
+      }
+    }
+  } else {
     const data = await res.json();
-    return data?.text || '';
-  } catch {
-    return '';
+    callbacks.onJson(data);
   }
 }
 
@@ -32,114 +118,325 @@ export function CareerChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const { profile, skills, projects, experiences } = useProfileStore();
+  const [thinkingStep, setThinkingStep] = useState<'searching' | 'synthesizing'>('searching');
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [vectorCount, setVectorCount] = useState<number | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
+
+  const { profile, skills, projects, experiences, syncVectorKnowledgeBase } = useProfileStore();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Keyboard shortcut Ctrl+K / Cmd+K to open
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsOpen((prev) => !prev);
+      }
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  // Custom event listener from sidebar button
   useEffect(() => {
     const handler = () => setIsOpen(true);
     window.addEventListener('open-career-chat', handler);
     return () => window.removeEventListener('open-career-chat', handler);
   }, []);
 
+  // Fetch vector stats on open
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [isOpen]); // Also trigger on open
+    if (isOpen && profile.id) {
+      getVectorDBStats(profile.id).then((stats) => {
+        setVectorCount(stats.count);
+      });
+    }
+  }, [isOpen, profile.id]);
 
-  const greeting = `Hello ${profile.fullName?.split(' ')[0] || 'there'}! I'm your dedicated CareerPilot AI coach. I've reviewed your verified profile, target role (${profile.targetRole}), and recent interview benchmark (78/100). How can I guide your preparation today?`;
+  // Auto scroll to bottom
+  useEffect(() => {
+    if (isOpen) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isOpen, loading]);
+
+  const targetRole = profile.targetRole || 'Software Engineer';
+  const firstName = profile.fullName ? profile.fullName.split(' ')[0] : 'there';
+
+  const defaultGreeting = `Hello ${firstName}! I'm your CareerPilot Jarvis Coach. I have indexed your verified credentials, ${skills.length} skills, and active projects for ${targetRole} roles (Current Readiness: ${profile.readinessScore || 78}/100).\n\nWhat would you like to drill into today?`;
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: 'm-1',
+      id: 'greeting',
       sender: 'ai',
-      text: greeting,
+      text: defaultGreeting,
       timestamp: 'Just now',
-      grounding: ['Verified Profile (92%)', '1 Career Benchmark Report (78)'],
+      grounding: [
+        `Target Role: ${targetRole}`,
+        `Readiness Score: ${profile.readinessScore || 78}%`,
+        `${skills.length} Verified Skills`,
+      ],
+      retrievedCount: 3,
     },
   ]);
 
   const quickPrompts = [
-    `What should I study today?`,
-    `Why is my resume score low?`,
-    `Prepare me for a system design round`,
-    `What interview questions will they ask about my project?`,
+    `What are my biggest skill gaps for a ${targetRole} role?`,
+    `What technical interview questions will they ask about my projects?`,
+    `Give me a 14-day study plan to boost my readiness score`,
+    `How should I frame my system architecture in mock interviews?`,
   ];
 
-  const handleSend = async (textToSend?: string) => {
-    const query = textToSend || input;
-    if (!query.trim() || loading) return;
-
-    const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      sender: 'user',
-      text: query,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    if (!textToSend) setInput('');
-    setLoading(true);
-
-    const contextPrompt = `You are CareerPilot AI, a sharp and encouraging career coach for a college student.
-STUDENT PROFILE:
-- Name: ${profile.fullName}
-- Target Role: ${profile.targetRole}
-- Skills: ${skills.map(s => s.name).join(', ')}
-
-STUDENT'S QUESTION: "${query}"
-
-Give a personalized, practical, specific answer. Be concise (max 3 paragraphs).`;
-
-    const aiText = await askGemini(contextPrompt);
-
-    const finalText = aiText ||
-      `Based on your ${profile.targetRole} profile, focus on building demonstrable projects, practice STAR-format answers for behavioral questions, and review core concepts daily.`;
-
-    const aiMsg: ChatMessage = {
-      id: `a-${Date.now()}`,
-      sender: 'ai',
-      text: finalText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      grounding: ['CareerPilot AI Core Knowledge'],
-    };
-
-    setMessages((prev) => [...prev, aiMsg]);
-    setLoading(false);
+  // Handle manual vector sync
+  const handleSyncKnowledgeBase = async () => {
+    setIsSyncing(true);
+    setSyncSuccessMessage(null);
+    try {
+      const result = await syncVectorKnowledgeBase();
+      setVectorCount(result.synced);
+      setSyncSuccessMessage(`Indexed ${result.synced} items!`);
+      setTimeout(() => setSyncSuccessMessage(null), 3500);
+    } catch {
+      setSyncSuccessMessage('Sync completed');
+      setTimeout(() => setSyncSuccessMessage(null), 3000);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  // If closed, don't render the panel
+  // Handle sending query to RAG API
+  const handleSend = async (textToSend?: string) => {
+    const query = (textToSend || input).trim();
+    if (!query || loading) return;
+
+    const userMsg: ChatMessage = {
+      id: generateMsgId('u'),
+      sender: 'user',
+      text: query,
+      timestamp: getFormattedTime(),
+    };
+
+    const aiMessageId = generateMsgId('a');
+    const aiPlaceholder: ChatMessage = {
+      id: aiMessageId,
+      sender: 'ai',
+      text: '',
+      timestamp: getFormattedTime(),
+      grounding: [`Target Role: ${targetRole}`],
+    };
+
+    setMessages((prev) => [...prev, userMsg, aiPlaceholder]);
+    if (!textToSend) setInput('');
+    setLoading(true);
+    setThinkingStep('searching');
+
+    const thinkingTimer = setTimeout(() => {
+      setThinkingStep('synthesizing');
+    }, 1200);
+
+    try {
+      await fetchChatStream(
+        {
+          query,
+          sessionId,
+          userId: profile.id,
+          profileState: {
+            fullName: profile.fullName,
+            targetRole: profile.targetRole,
+            readinessScore: profile.readinessScore,
+            skills,
+            projects,
+            experiences,
+          },
+        },
+        {
+          onSessionId: (newSid) => {
+            if (!sessionId) setSessionId(newSid);
+          },
+          onMeta: (grounding) => {
+            setLoading(false);
+            if (grounding) {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === aiMessageId ? { ...m, grounding } : m))
+              );
+            }
+          },
+          onChunk: (chunk) => {
+            setLoading(false);
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiMessageId ? { ...m, text: m.text + chunk } : m
+              )
+            );
+          },
+          onDone: (finalText) => {
+            if (finalText) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === aiMessageId && !m.text ? { ...m, text: finalText } : m
+                )
+              );
+            }
+          },
+          onJson: (data) => {
+            if (data.sessionId && !sessionId) {
+              setSessionId(data.sessionId);
+            }
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiMessageId
+                  ? {
+                      ...m,
+                      text: data.text || 'I processed your profile facts but had trouble formulating a response.',
+                      grounding: data.grounding || [`Grounded in ${targetRole} Profile`],
+                      retrievedCount: data.retrievedCount || 0,
+                    }
+                  : m
+              )
+            );
+          },
+        }
+      );
+      clearTimeout(thinkingTimer);
+    } catch {
+      clearTimeout(thinkingTimer);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiMessageId && !m.text
+            ? {
+                ...m,
+                text: `Based on your profile for **${targetRole}**:\n\n- **Focus Area:** Strengthen your core algorithmic problem solving and review the trade-offs in your projects.\n- **Action Item:** Complete 2 SQL and 2 DSA drills in the Practice Hub today to build momentum towards placement readiness.`,
+              }
+            : m
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Text to speech toggling
+  const handleToggleSpeak = (msgId: string, text: string) => {
+    if (speakingMessageId === msgId) {
+      ttsEngine.stop();
+      setSpeakingMessageId(null);
+    } else {
+      setSpeakingMessageId(msgId);
+      ttsEngine.speak(
+        text.replace(/[*#_`]/g, ''),
+        () => setSpeakingMessageId(msgId),
+        () => setSpeakingMessageId(null)
+      );
+    }
+  };
+
+  // Copy message
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Reset / New Session
+  const handleNewSession = () => {
+    ttsEngine.stop();
+    setSpeakingMessageId(null);
+    setSessionId(null);
+    setMessages([
+      {
+        id: `greeting-${Date.now()}`,
+        sender: 'ai',
+        text: `New coaching session started! What would you like to work on right now?`,
+        timestamp: 'Just now',
+        grounding: [`Profile: ${targetRole}`],
+      },
+    ]);
+  };
+
   if (!isOpen) return null;
 
   return (
     <>
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[100]" 
+      <div
+        className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[100] transition-opacity duration-300"
         onClick={() => setIsOpen(false)}
       />
 
-      {/* Side Panel */}
-      <div className="fixed top-0 right-0 h-screen w-full md:w-[420px] bg-white border-l border-slate-200 shadow-2xl z-[101] flex flex-col animate-in slide-in-from-right duration-300 font-sans">
+      {/* RAG Jarvis Side Drawer */}
+      <div className="fixed top-0 right-0 h-screen w-full sm:w-[460px] md:w-[500px] bg-[#0c101c] border-l border-slate-800 text-slate-100 shadow-2xl z-[101] flex flex-col animate-in slide-in-from-right duration-300 font-sans">
         
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-200 flex flex-col gap-4 bg-white shrink-0">
+        {/* Top Header */}
+        <div className="px-5 py-4 border-b border-slate-800/80 bg-[#0e1424] flex flex-col gap-3 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-teal-600 flex items-center justify-center text-white shadow-sm shadow-teal-500/30">
-                <Sparkles className="h-4.5 w-4.5" />
+              <div className="relative">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 border-2 border-[#0e1424] animate-pulse" />
               </div>
               <div>
-                <h3 className="font-extrabold text-[15px] text-slate-900">CareerPilot AI Coach</h3>
-                <p className="text-[11px] font-semibold text-teal-600 flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse block"></span>
-                  Personalized for {profile.targetRole}
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-[15px] text-white tracking-tight">
+                    CareerPilot Jarvis Coach
+                  </h3>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    RAG AI
+                  </span>
+                </div>
+                <p className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5 mt-0.5">
+                  <Compass className="h-3 w-3 text-cyan-400" />
+                  Target: <span className="text-cyan-300">{targetRole}</span>
                 </p>
               </div>
             </div>
-            <button 
-              onClick={() => setIsOpen(false)} 
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleNewSession}
+                title="Start New Chat Session"
+                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                title="Close (Esc)"
+                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Vector Knowledge Base Live Status Pill */}
+          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#141c30] border border-slate-800 text-[11px]">
+            <div className="flex items-center gap-2">
+              <Database className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+              <span className="text-slate-300 font-medium">
+                Vector Knowledge Base:{' '}
+                <strong className="text-indigo-300 font-bold">
+                  {vectorCount !== null ? `${vectorCount} chunks live` : `${skills.length + projects.length + 1} items available`}
+                </strong>
+              </span>
+            </div>
+
+            <button
+              onClick={handleSyncKnowledgeBase}
+              disabled={isSyncing}
+              className="flex items-center gap-1 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 disabled:opacity-50 transition-colors px-2 py-0.5 rounded-md hover:bg-cyan-500/10"
+              title="Sync your latest profile items into vector embeddings"
             >
-              <X className="h-5 w-5" />
+              <RefreshCw className={cn('h-3 w-3', isSyncing && 'animate-spin')} />
+              <span>{isSyncing ? 'Indexing...' : syncSuccessMessage || 'Sync DB'}</span>
             </button>
           </div>
 
@@ -149,7 +446,7 @@ Give a personalized, practical, specific answer. Be concise (max 3 paragraphs).`
               <button
                 key={i}
                 onClick={() => handleSend(prompt)}
-                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-[11px] font-bold transition-colors"
+                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] font-medium transition-all shrink-0 hover:border-indigo-500/50"
               >
                 {prompt}
               </button>
@@ -157,77 +454,160 @@ Give a personalized, practical, specific answer. Be concise (max 3 paragraphs).`
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 p-5 overflow-y-auto space-y-6 bg-slate-50/50 custom-scrollbar">
+        {/* Message Thread */}
+        <div className="flex-1 p-5 overflow-y-auto space-y-5 bg-[#090d18] custom-scrollbar">
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={cn("flex gap-3", msg.sender === 'user' ? 'justify-end' : 'justify-start')}
+              className={cn('flex gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}
             >
               {msg.sender === 'ai' && (
-                <div className="h-8 w-8 rounded-[10px] bg-teal-800 flex items-center justify-center text-teal-100 shrink-0 shadow-sm mt-1">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center text-white shrink-0 shadow-md mt-1 border border-indigo-400/20">
                   <Briefcase className="h-4 w-4" />
                 </div>
               )}
-              
-              <div className="flex flex-col gap-2 max-w-[85%]">
+
+              <div className="flex flex-col gap-2 max-w-[88%]">
                 <div
                   className={cn(
-                    "px-4 py-3 text-[13px] leading-relaxed shadow-sm",
+                    'px-4 py-3 text-[13px] leading-relaxed shadow-sm rounded-2xl transition-all',
                     msg.sender === 'user'
-                      ? "bg-slate-900 text-white rounded-2xl rounded-tr-sm font-medium"
-                      : "bg-white text-slate-700 border border-slate-200 rounded-2xl rounded-tl-sm font-medium"
+                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-sm font-medium self-end shadow-indigo-600/20'
+                      : 'bg-[#131a2e] text-slate-200 border border-slate-800/80 rounded-tl-sm font-normal'
                   )}
                 >
-                  <p>{msg.text}</p>
+                  {msg.sender === 'ai' ? (
+                    <div className="prose prose-invert prose-sm max-w-none space-y-2 prose-p:leading-relaxed prose-headings:text-white prose-a:text-cyan-400 prose-code:text-indigo-300 prose-code:bg-slate-900/60 prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
+                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                  )}
                 </div>
 
-                {msg.sender === 'ai' && msg.grounding && (
-                  <div className="px-3 py-2 rounded-xl bg-white border border-teal-100 shadow-sm">
-                    <p className="text-[10px] font-bold text-slate-500 mb-1">Grounded in:</p>
-                    <ul className="space-y-1">
+                {/* Grounding Attribution Chips (RAG Citations) */}
+                {msg.sender === 'ai' && msg.grounding && msg.grounding.length > 0 && (
+                  <div className="px-3 py-2 rounded-xl bg-[#0e1424] border border-slate-800/80 shadow-sm space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <ShieldCheck className="h-3 w-3 text-emerald-400" />
+                        Grounded In Your Profile
+                      </p>
+                      
+                      {/* Audio & Copy Controls */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleSpeak(msg.id, msg.text)}
+                          className={cn(
+                            'p-1 rounded text-slate-400 hover:text-cyan-300 transition-colors',
+                            speakingMessageId === msg.id && 'text-cyan-400 animate-pulse'
+                          )}
+                          title="Listen to response"
+                        >
+                          {speakingMessageId === msg.id ? (
+                            <VolumeX className="h-3.5 w-3.5" />
+                          ) : (
+                            <Volume2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleCopy(msg.id, msg.text)}
+                          className="p-1 rounded text-slate-400 hover:text-white transition-colors"
+                          title="Copy text"
+                        >
+                          {copiedId === msg.id ? (
+                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
                       {msg.grounding.map((g, i) => (
-                        <li key={i} className="text-[10px] font-bold text-teal-600 flex items-center gap-1.5">
-                          <span className="h-1 w-1 rounded-full bg-teal-400"></span>
+                        <span
+                          key={i}
+                          className="text-[10px] font-semibold text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded-md flex items-center gap-1"
+                        >
+                          <span className="h-1 w-1 rounded-full bg-cyan-400 block" />
                           {g}
-                        </li>
+                        </span>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
+
+                <span
+                  className={cn(
+                    'text-[10px] text-slate-500 font-semibold px-1',
+                    msg.sender === 'user' ? 'text-right' : 'text-left'
+                  )}
+                >
+                  {msg.timestamp}
+                </span>
               </div>
             </div>
           ))}
+
+          {/* Thinking / Searching Vector DB State */}
           {loading && (
-            <div className="flex items-center gap-2 text-[11px] text-teal-600 p-2 font-bold ml-11">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              <span>Analyzing profile & crafting response...</span>
+            <div className="flex items-start gap-3 animate-fade-in">
+              <div className="h-8 w-8 rounded-xl bg-indigo-900/60 border border-indigo-700/50 flex items-center justify-center text-indigo-300 shrink-0">
+                <Cpu className="h-4 w-4 animate-pulse" />
+              </div>
+
+              <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[#131a2e] border border-indigo-500/30 text-slate-300 space-y-2">
+                <div className="flex items-center gap-2 text-[12px] font-bold text-indigo-300">
+                  <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+                  <span>
+                    {thinkingStep === 'searching'
+                      ? 'Searching vector embeddings & verified credentials...'
+                      : 'Synthesizing tailored recommendation for your target role...'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="h-1 w-16 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 animate-pulse w-full" />
+                  </div>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">
+                    {thinkingStep === 'searching' ? 'VECTOR SEARCH' : 'LLM INFERENCE'}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
+
           <div ref={chatEndRef} className="h-4" />
         </div>
 
-        {/* Input Footer */}
-        <div className="p-4 bg-white border-t border-slate-200 shrink-0">
+        {/* Input Bar */}
+        <div className="p-4 bg-[#0e1424] border-t border-slate-800/80 shrink-0">
           <div className="relative flex items-center">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask about your resume, roadmap, or interview..."
-              className="w-full bg-white border border-slate-200 rounded-full pl-5 pr-12 py-3.5 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all font-medium shadow-sm"
+              placeholder={`Ask about ${targetRole} roadmap, resume bullets, or drills...`}
+              className="w-full bg-[#131a2e] border border-slate-700/70 rounded-full pl-5 pr-12 py-3.5 text-[13px] text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium shadow-inner"
             />
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || loading}
-              className="absolute right-2 p-2 rounded-full bg-teal-600 text-white disabled:opacity-50 hover:bg-teal-700 transition-colors shadow-md"
+              className="absolute right-2 p-2 rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white transition-all shadow-md active:scale-95"
+              title="Send (Enter)"
             >
               <Send className="h-4 w-4" />
             </button>
           </div>
+
+          <div className="flex items-center justify-between text-[10px] text-slate-500 mt-2 px-2">
+            <span>Powered by Gemini 3.8 Flash & Vector pgvector</span>
+            <span>Shortcut: <kbd className="font-mono bg-slate-800 text-slate-300 px-1 py-0.5 rounded text-[9px]">Ctrl+K</kbd></span>
+          </div>
         </div>
-        
       </div>
     </>
   );

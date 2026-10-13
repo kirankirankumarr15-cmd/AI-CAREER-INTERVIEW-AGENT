@@ -7,329 +7,331 @@ import {
   Mail,
   Globe,
   Upload,
-  Plus,
-  RefreshCw,
   ExternalLink,
-  ChevronDown,
   Code2,
-  Briefcase
+  Briefcase,
+  GraduationCap,
+  Award,
+  Sparkles
 } from 'lucide-react';
+import Link from 'next/link';
+import { useProfileStore } from '@/store/useProfileStore';
 
 function VerifiedBadge() {
   return (
-    <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-widest">
+    <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded uppercase tracking-widest border border-emerald-200 dark:border-emerald-800">
       <CheckCircle2 className="h-3 w-3" /> Verified
     </span>
   );
 }
 
-function SkillPill({ name }: { name: string }) {
+function SkillPill({ name, verified }: { name: string; verified?: boolean }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-[10px] font-bold shadow-sm">
-      {name} <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 dark:bg-slate-800 text-white text-[10px] font-bold shadow-sm">
+      {name} {verified && <CheckCircle2 className="h-3 w-3 text-emerald-400" />}
     </div>
   );
 }
 
 export default function ProfilePage() {
+  const { profile, skills, education, projects, experiences, certifications } = useProfileStore();
+
+  const initials = (profile.fullName || 'Career Pilot')
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  const technicalSkills = skills.filter((s) => s.category === 'Technical');
+  const frameworkSkills = skills.filter((s) => s.category === 'Framework');
+  const toolSkills = skills.filter((s) => s.category === 'Tool');
+  const softSkills = skills.filter((s) => s.category === 'Soft');
+
   return (
     <div className="max-w-[1100px] mx-auto space-y-6 pb-16 animate-fade-in-up font-sans">
-      
       {/* Top Dark Header Card */}
-      <div className="bg-[#111113] rounded-3xl p-8 pb-0 text-white shadow-xl relative overflow-hidden">
-        {/* Abstract background blobs could go here, keeping it clean for now */}
-        
-        <div className="flex flex-col md:flex-row justify-between gap-6 relative z-10 mb-8">
-          <div className="flex gap-6">
-            <div className="h-24 w-24 rounded-2xl overflow-hidden border-2 border-slate-700 shrink-0">
-              <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" className="h-full w-full object-cover" />
+      <div className="bg-[#111113] rounded-3xl p-8 pb-6 text-white shadow-xl relative overflow-hidden border border-slate-800">
+        <div className="flex flex-col md:flex-row justify-between gap-6 relative z-10 mb-6">
+          <div className="flex gap-6 items-start">
+            <div className="h-20 w-20 rounded-2xl bg-indigo-600/30 border-2 border-indigo-500/50 flex items-center justify-center text-2xl font-black text-indigo-300 shrink-0 shadow-inner">
+              {initials}
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div>
-                <h1 className="text-3xl font-black tracking-tight flex items-center gap-3">
-                  Chinmay Hegde 
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-teal-500/20 text-teal-400 tracking-widest uppercase border border-teal-500/30">
-                    Target: Software Developer (SDE1)
+                <h1 className="text-2xl md:text-3xl font-black tracking-tight flex flex-wrap items-center gap-3">
+                  {profile.fullName || 'Student Career Profile'}
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 tracking-widest uppercase border border-indigo-500/30">
+                    Target: {profile.targetRole || 'Software Engineer'}
                   </span>
                 </h1>
               </div>
               
               <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-400">
-                <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> chinmay.hegde@example.com</span>
-                <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> +91 80554 13359</span>
-                <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> Bengaluru, India</span>
+                {profile.email && (
+                  <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {profile.email}</span>
+                )}
+                {profile.phone && (
+                  <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> {profile.phone}</span>
+                )}
+                {profile.location && (
+                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {profile.location}</span>
+                )}
               </div>
 
               <div className="flex gap-4 pt-1">
-                <a href="#" className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-white transition-colors">
-                  <Code2 className="h-3.5 w-3.5" /> Github
-                </a>
-                <a href="#" className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-white transition-colors">
-                  <Briefcase className="h-3.5 w-3.5" /> LinkedIn
-                </a>
-                <a href="#" className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-white transition-colors">
-                  <Globe className="h-3.5 w-3.5" /> Portfolio
-                </a>
+                {profile.githubUrl && (
+                  <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-white transition-colors">
+                    <Code2 className="h-3.5 w-3.5" /> GitHub
+                  </a>
+                )}
+                {profile.linkedInUrl && (
+                  <a href={profile.linkedInUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-white transition-colors">
+                    <Briefcase className="h-3.5 w-3.5" /> LinkedIn
+                  </a>
+                )}
+                {profile.portfolioUrl && (
+                  <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-white transition-colors">
+                    <Globe className="h-3.5 w-3.5" /> Portfolio
+                  </a>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-3">
-            <div className="bg-white text-slate-900 rounded-2xl p-4 flex items-center gap-4 shadow-lg w-64">
-              <div className="h-12 w-12 rounded-full border-4 border-teal-500 flex items-center justify-center shrink-0">
-                <span className="text-sm font-black text-slate-900">94%</span>
+          <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
+            <div className="bg-white text-slate-900 rounded-2xl p-4 flex items-center gap-4 shadow-lg w-full md:w-64">
+              <div className="h-12 w-12 rounded-full border-4 border-indigo-500 flex items-center justify-center shrink-0">
+                <span className="text-sm font-black text-slate-900">{profile.readinessScore || 78}%</span>
               </div>
               <div>
-                <p className="text-[10px] font-black text-teal-700 uppercase tracking-widest mb-0.5">OVERALL READINESS</p>
-                <p className="text-[10px] font-bold text-slate-500">Missing skill: System Design & GraphQL</p>
+                <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-0.5">OVERALL READINESS</p>
+                <p className="text-[10px] font-bold text-slate-500">Verified Credentials: {skills.length + projects.length}</p>
               </div>
             </div>
-            <button className="w-64 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold flex items-center justify-center gap-2 border border-white/20 transition-colors">
-              <Upload className="h-3.5 w-3.5" /> Explore Credentials
-            </button>
+            <Link
+              href="/documents"
+              className="w-full md:w-64 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold flex items-center justify-center gap-2 border border-white/20 transition-colors"
+            >
+              <Upload className="h-3.5 w-3.5" /> Manage & Verify Documents
+            </Link>
           </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex items-center gap-8 text-[11px] font-black uppercase tracking-widest border-t border-slate-800 pt-4">
-          <button className="pb-4 border-b-2 border-teal-500 text-teal-400">All</button>
-          <button className="pb-4 border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors">Education</button>
-          <button className="pb-4 border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors">Skills</button>
-          <button className="pb-4 border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors">Projects</button>
-          <button className="pb-4 border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors">Experience</button>
         </div>
       </div>
 
       {/* Education */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4">
-          <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest flex items-center gap-1 bg-teal-50 px-2 py-1 rounded">
-             <Upload className="h-3 w-3" /> Upload Meta Card
-          </span>
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-indigo-600" /> Education & Academics
+          </h2>
+          <span className="text-xs font-bold text-slate-400">{education.length} Records</span>
         </div>
         
-        <div className="p-8 space-y-6">
-          <div className="flex items-start justify-between border-b border-slate-100 pb-6 mt-4">
-            <div>
-              <h3 className="text-base font-black text-slate-900 mb-1">PES Institute of Technology</h3>
-              <p className="text-[13px] font-semibold text-slate-500 mb-2">B.E., Computer Engineering | Computers and Software Engineering</p>
-              <div className="flex items-center gap-4 text-[11px] font-bold text-slate-400">
-                <span>Oct 2018 - Jul 2022</span>
-                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">CGPA: 9.21 / 10.0</span>
+        {education.length === 0 ? (
+          <p className="text-xs text-slate-500 py-4">No verified education records uploaded yet. Upload your transcripts in Documents.</p>
+        ) : (
+          <div className="space-y-6">
+            {education.map((edu) => (
+              <div key={edu.id} className="flex items-start justify-between border-b border-slate-100 last:border-0 pb-6 last:pb-0">
+                <div>
+                  <h3 className="text-base font-black text-slate-900 mb-1">{edu.institution}</h3>
+                  <p className="text-[13px] font-semibold text-slate-600 mb-2">{edu.degree} {edu.fieldOfStudy ? `in ${edu.fieldOfStudy}` : ''}</p>
+                  <div className="flex items-center gap-4 text-[11px] font-bold text-slate-400">
+                    <span>{edu.startYear} - {edu.endYear || 'Present'}</span>
+                    {edu.cgpa > 0 && <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">CGPA: {edu.cgpa}</span>}
+                  </div>
+                </div>
+                {edu.verificationStatus === 'Verified' && <VerifiedBadge />}
               </div>
-            </div>
-            <VerifiedBadge />
+            ))}
           </div>
-
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-base font-black text-slate-900 mb-1">National Pre-University College</h3>
-              <p className="text-[13px] font-semibold text-slate-500 mb-2">Higher Secondary School | Science</p>
-              <div className="flex items-center gap-4 text-[11px] font-bold text-slate-400">
-                <span>Jun 2016 - May 2018</span>
-              </div>
-            </div>
-            <VerifiedBadge />
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Skills & Technologies */}
-      <div>
-        <div className="flex items-center justify-between mb-4 px-2">
-          <h2 className="text-sm font-black text-slate-900 flex items-center gap-2">
-            <span className="text-teal-500">▼</span> Skills & Technologies
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-indigo-600" /> Skills & Competencies
           </h2>
-          <button className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-[10px] font-bold flex items-center gap-1.5 hover:bg-slate-50 transition-colors shadow-sm bg-white">
-            <Plus className="h-3 w-3" /> Add Skill
-          </button>
+          <span className="text-xs font-bold text-slate-400">{skills.length} Skills</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Programming Languages */}
-          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 shadow-inner">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">PROGRAMMING LANGUAGES</h3>
-            <div className="flex flex-wrap gap-2">
-              <SkillPill name="C++" />
-              <SkillPill name="Python" />
-              <SkillPill name="Java" />
-              <SkillPill name="JavaScript" />
-              <SkillPill name="SQL" />
-            </div>
+        {skills.length === 0 ? (
+          <p className="text-xs text-slate-500 py-4">No skills extracted yet. Upload your resume or certifications to verify skills.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {technicalSkills.length > 0 && (
+              <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">TECHNICAL & LANGUAGES</h3>
+                <div className="flex flex-wrap gap-2">
+                  {technicalSkills.map((s) => (
+                    <SkillPill key={s.id} name={s.name} verified={s.verificationStatus === 'Verified'} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {frameworkSkills.length > 0 && (
+              <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">FRAMEWORKS & LIBRARIES</h3>
+                <div className="flex flex-wrap gap-2">
+                  {frameworkSkills.map((s) => (
+                    <SkillPill key={s.id} name={s.name} verified={s.verificationStatus === 'Verified'} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {toolSkills.length > 0 && (
+              <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">TOOLS & PLATFORMS</h3>
+                <div className="flex flex-wrap gap-2">
+                  {toolSkills.map((s) => (
+                    <SkillPill key={s.id} name={s.name} verified={s.verificationStatus === 'Verified'} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {softSkills.length > 0 && (
+              <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">SOFT & PROFESSIONAL SKILLS</h3>
+                <div className="flex flex-wrap gap-2">
+                  {softSkills.map((s) => (
+                    <SkillPill key={s.id} name={s.name} verified={s.verificationStatus === 'Verified'} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          {/* Frameworks */}
-          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 shadow-inner">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">FRAMEWORKS & LIBRARIES</h3>
-            <div className="flex flex-wrap gap-2">
-              <SkillPill name="React.js" />
-              <SkillPill name="Next.js" />
-              <SkillPill name="Node.js" />
-              <SkillPill name="Express.js" />
-              <SkillPill name="Spring Boot" />
-            </div>
-          </div>
-          {/* Databases */}
-          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 shadow-inner">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">DATABASES & TOOLS</h3>
-            <div className="flex flex-wrap gap-2">
-              <SkillPill name="PostgreSQL" />
-              <SkillPill name="MongoDB" />
-              <SkillPill name="Docker" />
-              <SkillPill name="Git" />
-              <SkillPill name="AWS" />
-            </div>
-          </div>
-          {/* Architecture */}
-          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 shadow-inner">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">ARCHITECTURE & TECHNOLOGIES</h3>
-            <div className="flex flex-wrap gap-2">
-              <SkillPill name="Microservices" />
-              <SkillPill name="RESTful API" />
-              <SkillPill name="System Design" />
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Projects */}
-      <div>
-        <div className="flex items-center justify-between mb-4 px-2">
-          <h2 className="text-sm font-black text-slate-900 flex items-center gap-2">
-            <span className="text-teal-500">▼</span> Projects
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+            <Code2 className="h-5 w-5 text-indigo-600" /> Verified Projects
           </h2>
-          <button className="text-[10px] font-bold text-slate-500 flex items-center gap-1 hover:text-slate-800 transition-colors">
-            <RefreshCw className="h-3 w-3" /> Sync From Github
-          </button>
+          <span className="text-xs font-bold text-slate-400">{projects.length} Projects</span>
         </div>
         
-        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
-          <div className="border-b border-slate-100 pb-6">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h3 className="text-[14px] font-black text-slate-900">Campus Placement & Career Hub <span className="text-[11px] font-semibold text-slate-400 ml-2">Full Stack Developer</span></h3>
+        {projects.length === 0 ? (
+          <p className="text-xs text-slate-500 py-4">No verified projects yet. Upload project certificates or repository reports in Documents.</p>
+        ) : (
+          <div className="space-y-6">
+            {projects.map((proj) => (
+              <div key={proj.id} className="border-b border-slate-100 last:border-0 pb-6 last:pb-0">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="text-[14px] font-black text-slate-900">
+                      {proj.title}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {proj.verificationStatus === 'Verified' && <VerifiedBadge />}
+                  </div>
+                </div>
+                {proj.description && (
+                  <p className="text-[12px] font-medium text-slate-600 mb-3 leading-relaxed">
+                    {proj.description}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {proj.techStack?.map((t) => (
+                      <span key={t} className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {proj.liveUrl && (
+                      <a href={proj.liveUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:underline">
+                        <ExternalLink className="h-3 w-3" /> Live Demo
+                      </a>
+                    )}
+                    {proj.githubUrl && (
+                      <a href={proj.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:underline">
+                        <Code2 className="h-3 w-3" /> Code
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] font-bold text-slate-400">Sep 2023 - Present</span>
-                <VerifiedBadge />
-              </div>
-            </div>
-            <p className="text-[12px] font-medium text-slate-600 mb-3">
-              Built an automated AI resume evaluation system handling 500+ daily requests with 99.9% uptime and <br/> real-time feedback.
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <span className="px-2 py-1 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase">Java</span>
-                <span className="px-2 py-1 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase">Spring Boot</span>
-                <span className="px-2 py-1 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase">PostgreSQL</span>
-                <span className="px-2 py-1 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase">React</span>
-              </div>
-              <a href="#" className="flex items-center gap-1 text-[11px] font-bold text-teal-600 hover:underline">
-                <ExternalLink className="h-3 w-3" /> Live Demo
-              </a>
-            </div>
+            ))}
           </div>
-
-          <div className="border-b border-slate-100 pb-6">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h3 className="text-[14px] font-black text-slate-900">Distributed Rate Limiter Service <span className="text-[11px] font-semibold text-slate-400 ml-2">Core Backend Eng</span></h3>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] font-bold text-slate-400">Jan 2023 - May 2023</span>
-                <VerifiedBadge />
-              </div>
-            </div>
-            <p className="text-[12px] font-medium text-slate-600 mb-3">
-              Implemented sliding window token bucket rate limiting algorithm in Go (Redis Backend) with <br/> 1ms P99 latency across clusters.
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <span className="px-2 py-1 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase">Golang</span>
-                <span className="px-2 py-1 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase">Redis</span>
-                <span className="px-2 py-1 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase">gRPC</span>
-              </div>
-              <a href="#" className="flex items-center gap-1 text-[11px] font-bold text-teal-600 hover:underline">
-                <Code2 className="h-3 w-3" /> Source
-              </a>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Bottom Grid: Experience & Certifications */}
+      {/* Experience & Certifications Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
         {/* Experience */}
-        <div>
-          <div className="flex items-center justify-between mb-4 px-2">
-            <h2 className="text-sm font-black text-slate-900 flex items-center gap-2">
-              <span className="text-teal-500">▼</span> Experience & Internships
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-indigo-600" /> Work Experience
             </h2>
+            <span className="text-xs font-bold text-slate-400">{experiences.length} Positions</span>
           </div>
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-            <div className="flex items-start justify-between mb-1">
-              <h3 className="text-[14px] font-black text-slate-900">Backend Engineer Intern</h3>
-              <VerifiedBadge />
+
+          {experiences.length === 0 ? (
+            <p className="text-xs text-slate-500 py-3">No work experience or internships recorded yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {experiences.map((exp) => (
+                <div key={exp.id} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
+                  <div className="flex items-start justify-between mb-1">
+                    <h3 className="text-[13px] font-black text-slate-900">{exp.role}</h3>
+                    {exp.verificationStatus === 'Verified' && <VerifiedBadge />}
+                  </div>
+                  <p className="text-[12px] font-semibold text-slate-600">{exp.company} {exp.location ? `• ${exp.location}` : ''}</p>
+                  <p className="text-[10px] font-bold text-slate-400 mb-2">
+                    {exp.startDate ? `${exp.startDate} - ${exp.endDate || 'Present'}` : 'Recent'}
+                  </p>
+                  {exp.description && (
+                    <p className="text-[12px] text-slate-600 mb-2 leading-relaxed">{exp.description}</p>
+                  )}
+                  {exp.achievements && exp.achievements.length > 0 && (
+                    <ul className="space-y-1 text-[11px] text-slate-600">
+                      {exp.achievements.map((a: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-1.5">
+                          <span className="mt-1.5 h-1 w-1 rounded-full bg-slate-400 shrink-0" />
+                          <span>{a}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
             </div>
-            <p className="text-[12px] font-semibold text-slate-500 mb-1">Techflow Innovations, Bengaluru (Hybrid)</p>
-            <p className="text-[10px] font-bold text-slate-400 mb-4">Jan 2023 - Aug 2023 (8 Mos)</p>
-            <ul className="space-y-2">
-              <li className="flex items-start gap-2 text-[12px] font-medium text-slate-600 leading-relaxed">
-                <div className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400" />
-                Worked with core backend team migrating legacy monolith to Node.js microservices.
-              </li>
-              <li className="flex items-start gap-2 text-[12px] font-medium text-slate-600 leading-relaxed">
-                <div className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400" />
-                Reduced API response times by 30% by refactoring database indexing and Redis caching policies.
-              </li>
-              <li className="flex items-start gap-2 text-[12px] font-medium text-slate-600 leading-relaxed">
-                <div className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400" />
-                Collaborated with QA to increase test coverage from 45% to 80% via Jest.
-              </li>
-            </ul>
-          </div>
+          )}
         </div>
 
         {/* Certifications */}
-        <div>
-          <div className="flex items-center justify-between mb-4 px-2">
-            <h2 className="text-sm font-black text-slate-900 flex items-center gap-2">
-              <span className="text-teal-500">▼</span> Certifications & Honors
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Award className="h-5 w-5 text-indigo-600" /> Certifications & Honors
             </h2>
+            <span className="text-xs font-bold text-slate-400">{certifications.length} Credentials</span>
           </div>
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
-            <div className="border-b border-slate-100 pb-6">
-              <div className="flex items-start justify-between mb-1">
-                <h3 className="text-[13px] font-black text-slate-900">AWS Certified Cloud Practitioner</h3>
-                <VerifiedBadge />
-              </div>
-              <p className="text-[11px] font-medium text-slate-500">Amazon Web Services (Nov 2023)</p>
-            </div>
-            
-            <div className="border-b border-slate-100 pb-6">
-              <div className="flex items-start justify-between mb-1">
-                <h3 className="text-[13px] font-black text-slate-900">Oracle Certified Associate, Java SE 8</h3>
-                <VerifiedBadge />
-              </div>
-              <p className="text-[11px] font-medium text-slate-500">Oracle (Jan 2022)</p>
-            </div>
 
-            <div>
-              <h3 className="text-[13px] font-black text-slate-900 mb-2">Hackathons & Leadership</h3>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2 text-[11px] font-medium text-slate-600">
-                  <div className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400" />
-                  Winner at SIH (Smart India Hackathon) 2022
-                </li>
-                <li className="flex items-start gap-2 text-[11px] font-medium text-slate-600">
-                  <div className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400" />
-                  Technical Lead at Campus Developer Student Club (DSC)
-                </li>
-              </ul>
+          {certifications.length === 0 ? (
+            <p className="text-xs text-slate-500 py-3">No certifications uploaded yet. Upload certificates in Documents.</p>
+          ) : (
+            <div className="space-y-4">
+              {certifications.map((cert) => (
+                <div key={cert.id} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
+                  <div className="flex items-start justify-between mb-1">
+                    <h3 className="text-[13px] font-black text-slate-900">{cert.name}</h3>
+                    {cert.verificationStatus === 'Verified' && <VerifiedBadge />}
+                  </div>
+                  <p className="text-[11px] font-medium text-slate-500">{cert.issuer} {cert.issueDate ? `(${cert.issueDate})` : ''}</p>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
-
       </div>
     </div>
   );

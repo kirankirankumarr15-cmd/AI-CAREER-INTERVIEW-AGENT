@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY;
 
 let genAI: GoogleGenerativeAI | null = null;
 if (apiKey) {
@@ -16,8 +16,7 @@ export async function callGeminiJSON<T>(prompt: string, fallbackData: T): Promis
     return fallbackData;
   }
 
-  // List of standard Gemini models to attempt in sequence
-  const candidateModels = ['gemini-3.8-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  const candidateModels = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.8-flash'];
 
   for (const modelName of candidateModels) {
     try {
@@ -41,7 +40,7 @@ export async function callGeminiText(prompt: string, fallbackText: string): Prom
     return fallbackText;
   }
 
-  const candidateModels = ['gemini-3.8-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  const candidateModels = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-2.5-flash'];
 
   for (const modelName of candidateModels) {
     try {

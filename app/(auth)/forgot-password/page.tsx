@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import {
   isSupabaseConfigured,
@@ -12,19 +11,16 @@ import {
 } from '@/lib/auth/userStore';
 import {
   Sparkles, Mail, KeyRound, Loader2, ShieldCheck, ArrowLeft,
-  CheckCircle2, Lock, Eye, EyeOff, Building2, Award, Copy, Check,
+  CheckCircle2, Lock, Eye, EyeOff, Building2, Award,
   ShieldAlert, RefreshCw,
 } from 'lucide-react';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'success';
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
-  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
-  const [copiedOtp, setCopiedOtp] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -69,13 +65,11 @@ export default function ForgotPasswordPage() {
            }
         }
         setStatusMessage(data.message || `6-digit password reset code sent to ${email}`);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.warn('API /api/auth/send-otp failed, falling back:', err);
         code = createAndStoreOtp(email);
         setStatusMessage(`6-digit password reset code sent to ${email} (Fallback)`);
       }
-
-      setGeneratedOtp(code || null);
 
       if (isSupabaseConfigured()) {
         await supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -88,8 +82,9 @@ export default function ForgotPasswordPage() {
       setTimeout(() => {
         document.getElementById('fp-otp-0')?.focus();
       }, 100);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to send reset code.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to send reset code.';
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -140,22 +135,6 @@ export default function ForgotPasswordPage() {
     document.getElementById(`fp-otp-${lastIdx}`)?.focus();
   };
 
-  const handleAutoFillOtp = () => {
-    if (!generatedOtp) return;
-    setOtpCode(generatedOtp.split(''));
-    setErrorMessage('');
-    setTimeout(() => {
-      document.getElementById('fp-otp-5')?.focus();
-    }, 50);
-  };
-
-  const handleCopyOtp = () => {
-    if (!generatedOtp) return;
-    navigator.clipboard.writeText(generatedOtp);
-    setCopiedOtp(true);
-    setTimeout(() => setCopiedOtp(false), 2000);
-  };
-
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const fullOtp = otpCode.join('');
@@ -188,7 +167,7 @@ export default function ForgotPasswordPage() {
             return;
           }
         }
-      } catch (err: any) {
+      } catch {
         const check = verifyOtpCode(email, fullOtp);
         if (check.success) verifySuccess = true;
         else {
@@ -206,8 +185,9 @@ export default function ForgotPasswordPage() {
 
       setStatusMessage('Code verified! Please create your new password.');
       setStep('newPassword');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'OTP verification failed.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'OTP verification failed.';
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -238,8 +218,9 @@ export default function ForgotPasswordPage() {
 
       setStatusMessage('Password reset successfully!');
       setStep('success');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to update password.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update password.';
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -304,7 +285,7 @@ export default function ForgotPasswordPage() {
               {step === 'success' && 'Password Updated!'}
             </h1>
             <p className="text-xs text-slate-400">
-              {step === 'email' && 'Enter your student email and we’ll generate a verification code.'}
+              {step === 'email' && 'Enter your student email and we will generate a verification code.'}
               {step === 'otp' && `Enter the 6-digit code sent to ${email}`}
               {step === 'newPassword' && 'Choose a strong password with at least 8 characters.'}
               {step === 'success' && 'Your credentials have been securely updated.'}

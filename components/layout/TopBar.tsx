@@ -96,7 +96,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
 
   const handleLogout = async () => {
     try { await supabase.auth.signOut(); } catch {}
-    window.location.href = '/login';
+    router.push('/login');
   };
 
   const notifIcon = (type: Notification['type']) => {
@@ -158,27 +158,27 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
       {/* Right: Stats + Notifications */}
       <div className="flex items-center gap-2.5">
         {/* Streak */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-400">
-          <Flame className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-600 dark:text-amber-400">
+          <Flame className="h-3.5 w-3.5 fill-amber-500 text-amber-500 dark:fill-amber-400 dark:text-amber-400" />
           <span>1 Day</span>
         </div>
 
         {/* Readiness */}
         <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs">
-          <Award className="h-3.5 w-3.5 text-emerald-400" />
-          <span className="text-slate-300 font-medium">Ready:</span>
-          <span className="font-extrabold text-emerald-400 tabular-nums">{profile.readinessScore}%</span>
+          <Award className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span className="text-slate-600 dark:text-slate-300 font-medium">Ready:</span>
+          <span className="font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">{profile.readinessScore}%</span>
         </div>
 
         {/* Keyboard Shortcuts Button */}
         <button
           onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 text-xs font-semibold transition-all group"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-white border border-slate-200 dark:border-slate-700 hover:border-emerald-300 text-xs font-semibold transition-all group"
           title="Press '?' for Quick Key Shortcuts"
         >
           <Keyboard className="h-3.5 w-3.5 text-emerald-500 group-hover:scale-110 transition-transform" />
           <span className="font-bold text-[11px]">Shortcuts</span>
-          <span className="font-mono text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-600 border border-emerald-200">
+          <span className="font-mono text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-600/30">
             ?
           </span>
         </button>
@@ -187,7 +187,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="relative p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title="Notifications"
           >
             <Bell className="h-4 w-4" />

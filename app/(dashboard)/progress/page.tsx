@@ -1,7 +1,7 @@
 'use client';
 
 import { useProgressStore } from '@/store/useProgressStore';
-import { LineChart as LineChartIcon, Award, Flame, CheckCircle2, TrendingUp, Mic, Code2, ShieldCheck } from 'lucide-react';
+import { LineChart as LineChartIcon, Flame, TrendingUp } from 'lucide-react';
 
 export default function ProgressPage() {
   const { progress } = useProgressStore();

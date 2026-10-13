@@ -1,20 +1,58 @@
+interface SpeechRecognitionResultItem {
+  transcript: string;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  [index: number]: {
+    [index: number]: SpeechRecognitionResultItem;
+  };
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+}
+
+interface ISpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => ISpeechRecognition;
+    webkitSpeechRecognition?: new () => ISpeechRecognition;
+  }
+}
+
 export class SpeechToTextEngine {
-  private recognition: any = null;
+  private recognition: ISpeechRecognition | null = null;
   private isListening: boolean = false;
   private onResultCallback: ((text: string) => void) | null = null;
   private onErrorCallback: ((error: string) => void) | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        this.recognition = new SpeechRecognition();
+      const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognitionClass) {
+        this.recognition = new SpeechRecognitionClass();
         this.recognition.continuous = true;
         this.recognition.interimResults = true;
         this.recognition.lang = 'en-US';
 
-        this.recognition.onresult = (event: any) => {
+        this.recognition.onresult = (event: SpeechRecognitionEvent) => {
           let transcript = '';
           for (let i = event.resultIndex; i < event.results.length; i++) {
             transcript += event.results[i][0].transcript;
@@ -24,7 +62,7 @@ export class SpeechToTextEngine {
           }
         };
 
-        this.recognition.onerror = (event: any) => {
+        this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
           console.warn('Speech recognition error:', event.error);
           if (this.onErrorCallback) {
             this.onErrorCallback(event.error);
@@ -53,20 +91,23 @@ export class SpeechToTextEngine {
     try {
       this.recognition.start();
       this.isListening = true;
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn('Speech recognition start error:', e);
     }
   }
 
   public stop() {
-    if (this.recognition && this.isListening) {
-      try {
-        this.recognition.stop();
-      } catch (e) {
-        console.warn('Speech recognition stop error:', e);
-      }
+    if (!this.recognition || !this.isListening) return;
+    try {
+      this.recognition.stop();
       this.isListening = false;
+    } catch (e: unknown) {
+      console.warn('Speech recognition stop error:', e);
     }
+  }
+
+  public getActiveListeningState(): boolean {
+    return this.isListening;
   }
 }
 

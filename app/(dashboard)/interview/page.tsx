@@ -62,13 +62,13 @@ export default function InterviewSetupPage() {
       
       {/* Header */}
       <div className="text-center space-y-3 mb-10">
-        <p className="text-[11px] font-extrabold text-indigo-600 uppercase tracking-widest flex items-center justify-center gap-2">
+        <p className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest flex items-center justify-center gap-2">
           Cinematic AI Simulation • Dynamic Voice Avatar
         </p>
-        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+        <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
           Prepare for your interview
         </h1>
-        <p className="text-[13px] text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
+        <p className="text-[13px] text-slate-600 dark:text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">
           Configure your mock interview parameters. You will enter a distraction-free audio-visual simulation with dynamic follow-up questioning.
         </p>
       </div>
@@ -76,8 +76,8 @@ export default function InterviewSetupPage() {
       <div className="space-y-6">
         
         {/* 1. Target Role */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-          <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-widest mb-5">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+          <h2 className="text-[12px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-5">
             1. Select Interview Target Role
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -87,8 +87,8 @@ export default function InterviewSetupPage() {
                 onClick={() => setTargetRole(role)}
                 className={`px-4 py-2.5 rounded-xl border text-[12px] font-bold transition-all ${
                   targetRole === role
-                    ? 'bg-teal-50 border-teal-200 text-teal-800 shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                    ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-500/40 text-teal-900 dark:text-teal-200 shadow-sm'
+                    : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
                 {role}
@@ -98,30 +98,30 @@ export default function InterviewSetupPage() {
         </div>
 
         {/* 2. Choose Track */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-          <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-widest mb-5">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+          <h2 className="text-[12px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-5">
             2. Choose Interview Track
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {tracks.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setInterviewType(t.id as any)}
+                onClick={() => setInterviewType(t.id as InterviewType)}
                 className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden group ${
                   interviewType === t.id
-                    ? 'bg-teal-50 border-teal-200 shadow-sm'
-                    : 'bg-white border-slate-200 hover:border-teal-200 hover:shadow-sm'
+                    ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-500/40 shadow-sm'
+                    : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-500/40'
                 }`}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className={`text-[13px] font-black ${interviewType === t.id ? 'text-teal-900' : 'text-slate-900'}`}>
+                  <h3 className={`text-[13px] font-black ${interviewType === t.id ? 'text-teal-900 dark:text-teal-200' : 'text-slate-900 dark:text-white'}`}>
                     {t.label}
                   </h3>
-                  <span className={`text-[9px] font-extrabold uppercase tracking-widest ${interviewType === t.id ? 'text-teal-600' : 'text-slate-400'}`}>
+                  <span className={`text-[9px] font-extrabold uppercase tracking-widest ${interviewType === t.id ? 'text-teal-700 dark:text-teal-300' : 'text-slate-500 dark:text-slate-400'}`}>
                     10M • {t.questions} Qs
                   </span>
                 </div>
-                <p className={`text-[11px] font-medium leading-relaxed ${interviewType === t.id ? 'text-teal-700/80' : 'text-slate-500'}`}>
+                <p className={`text-[11px] font-medium leading-relaxed ${interviewType === t.id ? 'text-teal-800 dark:text-teal-300' : 'text-slate-600 dark:text-slate-400'}`}>
                   {t.desc}
                 </p>
               </button>
@@ -131,25 +131,25 @@ export default function InterviewSetupPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 3. Difficulty Bar */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-            <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-widest mb-5">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+            <h2 className="text-[12px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-5">
               3. Difficulty Bar
             </h2>
             <div className="space-y-3">
               {difficulties.map((d) => (
                 <button
                   key={d.id}
-                  onClick={() => setDifficulty(d.id as any)}
+                  onClick={() => setDifficulty(d.id as InterviewDifficulty)}
                   className={`w-full p-4 rounded-2xl border text-left transition-all ${
                     difficulty === d.id
-                      ? 'bg-teal-50 border-teal-200 shadow-sm'
-                      : 'bg-white border-slate-100 hover:border-teal-200 hover:bg-slate-50/50'
+                      ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-500/40 shadow-sm'
+                      : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-teal-300'
                   }`}
                 >
-                  <h3 className={`text-[13px] font-black mb-1.5 ${difficulty === d.id ? 'text-teal-900' : 'text-slate-900'}`}>
+                  <h3 className={`text-[13px] font-black mb-1.5 ${difficulty === d.id ? 'text-teal-900 dark:text-teal-200' : 'text-slate-900 dark:text-white'}`}>
                     {d.label}
                   </h3>
-                  <p className={`text-[11px] font-medium ${difficulty === d.id ? 'text-teal-700/80' : 'text-slate-500'}`}>
+                  <p className={`text-[11px] font-medium ${difficulty === d.id ? 'text-teal-800 dark:text-teal-300' : 'text-slate-600 dark:text-slate-400'}`}>
                     {d.desc}
                   </p>
                 </button>
@@ -158,25 +158,25 @@ export default function InterviewSetupPage() {
           </div>
 
           {/* 4. Interviewer Persona */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-            <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-widest mb-5">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+            <h2 className="text-[12px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-5">
               4. Interviewer Persona
             </h2>
             <div className="space-y-3">
               {personas.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => setMode(p.id as any)}
+                  onClick={() => setMode(p.id as InterviewMode)}
                   className={`w-full p-4 rounded-2xl border text-left transition-all ${
                     mode === p.id
-                      ? 'bg-teal-50 border-teal-200 shadow-sm'
-                      : 'bg-white border-slate-100 hover:border-teal-200 hover:bg-slate-50/50'
+                      ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-500/40 shadow-sm'
+                      : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-teal-300'
                   }`}
                 >
-                  <h3 className={`text-[13px] font-black mb-1.5 flex items-center gap-2 ${mode === p.id ? 'text-teal-900' : 'text-slate-900'}`}>
+                  <h3 className={`text-[13px] font-black mb-1.5 flex items-center gap-2 ${mode === p.id ? 'text-teal-900 dark:text-teal-200' : 'text-slate-900 dark:text-white'}`}>
                     <span className="text-sm">{p.icon}</span> {p.label}
                   </h3>
-                  <p className={`text-[11px] font-medium ${mode === p.id ? 'text-teal-700/80' : 'text-slate-500'}`}>
+                  <p className={`text-[11px] font-medium ${mode === p.id ? 'text-teal-800 dark:text-teal-300' : 'text-slate-600 dark:text-slate-400'}`}>
                     {p.desc}
                   </p>
                 </button>
@@ -186,10 +186,10 @@ export default function InterviewSetupPage() {
         </div>
 
         {/* Footer / CTA */}
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-6 bg-white border border-slate-200 p-6 rounded-3xl shadow-sm">
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
           <div>
-            <h4 className="text-[12px] font-black text-slate-900 mb-1">Ready to enter the Interview Room?</h4>
-            <p className="text-[11px] text-slate-500 font-medium">
+            <h4 className="text-[12px] font-black text-slate-900 dark:text-white mb-1">Ready to enter the Interview Room?</h4>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
               Estimated duration: 15 minutes • Video & microphone enabled
             </p>
           </div>

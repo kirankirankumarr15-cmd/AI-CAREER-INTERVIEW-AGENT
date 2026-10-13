@@ -8,8 +8,17 @@ import {
   ProjectItem,
   ExperienceItem,
   CertificationItem,
-  DocumentRecord
+  DocumentRecord,
+  VerificationStatus
 } from '@/types';
+import {
+  syncEntireProfileToVectorDB,
+  syncSkillsChunkToVectorDB,
+  syncProjectChunkToVectorDB,
+  syncCertificationChunkToVectorDB,
+  syncExperienceChunkToVectorDB,
+  deleteFromVectorDB
+} from '@/lib/rag/sync';
 
 const defaultProfile: StudentProfile = {
   id: '',
@@ -49,8 +58,9 @@ interface ProfileState {
   addCertification: (cert: Omit<CertificationItem, 'id'>) => Promise<void>;
   addDocument: (doc: DocumentRecord) => Promise<void>;
   updateDocumentStatus: (id: string, status: DocumentRecord['status']) => Promise<void>;
-  confirmExtractedData: (docId: string, verifiedData: any) => Promise<void>;
+  confirmExtractedData: (docId: string) => Promise<void>;
   syncWithSupabase: () => Promise<void>;
+  syncVectorKnowledgeBase: () => Promise<{ total: number; synced: number }>;
 }
 
 export const useProfileStore = create<ProfileState>()(
@@ -69,7 +79,7 @@ export const useProfileStore = create<ProfileState>()(
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const updateData: any = {};
+        const updateData: Record<string, string | number | undefined> = {};
         if (data.fullName) updateData.full_name = data.fullName;
         if (data.location) updateData.location = data.location;
         if (data.college) updateData.college = data.college;
@@ -101,30 +111,39 @@ export const useProfileStore = create<ProfileState>()(
         }).select().single();
 
         if (data && !error) {
-          set((state) => ({
-            skills: [...state.skills, {
-              id: data.id,
-              name: data.name,
-              category: data.category as any,
-              proficiency: data.proficiency as any,
-              verificationStatus: data.verification_status as any,
-            }],
-          }));
+          const newSkill: SkillItem = {
+            id: data.id,
+            name: data.name,
+            category: data.category as SkillItem['category'],
+            proficiency: data.proficiency as SkillItem['proficiency'],
+            verificationStatus: (data.verification_status || 'Unverified') as VerificationStatus,
+          };
+          const updatedSkills = [...get().skills, newSkill];
+          set({ skills: updatedSkills });
+          syncSkillsChunkToVectorDB(user.id, updatedSkills).catch(() => {});
         }
       },
 
       removeSkill: async (id) => {
         const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
         await supabase.from('skills').delete().eq('id', id);
-        set((state) => ({ skills: state.skills.filter((s) => s.id !== id) }));
+        const updatedSkills = get().skills.filter((s) => s.id !== id);
+        set({ skills: updatedSkills });
+        if (user) {
+          syncSkillsChunkToVectorDB(user.id, updatedSkills).catch(() => {});
+        }
       },
 
       updateSkillVerification: async (id, status) => {
         const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
         await supabase.from('skills').update({ verification_status: status }).eq('id', id);
-        set((state) => ({
-          skills: state.skills.map((s) => (s.id === id ? { ...s, verificationStatus: status } : s)),
-        }));
+        const updatedSkills = get().skills.map((s) => (s.id === id ? { ...s, verificationStatus: status } : s));
+        set({ skills: updatedSkills });
+        if (user) {
+          syncSkillsChunkToVectorDB(user.id, updatedSkills).catch(() => {});
+        }
       },
 
       addProject: async (project) => {
@@ -146,41 +165,52 @@ export const useProfileStore = create<ProfileState>()(
         }).select().single();
 
         if (data && !error) {
+          const newProj: ProjectItem = {
+            id: data.id,
+            title: data.title,
+            description: data.description || '',
+            techStack: data.tech_stack || [],
+            architectureSummary: data.architecture_summary || '',
+            studentContribution: data.student_contribution || '',
+            githubUrl: data.github_url,
+            liveUrl: data.live_url,
+            keyChallenges: data.key_challenges || [],
+            verificationStatus: (data.verification_status || 'Unverified') as VerificationStatus,
+          };
           set((state) => ({
-            projects: [...state.projects, {
-              id: data.id,
-              title: data.title,
-              description: data.description || '',
-              techStack: data.tech_stack || [],
-              architectureSummary: data.architecture_summary || '',
-              studentContribution: data.student_contribution || '',
-              githubUrl: data.github_url,
-              liveUrl: data.live_url,
-              keyChallenges: data.key_challenges || [],
-              verificationStatus: data.verification_status as any,
-            }],
+            projects: [...state.projects, newProj],
           }));
+          syncProjectChunkToVectorDB(user.id, newProj).catch(() => {});
         }
       },
 
       updateProject: async (id, data) => {
         const supabase = createClient();
-        const updateData: any = {};
+        const { data: { user } } = await supabase.auth.getUser();
+        const updateData: Record<string, string | string[] | undefined> = {};
         if (data.title) updateData.title = data.title;
         if (data.description) updateData.description = data.description;
         if (data.techStack) updateData.tech_stack = data.techStack;
         if (data.githubUrl) updateData.github_url = data.githubUrl;
 
         await supabase.from('projects').update(updateData).eq('id', id);
-        set((state) => ({
-          projects: state.projects.map((p) => (p.id === id ? { ...p, ...data } : p)),
-        }));
+        const updatedProjects = get().projects.map((p) => (p.id === id ? { ...p, ...data } : p));
+        set({ projects: updatedProjects });
+
+        const targetProj = updatedProjects.find((p) => p.id === id);
+        if (user && targetProj) {
+          syncProjectChunkToVectorDB(user.id, targetProj).catch(() => {});
+        }
       },
 
       removeProject: async (id) => {
         const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
         await supabase.from('projects').delete().eq('id', id);
         set((state) => ({ projects: state.projects.filter((p) => p.id !== id) }));
+        if (user) {
+          deleteFromVectorDB(user.id, 'project', id).catch(() => {});
+        }
       },
 
       addEducation: async (edu) => {
@@ -209,7 +239,7 @@ export const useProfileStore = create<ProfileState>()(
               startYear: data.start_year || 0,
               endYear: data.end_year || 0,
               cgpa: data.cgpa || 0,
-              verificationStatus: data.verification_status as any,
+              verificationStatus: (data.verification_status || 'Unverified') as VerificationStatus,
             }],
           }));
         }
@@ -234,20 +264,22 @@ export const useProfileStore = create<ProfileState>()(
         }).select().single();
 
         if (data && !error) {
+          const newExp: ExperienceItem = {
+            id: data.id,
+            company: data.company,
+            role: data.role,
+            location: data.location || '',
+            startDate: data.start_date,
+            endDate: data.end_date,
+            isCurrent: data.is_current || false,
+            description: data.description || '',
+            achievements: data.achievements || [],
+            verificationStatus: (data.verification_status || 'Unverified') as VerificationStatus,
+          };
           set((state) => ({
-            experiences: [...state.experiences, {
-              id: data.id,
-              company: data.company,
-              role: data.role,
-              location: data.location || '',
-              startDate: data.start_date,
-              endDate: data.end_date,
-              isCurrent: data.is_current || false,
-              description: data.description || '',
-              achievements: data.achievements || [],
-              verificationStatus: data.verification_status as any,
-            }],
+            experiences: [...state.experiences, newExp],
           }));
+          syncExperienceChunkToVectorDB(user.id, newExp).catch(() => {});
         }
       },
 
@@ -266,16 +298,18 @@ export const useProfileStore = create<ProfileState>()(
         }).select().single();
 
         if (data && !error) {
+          const newCert: CertificationItem = {
+            id: data.id,
+            name: data.name,
+            issuer: data.issuer,
+            issueDate: data.issue_date,
+            credentialUrl: data.credential_url,
+            verificationStatus: (data.verification_status || 'Unverified') as VerificationStatus,
+          };
           set((state) => ({
-            certifications: [...state.certifications, {
-              id: data.id,
-              name: data.name,
-              issuer: data.issuer,
-              issueDate: data.issue_date,
-              credentialUrl: data.credential_url,
-              verificationStatus: data.verification_status as any,
-            }],
+            certifications: [...state.certifications, newCert],
           }));
+          syncCertificationChunkToVectorDB(user.id, newCert).catch(() => {});
         }
       },
 
@@ -304,7 +338,7 @@ export const useProfileStore = create<ProfileState>()(
         set((state) => ({ documents: state.documents.map((d) => (d.id === id ? { ...d, status } : d)) }));
       },
 
-      confirmExtractedData: async (docId, verifiedData) => {
+      confirmExtractedData: async (docId) => {
         const supabase = createClient();
         await supabase.from('documents').update({ status: 'Confirmed' }).eq('id', docId);
         set((state) => {
@@ -322,7 +356,7 @@ export const useProfileStore = create<ProfileState>()(
           // Fetch profile
           const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
           if (profileData) {
-            set((state) => ({
+            set(() => ({
               profile: {
                 id: profileData.id,
                 email: profileData.email,
@@ -340,7 +374,7 @@ export const useProfileStore = create<ProfileState>()(
                 targetCompanies: profileData.target_companies || [],
                 preferredLocations: profileData.preferred_locations || [],
                 readinessScore: profileData.readiness_score || 0,
-                verificationStatus: profileData.verification_status as any,
+                verificationStatus: (profileData.verification_status || 'Unverified') as VerificationStatus,
               }
             }));
           }
@@ -348,19 +382,19 @@ export const useProfileStore = create<ProfileState>()(
           // Fetch skills
           const { data: skillsData } = await supabase.from('skills').select('*').eq('user_id', user.id);
           if (skillsData) {
-            set({ skills: skillsData.map(s => ({
+            set({ skills: skillsData.map((s: { id: string; name: string; category: string; proficiency: string; verification_status: string }) => ({
               id: s.id,
               name: s.name,
-              category: s.category as any,
-              proficiency: s.proficiency as any,
-              verificationStatus: s.verification_status as any
+              category: s.category as SkillItem['category'],
+              proficiency: s.proficiency as SkillItem['proficiency'],
+              verificationStatus: (s.verification_status || 'Unverified') as VerificationStatus
             }))});
           }
 
           // Fetch projects
           const { data: projectsData } = await supabase.from('projects').select('*').eq('user_id', user.id);
           if (projectsData) {
-            set({ projects: projectsData.map(p => ({
+            set({ projects: projectsData.map((p: { id: string; title: string; description: string; tech_stack: string[]; architecture_summary: string; student_contribution: string; github_url: string; live_url: string; key_challenges: string[]; verification_status: string }) => ({
               id: p.id,
               title: p.title,
               description: p.description || '',
@@ -370,14 +404,14 @@ export const useProfileStore = create<ProfileState>()(
               githubUrl: p.github_url,
               liveUrl: p.live_url,
               keyChallenges: p.key_challenges || [],
-              verificationStatus: p.verification_status as any,
+              verificationStatus: (p.verification_status || 'Unverified') as VerificationStatus,
             }))});
           }
 
           // Fetch experiences
           const { data: experiencesData } = await supabase.from('experiences').select('*').eq('user_id', user.id);
           if (experiencesData) {
-            set({ experiences: experiencesData.map(e => ({
+            set({ experiences: experiencesData.map((e: { id: string; company: string; role: string; location: string; start_date: string; end_date: string; is_current: boolean; description: string; achievements: string[]; verification_status: string }) => ({
               id: e.id,
               company: e.company,
               role: e.role,
@@ -387,14 +421,14 @@ export const useProfileStore = create<ProfileState>()(
               isCurrent: e.is_current || false,
               description: e.description || '',
               achievements: e.achievements || [],
-              verificationStatus: e.verification_status as any,
+              verificationStatus: (e.verification_status || 'Unverified') as VerificationStatus,
             }))});
           }
 
           // Fetch education
           const { data: educationData } = await supabase.from('education').select('*').eq('user_id', user.id);
           if (educationData) {
-            set({ education: educationData.map(e => ({
+            set({ education: educationData.map((e: { id: string; institution: string; degree: string; field_of_study: string; start_year: number; end_year: number; cgpa: number; verification_status: string }) => ({
               id: e.id,
               institution: e.institution,
               degree: e.degree,
@@ -402,32 +436,32 @@ export const useProfileStore = create<ProfileState>()(
               startYear: e.start_year || 0,
               endYear: e.end_year || 0,
               cgpa: e.cgpa || 0,
-              verificationStatus: e.verification_status as any,
+              verificationStatus: (e.verification_status || 'Unverified') as VerificationStatus,
             }))});
           }
 
           // Fetch certifications
           const { data: certificationsData } = await supabase.from('certifications').select('*').eq('user_id', user.id);
           if (certificationsData) {
-            set({ certifications: certificationsData.map(c => ({
+            set({ certifications: certificationsData.map((c: { id: string; name: string; issuer: string; issue_date: string; credential_url: string; verification_status: string }) => ({
               id: c.id,
               name: c.name,
               issuer: c.issuer,
               issueDate: c.issue_date,
               credentialUrl: c.credential_url,
-              verificationStatus: c.verification_status as any,
+              verificationStatus: (c.verification_status || 'Unverified') as VerificationStatus,
             }))});
           }
 
           // Fetch documents
           const { data: documentsData } = await supabase.from('documents').select('*').eq('user_id', user.id);
           if (documentsData) {
-            set({ documents: documentsData.map(d => ({
+            set({ documents: documentsData.map((d: { id: string; file_name: string; file_url: string; doc_type: string; status: string; created_at: string }) => ({
               id: d.id,
               fileName: d.file_name,
               fileUrl: d.file_url,
-              docType: d.doc_type as any,
-              status: d.status as any,
+              docType: d.doc_type as DocumentRecord['docType'],
+              status: d.status as DocumentRecord['status'],
               createdAt: d.created_at,
             }))});
           }
@@ -435,6 +469,19 @@ export const useProfileStore = create<ProfileState>()(
         } catch (error) {
           console.error("Failed to sync with Supabase:", error);
         }
+      },
+
+      syncVectorKnowledgeBase: async () => {
+        const state = get();
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { total: 0, synced: 0 };
+        return await syncEntireProfileToVectorDB(user.id, {
+          profile: state.profile,
+          skills: state.skills,
+          projects: state.projects,
+          experiences: state.experiences,
+        });
       },
     }),
     {

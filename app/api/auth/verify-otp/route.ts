@@ -27,10 +27,11 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'OTP verified successfully.',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in verify-otp route:', error);
+    const errMsg = error instanceof Error ? error.message : 'Verification failed.';
     return NextResponse.json(
-      { success: false, error: error.message || 'Verification failed.' },
+      { success: false, error: errMsg },
       { status: 500 }
     );
   }

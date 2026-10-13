@@ -33,14 +33,14 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/interview"
-            className="btn-shine px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/25 transition-all active:scale-95"
+            className="btn-shine px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/25 transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <Mic className="h-4 w-4" />
             <span>Launch Mock Interview</span>
           </Link>
           <Link
             href="/resume"
-            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-xs font-bold flex items-center gap-2 transition-colors shadow-sm"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-xs font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 shadow-sm"
           >
             <FileText className="h-4 w-4 text-indigo-400" />
             <span>Build Resume</span>

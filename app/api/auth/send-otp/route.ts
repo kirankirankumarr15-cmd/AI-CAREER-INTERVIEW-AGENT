@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
 
     // Store in server-side cache (10 min TTL)
     storeServerOtp(email, code);
+    console.log(`[AUTH OTP DISPATCH] Generated 6-digit code for ${email}: ${code}`);
 
     // Attempt live email dispatch via Nodemailer
     const emailResult = await sendOtpEmail({
@@ -33,25 +34,29 @@ export async function POST(req: NextRequest) {
         success: true,
         delivered: true,
         email,
-        message: `Verification code successfully sent to ${email}. Check your Gmail inbox (and Spam folder).`,
+        message: `Verification code successfully sent to ${email}. Check your inbox (and Spam folder).`,
       });
     } else {
-      // SMTP not configured or failed - return code for offline/fallback mode with explanation
-      return NextResponse.json({
-        success: true,
-        delivered: false,
-        email,
-        code, // provided so developer/tester is never locked out
-        reason: emailResult.error || 'Gmail credentials not configured yet.',
-        message: isEmailConfigured()
-          ? `Could not dispatch to Gmail: ${emailResult.error}. Use the temporary backup code.`
-          : `Gmail SMTP is not configured in .env.local yet. A verification code has been generated.`,
-      });
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[DEV LOG] Email dispatch failed: ${emailResult.error || 'SMTP unconfigured'}. Code for ${email} is ${code}`);
+      }
+      return NextResponse.json(
+        {
+          success: false,
+          delivered: false,
+          email,
+          error: isEmailConfigured()
+            ? `Could not dispatch verification email: ${emailResult.error}. Please retry.`
+            : `Email dispatch is not configured. Please contact the administrator.`,
+        },
+        { status: 502 }
+      );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : 'Internal server error while sending OTP.';
     console.error('Error in send-otp route:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error while sending OTP.' },
+      { success: false, error: errorMsg },
       { status: 500 }
     );
   }
