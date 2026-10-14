@@ -19,7 +19,7 @@ export default function ProgressPage() {
       {/* Header */}
       <div className="white-card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
             <LineChartIcon className="h-4 w-4" /> Progress Tracking & Interview Analytics
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900">Career Readiness Progression</h1>
@@ -33,7 +33,7 @@ export default function ProgressPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="white-card p-5 space-y-1">
           <span className="text-xs text-slate-500 font-bold block">Questions Solved</span>
-          <p className="text-3xl font-black text-indigo-600">{progress.questionsSolved}</p>
+          <p className="text-3xl font-black text-blue-600">{progress.questionsSolved}</p>
         </div>
         <div className="white-card p-5 space-y-1">
           <span className="text-xs text-slate-500 font-bold block">Mock Interviews Completed</span>

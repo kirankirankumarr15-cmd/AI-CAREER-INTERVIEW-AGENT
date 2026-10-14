@@ -17,7 +17,7 @@ export default function DashboardPage() {
       {/* Header Banner */}
       <div className="card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-[0.15em] flex items-center gap-1.5 mb-1">
+          <span className="text-[10px] font-extrabold text-blue-600 uppercase tracking-[0.15em] flex items-center gap-1.5 mb-1">
             <Sparkles className="h-3.5 w-3.5" /> Dashboard Overview
           </span>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
@@ -33,7 +33,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/interview"
-            className="btn-shine px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/25 transition-all duration-300 hover:scale-105 active:scale-95"
+            className="btn-shine px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-600/25 transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <Mic className="h-4 w-4" />
             <span>Launch Mock Interview</span>
@@ -42,7 +42,7 @@ export default function DashboardPage() {
             href="/resume"
             className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-xs font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 shadow-sm"
           >
-            <FileText className="h-4 w-4 text-indigo-400" />
+            <FileText className="h-4 w-4 text-blue-600" />
             <span>Build Resume</span>
           </Link>
         </div>

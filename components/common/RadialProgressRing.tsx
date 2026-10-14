@@ -17,7 +17,7 @@ export function RadialProgressRing({
   strokeWidth = 8,
   label,
   sublabel,
-  color = '#6366F1',
+  color = '#2563EB',
   trackColor = '#1F1F27',
   className = '',
 }: RadialProgressRingProps) {

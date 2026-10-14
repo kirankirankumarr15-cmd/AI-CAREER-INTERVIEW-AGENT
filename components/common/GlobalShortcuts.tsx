@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Keyboard, FileText, LayoutDashboard, Mic, Dumbbell,
   Briefcase, Compass, Send, FolderOpen, UserCheck, X, Sparkles, Search, ChevronRight, LineChart, BookOpen
@@ -9,38 +9,89 @@ import {
 
 export function GlobalShortcuts() {
   const router = useRouter();
+  const pathname = usePathname();
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in form inputs, textareas, editable fields
-      const target = e.target as HTMLElement;
-      if (
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.tagName === 'SELECT' ||
-          target.isContentEditable)
-      ) {
+      // 1. Esc closes shortcuts modal
+      if (e.key === 'Escape') {
+        if (showModal) {
+          e.preventDefault();
+          setShowModal(false);
+        }
         return;
       }
 
-      // Modifier key combinations (e.g. Ctrl+K)
+      // 2. Ctrl+K / Cmd+K shortcut toggles modal anywhere
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setShowModal((prev) => !prev);
         return;
       }
 
-      // Toggle modal on '?'
+      // 3. '?' toggles modal (only when not typing)
+      const target = e.target as HTMLElement | null;
+      const activeEl = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+
+      const isTyping =
+        (target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable ||
+          target.closest('.monaco-editor') ||
+          target.closest('.inputarea') ||
+          target.closest('[role="textbox"]') ||
+          target.closest('pre') ||
+          target.closest('code') ||
+          target.closest('[data-disable-shortcuts="true"]')
+        )) ||
+        (activeEl && (
+          activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.tagName === 'SELECT' ||
+          activeEl.isContentEditable ||
+          activeEl.closest('.monaco-editor') ||
+          activeEl.closest('.inputarea') ||
+          activeEl.closest('[role="textbox"]')
+        ));
+
+      if (isTyping) {
+        return;
+      }
+
       if (e.key === '?') {
         e.preventDefault();
         setShowModal((prev) => !prev);
         return;
       }
 
-      // Single key navigation
+      // 4. If modal is currently open, do not trigger single-key navigation
+      if (showModal) {
+        return;
+      }
+
+      // 5. CRITICAL: Any modifier key (Ctrl, Meta, Alt) means user is performing
+      // a system/browser action (e.g. Ctrl+C, Ctrl+A, Ctrl+D, Ctrl+P, Alt+Left).
+      // NEVER treat modifier combinations as single-key page navigation!
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+
+      // 6. CRITICAL: Never hijack keystrokes on coding, solving, or interactive test routes
+      const isCodingRoute =
+        pathname?.startsWith('/practice/solve') ||
+        pathname?.includes('/solve/') ||
+        pathname?.startsWith('/interview/room') ||
+        pathname?.startsWith('/practice/technical');
+
+      if (isCodingRoute) {
+        return;
+      }
+
+      // 7. Single key navigation for general page browsing
       const key = e.key.toLowerCase();
       switch (key) {
         case 'p':
@@ -94,7 +145,7 @@ export function GlobalShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [router]);
+  }, [router, pathname, showModal]);
 
   const shortcuts = [
     { key: 'P', label: 'User Profile & Verification', href: '/profile', icon: UserCheck, category: 'Account' },
@@ -132,18 +183,18 @@ export function GlobalShortcuts() {
           <div className="relative z-10 w-full max-w-md bg-[#0D121F] border-r border-slate-700/60 shadow-2xl h-full flex flex-col transform transition-all duration-300 ease-out animate-in slide-in-from-left">
 
             {/* Gradient Highlight Top Bar */}
-            <div className="h-1 bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400" />
+            <div className="h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400" />
 
             {/* Header */}
             <div className="p-5 border-b border-slate-800 bg-[#111827] flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300 shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+                <div className="h-10 w-10 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-300 shadow-[0_0_20px_rgba(99,102,241,0.3)]">
                   <Keyboard className="h-5 w-5" />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm text-white tracking-tight flex items-center gap-2">
                     Quick Key Navigation
-                    <span className="text-[10px] bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 px-2 py-0.5 rounded-full font-mono">
+                    <span className="text-[10px] bg-blue-500/30 border border-blue-400/40 text-blue-200 px-2 py-0.5 rounded-full font-mono">
                       Press Key
                     </span>
                   </h3>
@@ -168,7 +219,7 @@ export function GlobalShortcuts() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Type key (e.g. P) or search tabs..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-[#172033] border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium shadow-inner"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#172033] border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-medium shadow-inner"
                   autoFocus
                 />
                 {searchQuery && (
@@ -188,7 +239,7 @@ export function GlobalShortcuts() {
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
                   Press any key below when browsing
                 </span>
-                <span className="text-[10px] text-indigo-300 font-mono font-bold bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/60">
+                <span className="text-[10px] text-blue-300 font-mono font-bold bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/60">
                   P = Profile
                 </span>
               </div>
@@ -209,14 +260,14 @@ export function GlobalShortcuts() {
                           if (item.href !== '#') router.push(item.href);
                           setShowModal(false);
                         }}
-                        className="p-3.5 rounded-2xl bg-[#151D2E] border border-slate-700/60 hover:border-indigo-400/80 hover:bg-[#1C273E] cursor-pointer transition-all flex items-center justify-between group shadow-sm hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                        className="p-3.5 rounded-2xl bg-[#151D2E] border border-slate-700/60 hover:border-blue-400/80 hover:bg-[#1C273E] cursor-pointer transition-all flex items-center justify-between group shadow-sm hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-400 transition-colors">
+                          <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-blue-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-400 transition-colors">
                             <Icon className="h-4.5 w-4.5" />
                           </div>
                           <div>
-                            <span className="text-xs font-bold text-white group-hover:text-indigo-200 block transition-colors">
+                            <span className="text-xs font-bold text-white group-hover:text-blue-200 block transition-colors">
                               {item.label}
                             </span>
                             <span className="text-[10px] text-slate-400 group-hover:text-slate-300">
@@ -226,10 +277,10 @@ export function GlobalShortcuts() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <kbd className="px-2.5 py-1 rounded-lg bg-indigo-600/30 border border-indigo-400/50 text-xs font-mono font-extrabold text-indigo-200 shadow-[0_0_12px_rgba(99,102,241,0.25)] group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-300 transition-all">
+                          <kbd className="px-2.5 py-1 rounded-lg bg-blue-600/30 border border-blue-400/50 text-xs font-mono font-extrabold text-blue-200 shadow-[0_0_12px_rgba(99,102,241,0.25)] group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-300 transition-all">
                             {item.key}
                           </kbd>
-                          <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-indigo-300 transition-colors" />
+                          <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-blue-300 transition-colors" />
                         </div>
                       </div>
                     );

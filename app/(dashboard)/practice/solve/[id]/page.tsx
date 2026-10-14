@@ -1,12 +1,23 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { notFound, useRouter, useParams } from 'next/navigation';
-import Editor from '@monaco-editor/react';
+import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { useRouter, useParams } from 'next/navigation';
 import { getQuestionById, Question } from '@/lib/practice/questions';
 import { usePracticeStore } from '@/store/usePracticeStore';
-import { ArrowLeft, Play, Check, Lightbulb, BookOpen, Clock, Activity, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Play, Check, Lightbulb, BookOpen, Clock, Activity, CheckCircle2, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+
+const Editor = dynamic(() => import('@monaco-editor/react'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full flex flex-col items-center justify-center bg-[#1e293b] text-slate-400 font-mono text-xs gap-3">
+      <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <span>Loading Code Editor...</span>
+    </div>
+  ),
+});
 
 function getInitialCode(q: Question, lang: string): string {
   if (q.type === 'sql' || lang === 'sql') {
@@ -85,7 +96,32 @@ export default function SolvePage() {
   };
 
   if (!question) {
-    return notFound();
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[500px] text-center p-8 bg-[#0f172a] text-slate-200 rounded-2xl border border-slate-800">
+        <div className="h-14 w-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4">
+          <AlertCircle className="h-7 w-7" />
+        </div>
+        <h2 className="text-xl font-black text-white mb-2">Problem Not Found</h2>
+        <p className="text-slate-400 text-sm max-w-md mb-6">
+          We couldn&apos;t find a problem with identifier <code className="bg-slate-800 text-emerald-400 px-2 py-0.5 rounded font-mono font-bold text-xs">{id}</code>. It may have been relocated or renamed.
+        </p>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/practice"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Practice Hub
+          </Link>
+          <Link
+            href="/practice/dbms"
+            className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors"
+          >
+            Explore DBMS & SQL
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const handleRunCode = async () => {
@@ -120,13 +156,26 @@ export default function SolvePage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0f172a] text-slate-300 font-sans -m-6 sm:-m-8">
+    <div
+      data-disable-shortcuts="true"
+      onKeyDown={(e) => {
+        // Prevent key events from bubbling up to any global layout shortcut listeners
+        if (e.target && (e.target as HTMLElement).closest?.('.monaco-editor')) {
+          e.stopPropagation();
+        }
+      }}
+      className="flex flex-col h-[calc(100vh-64px)] bg-[#0f172a] text-slate-300 font-sans -m-6 sm:-m-8"
+    >
       {/* Top Navbar */}
       <div className="h-12 border-b border-slate-800 bg-[#1e293b] flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.back()} className="text-slate-400 hover:text-white transition-colors">
+          <Link
+            href="/practice"
+            className="text-slate-400 hover:text-white transition-colors p-1 rounded hover:bg-slate-800"
+            title="Back to Practice Hub"
+          >
             <ArrowLeft className="h-4 w-4" />
-          </button>
+          </Link>
           <div className="flex items-center gap-2">
             <span className="text-xs font-black text-slate-500">#{question.number.toString().padStart(3, '0')}</span>
             <span className="text-sm font-bold text-slate-200">{question.title}</span>
@@ -151,7 +200,7 @@ export default function SolvePage() {
           </button>
           <button 
             onClick={handleRunCode}
-            className="px-4 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
+            className="px-4 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
           >
             <Check className="h-3.5 w-3.5" />
             Submit

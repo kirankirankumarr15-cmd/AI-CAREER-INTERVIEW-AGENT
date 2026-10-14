@@ -9,18 +9,18 @@ export function RecommendedNextStep() {
   const topWeakness = progress.weakAreas[0] || 'DBMS Joins';
 
   return (
-    <div className="relative overflow-hidden rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in-up border border-indigo-500/20"
-      style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(99,102,241,0.05) 100%)' }}>
+    <div className="relative overflow-hidden rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in-up border border-blue-500/20"
+      style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.12) 0%, rgba(37,99,235,0.04) 100%)' }}>
       {/* Glow blob */}
-      <div className="absolute -top-12 -left-12 w-40 h-40 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-12 -left-12 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="flex items-start gap-3.5 relative">
-        <div className="h-11 w-11 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-amber-400 shrink-0">
+        <div className="h-11 w-11 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-amber-500 shrink-0">
           <Lightbulb className="h-5 w-5" />
         </div>
         <div>
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-700 dark:text-blue-400">
               AI Recommendation
             </span>
             <span className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1 font-mono">
@@ -30,7 +30,7 @@ export function RecommendedNextStep() {
           <h4 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
             Practice &quot;{topWeakness}&quot; for 20 minutes
           </h4>
-          <p className="text-xs text-indigo-950 dark:text-indigo-200 mt-1 max-w-lg font-medium leading-relaxed">
+          <p className="text-xs text-blue-950 dark:text-blue-200 mt-1 max-w-lg font-medium leading-relaxed">
             Focusing on this weak spot will increase your Interview Readiness from {progress.dbmsScore}% to ~75%.
           </p>
         </div>
@@ -38,7 +38,7 @@ export function RecommendedNextStep() {
 
       <Link
         href="/learn"
-        className="btn-shine px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-indigo-600/25 shrink-0 transition-all duration-300 hover:scale-105 active:scale-95"
+        className="btn-shine px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-blue-600/25 shrink-0 transition-all duration-300 hover:scale-105 active:scale-95"
       >
         <span>Start Drills</span>
         <ArrowRight className="h-4 w-4" />

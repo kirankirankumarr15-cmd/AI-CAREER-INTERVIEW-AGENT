@@ -188,8 +188,8 @@ export default function StudentSignUpPage() {
       <div className="relative z-10 w-full max-w-[440px] bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in-up my-8">
         {/* Header Section */}
         <div className="flex flex-col items-center mb-6">
-          <div className="h-12 w-12 rounded-[14px] bg-emerald-50 flex items-center justify-center mb-4 shadow-sm border border-emerald-100">
-            <GraduationCap className="h-6 w-6 text-emerald-600" />
+          <div className="h-12 w-12 rounded-[14px] bg-blue-50 flex items-center justify-center mb-4 shadow-sm border border-blue-100">
+            <GraduationCap className="h-6 w-6 text-blue-600" />
           </div>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Student Sign Up</h1>
           <p className="text-[13px] font-medium text-slate-500 mt-1">Create your academic account</p>
@@ -216,7 +216,7 @@ export default function StudentSignUpPage() {
                   onChange={(e) => setFullName(e.target.value)}
                   required
                   placeholder="Enter your full name"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold shadow-sm"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-semibold shadow-sm"
                 />
               </div>
             </div>
@@ -234,7 +234,7 @@ export default function StudentSignUpPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="name@example.com"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold shadow-sm"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-semibold shadow-sm"
                 />
               </div>
             </div>
@@ -254,7 +254,7 @@ export default function StudentSignUpPage() {
                     required
                     minLength={6}
                     placeholder="Min 6 chars"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold shadow-sm"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-semibold shadow-sm"
                   />
                 </div>
               </div>
@@ -273,7 +273,7 @@ export default function StudentSignUpPage() {
                     required
                     minLength={6}
                     placeholder="Re-enter password"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold shadow-sm"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-semibold shadow-sm"
                   />
                 </div>
               </div>
@@ -284,14 +284,14 @@ export default function StudentSignUpPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[14px] font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center disabled:opacity-70 cursor-pointer"
+                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[14px] font-bold shadow-md shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center disabled:opacity-70 cursor-pointer"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Create Account'}
               </button>
             </div>
             
             <div className="text-center mt-4">
-              <Link href="/login" className="text-[12px] font-bold text-slate-500 hover:text-emerald-600 transition-colors">
+              <Link href="/login" className="text-[12px] font-bold text-slate-500 hover:text-blue-600 transition-colors">
                 Already have an account? Log In
               </Link>
             </div>
@@ -308,8 +308,8 @@ export default function StudentSignUpPage() {
             </div>
             
             {successMsg && (
-              <div className="bg-emerald-50 text-emerald-700 text-[12px] font-semibold p-2.5 rounded-xl border border-emerald-200 text-center flex items-center justify-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <div className="bg-blue-50 text-blue-700 text-[12px] font-semibold p-2.5 rounded-xl border border-blue-200 text-center flex items-center justify-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
                 <span>{successMsg}</span>
               </div>
             )}
@@ -332,7 +332,7 @@ export default function StudentSignUpPage() {
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   required
                   placeholder="Enter 6-digit code"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[15px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-bold shadow-sm text-center tracking-[0.5em]"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[15px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-bold shadow-sm text-center tracking-[0.5em]"
                   maxLength={6}
                   autoFocus
                 />
@@ -343,7 +343,7 @@ export default function StudentSignUpPage() {
               <button
                 type="submit"
                 disabled={loading || otp.length < 6}
-                className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[14px] font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 cursor-pointer"
+                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[14px] font-bold shadow-md shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 cursor-pointer"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Verify & Continue'}
               </button>
@@ -353,7 +353,7 @@ export default function StudentSignUpPage() {
               <button 
                 type="button" 
                 onClick={() => { setIsOtpSent(false); setOtp(''); setErrorMsg(''); setSuccessMsg(''); }}
-                className="font-bold text-slate-500 hover:text-emerald-600 transition-colors"
+                className="font-bold text-slate-500 hover:text-blue-600 transition-colors"
               >
                 ← Back to Sign Up
               </button>
@@ -365,7 +365,7 @@ export default function StudentSignUpPage() {
                 className={`font-bold transition-colors flex items-center gap-1 ${
                   resendCooldown > 0
                     ? 'text-slate-400 cursor-not-allowed'
-                    : 'text-emerald-600 hover:text-emerald-700 cursor-pointer'
+                    : 'text-blue-600 hover:text-blue-700 cursor-pointer'
                 }`}
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />

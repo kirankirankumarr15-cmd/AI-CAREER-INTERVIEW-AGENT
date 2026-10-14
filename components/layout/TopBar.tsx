@@ -100,9 +100,9 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
   };
 
   const notifIcon = (type: Notification['type']) => {
-    if (type === 'success') return <CheckCircle2 className="h-4 w-4 text-emerald-400" />;
-    if (type === 'warning') return <AlertCircle className="h-4 w-4 text-amber-400" />;
-    return <Info className="h-4 w-4 text-emerald-400" />;
+    if (type === 'success') return <CheckCircle2 className="h-4 w-4 text-blue-500" />;
+    if (type === 'warning') return <AlertCircle className="h-4 w-4 text-amber-500" />;
+    return <Info className="h-4 w-4 text-blue-500" />;
   };
 
   return (
@@ -121,9 +121,9 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
         <div className="relative">
           <button
             onClick={() => setShowRoles(!showRoles)}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600 hover:border-emerald-300 hover:text-slate-900 transition-all"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600 hover:border-blue-300 hover:text-slate-900 transition-all"
           >
-            <Target className="h-3.5 w-3.5 text-emerald-500" />
+            <Target className="h-3.5 w-3.5 text-blue-600" />
             <span className="text-slate-500">Target:</span>
             <span className="text-slate-900 font-bold">{profile.targetRole}</span>
             <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${showRoles ? 'rotate-180' : ''}`} />
@@ -142,7 +142,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
                     onClick={() => { updateProfile({ targetRole: role }); setShowRoles(false); }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                       profile.targetRole === role
-                        ? 'bg-emerald-50 text-emerald-700 font-bold border border-emerald-200'
+                        ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200'
                         : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
@@ -164,21 +164,21 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
         </div>
 
         {/* Readiness */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs">
-          <Award className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+        <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-xs">
+          <Award className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
           <span className="text-slate-600 dark:text-slate-300 font-medium">Ready:</span>
-          <span className="font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">{profile.readinessScore}%</span>
+          <span className="font-extrabold text-blue-600 dark:text-blue-400 tabular-nums">{profile.readinessScore}%</span>
         </div>
 
         {/* Keyboard Shortcuts Button */}
         <button
           onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-white border border-slate-200 dark:border-slate-700 hover:border-emerald-300 text-xs font-semibold transition-all group"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-white border border-slate-200 dark:border-slate-700 hover:border-blue-300 text-xs font-semibold transition-all group"
           title="Press '?' for Quick Key Shortcuts"
         >
-          <Keyboard className="h-3.5 w-3.5 text-emerald-500 group-hover:scale-110 transition-transform" />
+          <Keyboard className="h-3.5 w-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
           <span className="font-bold text-[11px]">Shortcuts</span>
-          <span className="font-mono text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-600/30">
+          <span className="font-mono text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-600/30">
             ?
           </span>
         </button>
@@ -192,7 +192,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center justify-center">
+              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
@@ -207,7 +207,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="text-[10px] text-emerald-600 font-semibold hover:underline">
+                    <button onClick={markAllRead} className="text-[10px] text-blue-600 font-semibold hover:underline">
                       Mark all read
                     </button>
                   )}
@@ -226,7 +226,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
                       if (notif.link) { router.push(notif.link); setShowNotifications(false); }
                     }}
                     className={`p-3 border-b border-slate-100 flex gap-3 cursor-pointer transition-colors ${
-                      notif.read ? 'hover:bg-slate-50' : 'bg-emerald-50/60 hover:bg-emerald-50'
+                      notif.read ? 'hover:bg-slate-50' : 'bg-blue-50/70 hover:bg-blue-50'
                     }`}
                   >
                     <div className="shrink-0 mt-0.5">{notifIcon(notif.type)}</div>

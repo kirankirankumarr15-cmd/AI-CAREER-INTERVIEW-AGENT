@@ -98,7 +98,7 @@ export default function JobsPage() {
 
       <div className="space-y-8">
         <div className="space-y-2">
-          <p className="text-[11px] font-extrabold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+          <p className="text-[11px] font-extrabold text-blue-600 uppercase tracking-widest flex items-center gap-2">
             Semantic Job Matcher • Verified Profile Alignment
           </p>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Job Matching &amp; Skill Alignment</h2>
@@ -115,7 +115,7 @@ export default function JobsPage() {
               onClick={() => setActiveCompanyId(c.id)}
               className={`px-4 py-2.5 rounded-t-xl text-xs font-bold transition-all border-b-2 cursor-pointer ${
                 activeCompanyId === c.id
-                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                  ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
                   : 'bg-white border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
@@ -136,7 +136,7 @@ export default function JobsPage() {
           <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
             <div className="flex items-start justify-between border-b border-slate-100 pb-6 mb-6">
               <div>
-                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2 block">
+                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2 block">
                   {activeJob.company}
                 </span>
                 <h3 className="text-2xl font-black text-slate-900">{activeJob.role}</h3>
@@ -148,7 +148,7 @@ export default function JobsPage() {
               </div>
               <Link
                 href="/interview"
-                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 shrink-0"
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 shrink-0"
               >
                 Mock Prep &rarr;
               </Link>
@@ -166,7 +166,7 @@ export default function JobsPage() {
                 <h4 className="text-slate-400 font-bold uppercase tracking-wider text-[10px] mb-2">
                   Core Responsibilities
                 </h4>
-                <ul className="list-disc list-inside space-y-1.5 marker:text-indigo-500">
+                <ul className="list-disc list-inside space-y-1.5 marker:text-blue-500">
                   {activeJob.responsibilities.map((r, idx) => (
                     <li key={idx}>{r}</li>
                   ))}
@@ -177,7 +177,7 @@ export default function JobsPage() {
                 <h4 className="text-slate-400 font-bold uppercase tracking-wider text-[10px] mb-2">
                   Candidate Requirements
                 </h4>
-                <ul className="list-disc list-inside space-y-1.5 marker:text-indigo-500">
+                <ul className="list-disc list-inside space-y-1.5 marker:text-blue-500">
                   <li>Bachelor&apos;s degree in Computer Science, Software Engineering, or related technical field.</li>
                   <li>Demonstrated competence in core data structures, algorithms, and modular clean code.</li>
                   <li>Proficiency in required skills: {activeJob.requiredSkills.join(', ')}.</li>
@@ -191,7 +191,7 @@ export default function JobsPage() {
               </span>
               <Link
                 href="/resume"
-                className="px-5 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/60 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-blue-200 bg-blue-50/60 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors"
               >
                 Tailor Resume for this Role
               </Link>
@@ -204,14 +204,14 @@ export default function JobsPage() {
               <h4 className="text-[11px] font-extrabold text-slate-900 uppercase tracking-widest">
                 Profile Match Index
               </h4>
-              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">
+              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
                 {matchScore >= 80 ? 'Strong Match' : 'Action Required'}
               </span>
             </div>
 
             <div className="flex gap-5 mb-8">
-              <div className="h-16 w-16 shrink-0 rounded-2xl bg-indigo-50 border-2 border-indigo-500 flex items-center justify-center">
-                <span className="text-xl font-black text-indigo-700">{matchScore}%</span>
+              <div className="h-16 w-16 shrink-0 rounded-2xl bg-blue-50 border-2 border-blue-500 flex items-center justify-center">
+                <span className="text-xl font-black text-blue-700">{matchScore}%</span>
               </div>
               <div>
                 <h4 className="text-sm font-extrabold text-slate-900 mb-1">Job Match Score</h4>
@@ -224,17 +224,17 @@ export default function JobsPage() {
             <div className="space-y-6 flex-1">
               {/* Strong Matches */}
               <div>
-                <h5 className="text-[11px] font-bold text-emerald-700 flex items-center gap-1.5 mb-2.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Verified Matches ({strongMatches.length})
+                <h5 className="text-[11px] font-bold text-blue-700 flex items-center gap-1.5 mb-2.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" /> Verified Matches ({strongMatches.length})
                 </h5>
                 <div className="flex flex-wrap gap-2">
                   {strongMatches.length > 0 ? (
                     strongMatches.map((s) => (
                       <span
                         key={s}
-                        className="px-2 py-1 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold flex items-center gap-1"
+                        className="px-2 py-1 rounded bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-bold flex items-center gap-1"
                       >
-                        <Check className="h-3 w-3" /> {s}
+                        <Check className="h-3 w-3 text-blue-600" /> {s}
                       </span>
                     ))
                   ) : (
@@ -264,7 +264,7 @@ export default function JobsPage() {
             <div className="mt-8 pt-6 border-t border-slate-100">
               <Link
                 href="/applications"
-                className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 Track in Applications Pipeline <ArrowRight className="h-4 w-4" />
               </Link>

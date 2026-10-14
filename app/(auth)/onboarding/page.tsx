@@ -53,7 +53,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 lg:p-8 select-none font-sans relative overflow-hidden">
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="w-full max-w-3xl bg-slate-900/95 border border-slate-800/80 rounded-3xl shadow-2xl p-6 lg:p-10 space-y-8 relative z-10">
@@ -61,7 +61,7 @@ export default function OnboardingPage() {
         {/* Step Progress Header */}
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-xs">
+            <div className="h-8 w-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-xs">
               {step}/4
             </div>
             <div>
@@ -75,7 +75,7 @@ export default function OnboardingPage() {
               <div
                 key={i}
                 className={`h-2 rounded-full transition-all ${
-                  i === step ? 'w-8 bg-indigo-500' : i < step ? 'w-2 bg-emerald-500' : 'w-2 bg-slate-800'
+                  i === step ? 'w-8 bg-blue-500' : i < step ? 'w-2 bg-emerald-500' : 'w-2 bg-slate-800'
                 }`}
               />
             ))}
@@ -86,7 +86,7 @@ export default function OnboardingPage() {
         {step === 1 && (
           <div className="space-y-6 animate-fade-in-up">
             <div className="space-y-2 text-center max-w-lg mx-auto">
-              <div className="inline-flex h-12 w-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 items-center justify-center text-indigo-400 mb-2">
+              <div className="inline-flex h-12 w-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 items-center justify-center text-blue-400 mb-2">
                 <Sparkles className="h-6 w-6" />
               </div>
               <h1 className="text-2xl lg:text-3xl font-black text-white">Welcome to CareerPilot</h1>
@@ -96,7 +96,7 @@ export default function OnboardingPage() {
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-              <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
+              <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
                 <ShieldCheck className="h-4 w-4" />
                 <span>What we will personalize for you:</span>
               </div>
@@ -118,7 +118,7 @@ export default function OnboardingPage() {
 
             <button
               onClick={() => setStep(2)}
-              className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all"
+              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all"
             >
               <span>Get Started</span>
               <ArrowRight className="h-4 w-4" />
@@ -141,7 +141,7 @@ export default function OnboardingPage() {
                   onClick={() => setGoal(opt.id)}
                   className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
                     goal === opt.id
-                      ? 'bg-indigo-600/15 border-indigo-500 text-white'
+                      ? 'bg-blue-600/15 border-blue-500 text-white'
                       : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
                   }`}
                 >
@@ -149,7 +149,7 @@ export default function OnboardingPage() {
                     <div className="font-bold text-xs">{opt.label}</div>
                     <div className="text-[11px] text-slate-400 mt-0.5">{opt.desc}</div>
                   </div>
-                  {goal === opt.id && <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />}
+                  {goal === opt.id && <CheckCircle2 className="h-5 w-5 text-blue-400 shrink-0" />}
                 </button>
               ))}
             </div>
@@ -164,7 +164,7 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setStep(3)}
-                className="py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30"
+                className="py-3 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-blue-600/30"
               >
                 <span>Continue</span>
                 <ArrowRight className="h-4 w-4" />
@@ -212,7 +212,7 @@ export default function OnboardingPage() {
               <button
                 onClick={() => setStep(4)}
                 disabled={selectedRoles.length === 0}
-                className="py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 disabled:opacity-50"
+                className="py-3 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-blue-600/30 disabled:opacity-50"
               >
                 <span>Continue</span>
                 <ArrowRight className="h-4 w-4" />
@@ -231,8 +231,8 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-slate-950 border border-dashed border-indigo-500/40 text-center space-y-3">
-              <div className="h-12 w-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto">
+            <div className="p-6 rounded-2xl bg-slate-950 border border-dashed border-blue-500/40 text-center space-y-3">
+              <div className="h-12 w-12 rounded-2xl bg-blue-600/20 text-blue-400 flex items-center justify-center mx-auto">
                 <Upload className="h-6 w-6" />
               </div>
 

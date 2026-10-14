@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Code2, Database, Layers, Cpu, Network, Briefcase, Calculator, Users, MessageCircle, Terminal } from 'lucide-react';
 
 export const ALL_CATEGORIES = [
-  { id: 'dbms', label: 'DBMS & SQL', icon: Database, color: 'text-indigo-600', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200' },
+  { id: 'dbms', label: 'DBMS & SQL', icon: Database, color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
   { id: 'dsa', label: 'Data Structures & Algorithms', icon: Code2, color: 'text-violet-600', bgColor: 'bg-violet-50', borderColor: 'border-violet-200' },
   { id: 'c', label: 'C & Core Systems', icon: Terminal, color: 'text-emerald-600', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
   { id: 'java', label: 'Java & Backend', icon: Briefcase, color: 'text-orange-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
@@ -14,7 +14,7 @@ export const ALL_CATEGORIES = [
   { id: 'cn', label: 'Computer Networks', icon: Network, color: 'text-cyan-600', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-200' },
   { id: 'aptitude', label: 'Aptitude & Reasoning', icon: Calculator, color: 'text-amber-600', bgColor: 'bg-amber-50', borderColor: 'border-amber-200' },
   { id: 'hr', label: 'HR & Behavioral', icon: Users, color: 'text-rose-600', bgColor: 'bg-rose-50', borderColor: 'border-rose-200' },
-  { id: 'communication', label: 'Communication', icon: MessageCircle, color: 'text-teal-600', bgColor: 'bg-teal-50', borderColor: 'border-teal-200' },
+  { id: 'communication', label: 'Communication', icon: MessageCircle, color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
 ];
 
 export function PracticeTopNav() {

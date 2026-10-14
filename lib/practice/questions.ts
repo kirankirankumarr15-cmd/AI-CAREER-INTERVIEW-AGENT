@@ -1634,11 +1634,21 @@ export function getQuestionsByCategory(category: string): Question[] {
 }
 
 export function getQuestionById(id: string): Question | undefined {
-  return allQuestions.find(q => q.id === id);
+  if (!id) return undefined;
+  const decoded = decodeURIComponent(id).trim();
+  const lower = decoded.toLowerCase();
+  return (
+    allQuestions.find(q => q.id === decoded) ||
+    allQuestions.find(q => q.id.toLowerCase() === lower) ||
+    allQuestions.find(q => q.slug === decoded) ||
+    allQuestions.find(q => q.slug.toLowerCase() === lower)
+  );
 }
 
 export function getQuestionBySlug(slug: string): Question | undefined {
-  return allQuestions.find(q => q.slug === slug);
+  if (!slug) return undefined;
+  const decoded = decodeURIComponent(slug).trim().toLowerCase();
+  return allQuestions.find(q => q.slug.toLowerCase() === decoded || q.id.toLowerCase() === decoded);
 }
 
 export function getQuestionsByDifficulty(difficulty: Difficulty): Question[] {

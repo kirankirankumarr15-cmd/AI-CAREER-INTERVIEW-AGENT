@@ -14,8 +14,8 @@ export function TodayMissionCard() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center">
-              <Dumbbell className="h-4 w-4 text-indigo-400" />
+            <div className="h-7 w-7 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center">
+              <Dumbbell className="h-4 w-4 text-blue-600" />
             </div>
             <div>
               <h3 className="font-bold text-xs uppercase tracking-wider text-slate-900">Today&apos;s Mission</h3>
@@ -23,10 +23,10 @@ export function TodayMissionCard() {
             </div>
           </div>
           <div className="text-right">
-            <span className="text-xs font-black text-indigo-400 tabular-nums">{completed}/{total}</span>
+            <span className="text-xs font-black text-blue-600 tabular-nums">{completed}/{total}</span>
             <div className="w-16 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-blue-600 to-sky-400 rounded-full transition-all duration-500"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -40,13 +40,13 @@ export function TodayMissionCard() {
               onClick={() => toggleMissionTask(task.id)}
               className={`w-full text-left p-2.5 rounded-xl border text-xs flex items-center justify-between transition-all ${
                 task.done
-                  ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 line-through opacity-70'
-                  : 'bg-white border-slate-200 text-slate-900 hover:border-indigo-500/40 hover:bg-indigo-50 shadow-sm'
+                  ? 'bg-blue-500/10 border-blue-500/25 text-blue-700 line-through opacity-75'
+                  : 'bg-white border-slate-200 text-slate-900 hover:border-blue-500/40 hover:bg-blue-50 shadow-sm'
               }`}
             >
               <div className="flex items-center gap-2.5">
                 {task.done ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
                 ) : (
                   <Circle className="h-4 w-4 text-slate-400 shrink-0" />
                 )}
@@ -62,7 +62,7 @@ export function TodayMissionCard() {
 
       <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
         <span className="text-slate-500">Streaks boost placement rate by 2.4×</span>
-        <Link href="/practice" className="font-bold text-indigo-400 hover:text-indigo-300">
+        <Link href="/practice" className="font-bold text-blue-600 hover:text-blue-700">
           Start Workout →
         </Link>
       </div>

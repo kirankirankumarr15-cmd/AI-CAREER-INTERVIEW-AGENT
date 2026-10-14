@@ -5,6 +5,7 @@ import { getQuestionsByCategory } from '@/lib/practice/questions';
 
 const categoriesInfo: Record<string, { title: string; description: string; colorTheme: string }> = {
   dbms: { title: 'DBMS & SQL', description: 'Relational algebra, ACID, indexes, query plans, normalization, and joins.', colorTheme: 'indigo' },
+  sql: { title: 'DBMS & SQL', description: 'Relational algebra, ACID, indexes, query plans, normalization, and joins.', colorTheme: 'indigo' },
   dsa: { title: 'Data Structures & Algorithms', description: 'Arrays, Trees, Graphs, Dynamic Programming, and complexity analysis.', colorTheme: 'violet' },
   c: { title: 'C Programming & Data Structures', description: 'Pointers, memory management (malloc/free), structs, bitwise operations, and data structures in C.', colorTheme: 'emerald' },
   java: { title: 'Java & Object-Oriented DSA', description: 'Core Java, Collections framework, generics, memory model, and data structures in Java.', colorTheme: 'orange' },
@@ -27,17 +28,23 @@ interface PageProps {
 
 export default async function CategoryPracticePage({ params }: PageProps) {
   const resolvedParams = await params;
-  const categoryId = resolvedParams.category;
-  const meta = categoriesInfo[categoryId];
+  const rawCategoryId = resolvedParams.category || '';
+  const categoryId = rawCategoryId.toLowerCase();
+  const effectiveCategory = categoryId === 'sql' ? 'dbms' : categoryId;
+  const meta = categoriesInfo[effectiveCategory] || {
+    title: `${rawCategoryId} Practice`,
+    description: `Curated practice questions and interview drills for ${rawCategoryId}.`,
+    colorTheme: 'indigo',
+  };
 
-  if (!meta) {
-    notFound();
-  }
-
-  let allQuestions = getQuestionsByCategory(categoryId);
+  let allQuestions = getQuestionsByCategory(effectiveCategory);
   // If specific language arena requested (e.g., C or Java), provide DSA coding problems
-  if (allQuestions.length === 0 && (categoryId === 'c' || categoryId === 'java')) {
+  if (allQuestions.length === 0 && (effectiveCategory === 'c' || effectiveCategory === 'java')) {
     allQuestions = getQuestionsByCategory('dsa');
+  }
+  // If still empty, provide general questions
+  if (allQuestions.length === 0) {
+    allQuestions = getQuestionsByCategory('dbms');
   }
 
   return (

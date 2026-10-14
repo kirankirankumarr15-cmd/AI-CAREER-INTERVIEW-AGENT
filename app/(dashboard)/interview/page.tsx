@@ -62,7 +62,7 @@ export default function InterviewSetupPage() {
       
       {/* Header */}
       <div className="text-center space-y-3 mb-10">
-        <p className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest flex items-center justify-center gap-2">
+        <p className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center justify-center gap-2">
           Cinematic AI Simulation • Dynamic Voice Avatar
         </p>
         <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -87,7 +87,7 @@ export default function InterviewSetupPage() {
                 onClick={() => setTargetRole(role)}
                 className={`px-4 py-2.5 rounded-xl border text-[12px] font-bold transition-all ${
                   targetRole === role
-                    ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-500/40 text-teal-900 dark:text-teal-200 shadow-sm'
+                    ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-500/40 text-blue-900 dark:text-blue-200 shadow-sm'
                     : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
@@ -109,19 +109,19 @@ export default function InterviewSetupPage() {
                 onClick={() => setInterviewType(t.id as InterviewType)}
                 className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden group ${
                   interviewType === t.id
-                    ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-500/40 shadow-sm'
-                    : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-500/40'
+                    ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-500/40 shadow-sm'
+                    : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/40'
                 }`}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className={`text-[13px] font-black ${interviewType === t.id ? 'text-teal-900 dark:text-teal-200' : 'text-slate-900 dark:text-white'}`}>
+                  <h3 className={`text-[13px] font-black ${interviewType === t.id ? 'text-blue-900 dark:text-blue-200' : 'text-slate-900 dark:text-white'}`}>
                     {t.label}
                   </h3>
-                  <span className={`text-[9px] font-extrabold uppercase tracking-widest ${interviewType === t.id ? 'text-teal-700 dark:text-teal-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                  <span className={`text-[9px] font-extrabold uppercase tracking-widest ${interviewType === t.id ? 'text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}>
                     10M • {t.questions} Qs
                   </span>
                 </div>
-                <p className={`text-[11px] font-medium leading-relaxed ${interviewType === t.id ? 'text-teal-800 dark:text-teal-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                <p className={`text-[11px] font-medium leading-relaxed ${interviewType === t.id ? 'text-blue-800 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
                   {t.desc}
                 </p>
               </button>
@@ -142,14 +142,14 @@ export default function InterviewSetupPage() {
                   onClick={() => setDifficulty(d.id as InterviewDifficulty)}
                   className={`w-full p-4 rounded-2xl border text-left transition-all ${
                     difficulty === d.id
-                      ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-500/40 shadow-sm'
-                      : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-teal-300'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-500/40 shadow-sm'
+                      : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-blue-300'
                   }`}
                 >
-                  <h3 className={`text-[13px] font-black mb-1.5 ${difficulty === d.id ? 'text-teal-900 dark:text-teal-200' : 'text-slate-900 dark:text-white'}`}>
+                  <h3 className={`text-[13px] font-black mb-1.5 ${difficulty === d.id ? 'text-blue-900 dark:text-blue-200' : 'text-slate-900 dark:text-white'}`}>
                     {d.label}
                   </h3>
-                  <p className={`text-[11px] font-medium ${difficulty === d.id ? 'text-teal-800 dark:text-teal-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                  <p className={`text-[11px] font-medium ${difficulty === d.id ? 'text-blue-800 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
                     {d.desc}
                   </p>
                 </button>
@@ -169,14 +169,14 @@ export default function InterviewSetupPage() {
                   onClick={() => setMode(p.id as InterviewMode)}
                   className={`w-full p-4 rounded-2xl border text-left transition-all ${
                     mode === p.id
-                      ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-500/40 shadow-sm'
-                      : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-teal-300'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-500/40 shadow-sm'
+                      : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-blue-300'
                   }`}
                 >
-                  <h3 className={`text-[13px] font-black mb-1.5 flex items-center gap-2 ${mode === p.id ? 'text-teal-900 dark:text-teal-200' : 'text-slate-900 dark:text-white'}`}>
+                  <h3 className={`text-[13px] font-black mb-1.5 flex items-center gap-2 ${mode === p.id ? 'text-blue-900 dark:text-blue-200' : 'text-slate-900 dark:text-white'}`}>
                     <span className="text-sm">{p.icon}</span> {p.label}
                   </h3>
-                  <p className={`text-[11px] font-medium ${mode === p.id ? 'text-teal-800 dark:text-teal-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                  <p className={`text-[11px] font-medium ${mode === p.id ? 'text-blue-800 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
                     {p.desc}
                   </p>
                 </button>
@@ -195,7 +195,7 @@ export default function InterviewSetupPage() {
           </div>
           <button
             onClick={handleLaunch}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-[13px] font-bold flex items-center justify-center gap-2 shadow-md shadow-teal-700/20 transition-all active:scale-95 shrink-0"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-[13px] font-bold flex items-center justify-center gap-2 shadow-md shadow-blue-700/20 transition-all active:scale-95 shrink-0"
           >
             <Play className="h-4 w-4 fill-white" /> Start Interview
           </button>

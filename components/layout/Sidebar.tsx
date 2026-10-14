@@ -30,6 +30,7 @@ import {
 
 const navItems = [
   { label: 'Dashboard',      href: '/dashboard',    icon: LayoutDashboard, shortcut: 'D' },
+  { label: 'Ask CareerPilot', href: '/chat',         icon: Bot,             shortcut: 'K', badge: 'ChatGPT' },
   { label: 'Profile',        href: '/profile',       icon: UserCheck,       shortcut: 'P' },
   { label: 'AI Resume',      href: '/resume',        icon: FileText,        shortcut: 'R' },
   { label: 'ATS Analyzer',   href: '/resume/ats',    icon: Sparkles,        shortcut: 'T' },
@@ -102,13 +103,13 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           {/* Brand */}
           <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 border border-emerald-400/30">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-600 to-sky-400 flex items-center justify-center shadow-lg shadow-blue-500/25 border border-blue-400/30">
                 <Sparkles className="h-4.5 w-4.5 text-white" />
               </div>
               <div>
                 <h1 className="font-extrabold text-[15px] text-slate-900 tracking-tight flex items-center gap-1.5">
                   CareerPilot
-                  <span className="text-[9px] font-extrabold px-1.5 py-[2px] rounded bg-emerald-100 text-emerald-600 border border-emerald-200 tracking-wider">
+                  <span className="text-[9px] font-extrabold px-1.5 py-[2px] rounded bg-blue-100 text-blue-600 border border-blue-200 tracking-wider">
                     AI
                   </span>
                 </h1>
@@ -133,7 +134,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search tabs or key..."
-                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 transition-all font-medium"
+                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition-all font-medium"
               />
               {searchQuery ? (
                 <button
@@ -166,18 +167,18 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                     className={cn(
                       'group flex items-center justify-between px-3 py-2 rounded-xl text-[12px] font-semibold transition-all duration-150 relative border',
                       isActive
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold'
+                        ? 'bg-blue-50 text-blue-700 border-blue-200 font-bold'
                         : 'text-slate-600 border-transparent hover:text-slate-900 hover:bg-slate-100 hover:border-slate-200'
                     )}
                   >
                     {isActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-emerald-500" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-blue-600" />
                     )}
                     <div className="flex items-center gap-2.5 min-w-0">
                       <Icon
                         className={cn(
                           'h-4 w-4 shrink-0 transition-colors',
-                          isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-700'
+                          isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-700'
                         )}
                       />
                       <span className="truncate">{item.label}</span>
@@ -185,14 +186,14 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       {item.badge && (
-                        <span className="text-[8.5px] font-bold px-1.5 py-[1px] rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200 tracking-wider">
+                        <span className="text-[8.5px] font-bold px-1.5 py-[1px] rounded-full bg-blue-100 text-blue-600 border border-blue-200 tracking-wider">
                           {item.badge}
                         </span>
                       )}
                       <kbd className={cn(
                         'px-1.5 py-0.5 rounded text-[9.5px] font-mono font-extrabold border transition-colors',
                         isActive
-                          ? 'bg-emerald-600 text-white border-emerald-500'
+                          ? 'bg-blue-600 text-white border-blue-500'
                           : 'bg-slate-100 text-slate-500 border-slate-200 group-hover:border-slate-300 group-hover:text-slate-700'
                       )}>
                         {item.shortcut}
@@ -212,7 +213,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                             className={cn(
                               'block px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition-colors',
                               isSubActive
-                                ? 'text-emerald-700 bg-emerald-50'
+                                ? 'text-blue-700 bg-blue-50'
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                             )}
                           >
@@ -233,9 +234,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           {/* Ask CareerCoach AI Button */}
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('open-career-chat'))}
-            className="w-full px-3 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-teal-50 border border-teal-700 text-[11px] font-bold flex items-center gap-2 transition-all group shadow-sm"
+            className="w-full px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white border border-blue-500 text-[11px] font-bold flex items-center gap-2 transition-all group shadow-md shadow-blue-600/20"
           >
-            <Bot className="h-4 w-4 text-teal-300" />
+            <Bot className="h-4 w-4 text-blue-200" />
             <span className="flex-1 text-left">Ask CareerCoach AI</span>
           </button>
 
@@ -244,15 +245,15 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             href="https://wa.me/919999999999?text=Hello%20CareerPilot%20AI%20Support"
             target="_blank"
             rel="noopener noreferrer"
-            className="mx-2.5 mb-2 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center justify-between transition-all group"
+            className="mx-2.5 mb-2 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center justify-between transition-all group shadow-sm shadow-emerald-500/5"
           >
             <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded-md bg-emerald-500 text-white flex items-center justify-center shrink-0">
+              <div className="h-5 w-5 rounded-md bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/20">
                 <MessageCircle className="h-3 w-3 fill-white" />
               </div>
               <span className="font-bold text-[11px] text-emerald-800">WhatsApp Help</span>
             </div>
-            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500 text-white">24/7</span>
+            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-[#25D366] text-white shadow-sm">24/7</span>
           </a>
 
           {/* User Profile Footer */}
@@ -263,14 +264,14 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity"
             >
               <div className="relative shrink-0">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-emerald-600 via-emerald-500 to-cyan-400 flex items-center justify-center font-bold text-xs text-white shadow-md">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-700 via-blue-600 to-sky-400 flex items-center justify-center font-bold text-xs text-white shadow-md">
                   {initials}
                 </div>
-                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-white" />
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-blue-500 border-2 border-white" />
               </div>
               <div className="min-w-0">
                 <p className="font-bold text-[12px] text-slate-900 truncate">{profile.fullName || 'Student'}</p>
-                <p className="text-[10px] text-emerald-600 font-semibold tabular-nums">{profile.readinessScore}% Ready</p>
+                <p className="text-[10px] text-blue-600 font-bold tabular-nums">{profile.readinessScore}% Ready</p>
               </div>
             </Link>
             <button

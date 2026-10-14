@@ -66,7 +66,7 @@ export function ProblemList({ questions }: ProblemListProps) {
         <select 
           value={filterTopic} 
           onChange={(e) => setFilterTopic(e.target.value)}
-          className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-indigo-400 text-slate-700"
+          className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-blue-400 text-slate-700"
         >
           <option value="all">All Topics</option>
           {topics.map(t => <option key={t} value={t}>{t}</option>)}
@@ -75,7 +75,7 @@ export function ProblemList({ questions }: ProblemListProps) {
         <select 
           value={filterDifficulty} 
           onChange={(e) => setFilterDifficulty(e.target.value)}
-          className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-indigo-400 text-slate-700"
+          className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-blue-400 text-slate-700"
         >
           <option value="all">All Difficulties</option>
           <option value="Easy">Easy</option>
@@ -86,7 +86,7 @@ export function ProblemList({ questions }: ProblemListProps) {
         <select 
           value={filterStatus} 
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-indigo-400 text-slate-700"
+          className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-blue-400 text-slate-700"
         >
           <option value="all">All Status</option>
           <option value="unsolved">Unsolved</option>
@@ -96,7 +96,7 @@ export function ProblemList({ questions }: ProblemListProps) {
         <select 
           value={filterLanguage} 
           onChange={(e) => setFilterLanguage(e.target.value)}
-          className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-indigo-400 text-slate-700"
+          className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-blue-400 text-slate-700"
         >
           <option value="all">Languages: All</option>
           <option value="c">C (GCC)</option>
@@ -136,7 +136,7 @@ export function ProblemList({ questions }: ProblemListProps) {
               {/* Center: Details */}
               <div className="flex-1 min-w-0 flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-base font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
+                  <h3 className="text-base font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
                     {q.title}
                   </h3>
                   {q.frequencyLevel.includes('high') && (
@@ -184,16 +184,16 @@ export function ProblemList({ questions }: ProblemListProps) {
               <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-3 sm:pt-0 border-t sm:border-0 border-slate-100 mt-2 sm:mt-0">
                 <button 
                   onClick={() => toggleBookmark(q.id)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+                  className="p-2 rounded-xl text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
                 >
-                  {isBookmarked ? <BookmarkCheck className="h-5 w-5 text-indigo-500" /> : <Bookmark className="h-5 w-5" />}
+                  {isBookmarked ? <BookmarkCheck className="h-5 w-5 text-blue-500" /> : <Bookmark className="h-5 w-5" />}
                 </button>
                 <Link
                   href={`/practice/solve/${q.id}`}
                   className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm ${
                     isSolved 
                       ? 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300' 
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
                 >
                   {isSolved ? 'Solve Again' : 'Practice'}

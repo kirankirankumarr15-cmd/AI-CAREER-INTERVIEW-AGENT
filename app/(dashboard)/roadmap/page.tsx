@@ -495,8 +495,8 @@ function RoadmapContent() {
 
             {/* Role Alignment Match Score */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-sm dark:shadow-lg flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0">
-                <ShieldCheck className="h-7 w-7 text-teal-600 dark:text-teal-400" />
+              <div className="h-14 w-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                <ShieldCheck className="h-7 w-7 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-0.5">
@@ -513,8 +513,8 @@ function RoadmapContent() {
 
             {/* Remaining Estimated Hours */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-sm dark:shadow-lg flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-                <Clock className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
+              <div className="h-14 w-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                <Clock className="h-7 w-7 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-0.5">
@@ -896,7 +896,7 @@ export default function RoadmapPage() {
     <Suspense
       fallback={
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-          <Loader2 className="h-8 w-8 text-indigo-500 animate-spin" />
+          <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
           <p className="text-xs text-slate-400 font-medium">Loading career roadmap...</p>
         </div>
       }

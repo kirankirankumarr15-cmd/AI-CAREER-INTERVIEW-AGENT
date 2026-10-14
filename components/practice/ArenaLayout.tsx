@@ -23,7 +23,7 @@ export function ArenaLayout({ categoryId, categoryTitle, description, colorTheme
 
   const getThemeClasses = () => {
     switch (colorTheme) {
-      case 'indigo': return { bg: 'bg-indigo-600', text: 'text-indigo-600', lightBg: 'bg-indigo-50', border: 'border-indigo-200' };
+      case 'indigo': return { bg: 'bg-blue-600', text: 'text-blue-600', lightBg: 'bg-blue-50', border: 'border-blue-200' };
       case 'violet': return { bg: 'bg-violet-600', text: 'text-violet-600', lightBg: 'bg-violet-50', border: 'border-violet-200' };
       case 'fuchsia': return { bg: 'bg-fuchsia-600', text: 'text-fuchsia-600', lightBg: 'bg-fuchsia-50', border: 'border-fuchsia-200' };
       case 'sky': return { bg: 'bg-sky-600', text: 'text-sky-600', lightBg: 'bg-sky-50', border: 'border-sky-200' };
@@ -31,7 +31,7 @@ export function ArenaLayout({ categoryId, categoryTitle, description, colorTheme
       case 'orange': return { bg: 'bg-orange-600', text: 'text-orange-600', lightBg: 'bg-orange-50', border: 'border-orange-200' };
       case 'amber': return { bg: 'bg-amber-600', text: 'text-amber-600', lightBg: 'bg-amber-50', border: 'border-amber-200' };
       case 'rose': return { bg: 'bg-rose-600', text: 'text-rose-600', lightBg: 'bg-rose-50', border: 'border-rose-200' };
-      default: return { bg: 'bg-indigo-600', text: 'text-indigo-600', lightBg: 'bg-indigo-50', border: 'border-indigo-200' };
+      default: return { bg: 'bg-blue-600', text: 'text-blue-600', lightBg: 'bg-blue-50', border: 'border-blue-200' };
     }
   };
 
@@ -42,7 +42,7 @@ export function ArenaLayout({ categoryId, categoryTitle, description, colorTheme
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
-          <Link href="/practice" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors mb-5">
+          <Link href="/practice" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors mb-5">
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Practice Hub
           </Link>
           <div className="flex items-center gap-3 mb-2">

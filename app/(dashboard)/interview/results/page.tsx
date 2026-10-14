@@ -66,7 +66,7 @@ export default function InterviewResultsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -93,7 +93,7 @@ export default function InterviewResultsPage() {
           </p>
           <Link
             href="/interview"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-bold shadow-md shadow-indigo-600/20 transition-all active:scale-95"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-bold shadow-md shadow-blue-600/20 transition-all active:scale-95"
           >
             Start Mock Interview &rarr;
           </Link>
@@ -107,7 +107,7 @@ export default function InterviewResultsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-5">
         <div className="space-y-1">
-          <p className="text-[11px] font-extrabold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+          <p className="text-[11px] font-extrabold text-blue-600 uppercase tracking-widest flex items-center gap-2">
             Performance Diagnostic Report • AI Mock Round
           </p>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -130,8 +130,8 @@ export default function InterviewResultsPage() {
       <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-100 pb-6 mb-6 gap-6">
           <div className="flex items-center gap-6">
-            <div className="h-24 w-24 shrink-0 rounded-3xl bg-indigo-50 border-[3px] border-indigo-600 flex items-center justify-center shadow-inner">
-              <span className="text-4xl font-black text-indigo-700">{sessionScore.overall}</span>
+            <div className="h-24 w-24 shrink-0 rounded-3xl bg-blue-50 border-[3px] border-blue-600 flex items-center justify-center shadow-inner">
+              <span className="text-4xl font-black text-blue-700">{sessionScore.overall}</span>
             </div>
             <div>
               <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
@@ -163,7 +163,7 @@ export default function InterviewResultsPage() {
               <div className="text-2xl font-black text-slate-900">{m.score}%</div>
               <div className="h-1.5 rounded-full bg-slate-100 w-full overflow-hidden">
                 <div
-                  className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+                  className="h-full bg-blue-600 rounded-full transition-all duration-500"
                   style={{ width: `${m.score}%` }}
                 ></div>
               </div>
@@ -228,14 +228,14 @@ export default function InterviewResultsPage() {
       {/* AI Recommendations & Bridge to Roadmap */}
       <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-4">
         <div className="flex items-center gap-2 mb-2">
-          <Lightbulb className="h-5 w-5 text-indigo-600" />
+          <Lightbulb className="h-5 w-5 text-blue-600" />
           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
             Actionable Next Steps from CareerPilot AI
           </h3>
         </div>
         <div className="space-y-3">
           {sessionScore.recommendations.map((rec, idx) => (
-            <p key={idx} className="text-xs text-slate-600 leading-relaxed font-medium pl-4 border-l-2 border-indigo-500">
+            <p key={idx} className="text-xs text-slate-600 leading-relaxed font-medium pl-4 border-l-2 border-blue-500">
               {rec}
             </p>
           ))}
@@ -244,7 +244,7 @@ export default function InterviewResultsPage() {
         <div className="pt-4 flex flex-wrap gap-4 border-t border-slate-100">
           <Link
             href="/roadmap"
-            className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 transition-colors shadow-md shadow-indigo-600/20"
+            className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 transition-colors shadow-md shadow-blue-600/20"
           >
             Review in Live Roadmap <ArrowRight className="h-3.5 w-3.5" />
           </Link>

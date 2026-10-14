@@ -230,15 +230,15 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 lg:p-8 select-none relative overflow-hidden">
-      <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/3 w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-5xl bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 relative z-10">
 
         {/* Left Hero */}
-        <div className="lg:col-span-6 relative p-8 lg:p-12 flex flex-col justify-between overflow-hidden min-h-[380px] lg:min-h-[640px] bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950">
-          <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="lg:col-span-6 relative p-8 lg:p-12 flex flex-col justify-between overflow-hidden min-h-[380px] lg:min-h-[640px] bg-gradient-to-br from-blue-950 via-slate-900 to-slate-950">
+          <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-500 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 space-y-2">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-extrabold shadow-lg">
@@ -271,12 +271,12 @@ export default function ForgotPasswordPage() {
           <div className="space-y-1.5">
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold mb-2"
+              className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-semibold mb-2"
             >
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Login
             </Link>
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-wider">
-              <Sparkles className="h-4 w-4 text-indigo-400" /> Account Recovery
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
+              <Sparkles className="h-4 w-4 text-blue-400" /> Account Recovery
             </div>
             <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight">
               {step === 'email' && 'Reset Your Password'}
@@ -298,7 +298,7 @@ export default function ForgotPasswordPage() {
               <div key={label} className="flex-1 flex flex-col gap-1">
                 <div
                   className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx <= stepIndex ? 'bg-indigo-500' : 'bg-slate-800'
+                    idx <= stepIndex ? 'bg-blue-500' : 'bg-slate-800'
                   }`}
                 />
                 <span className="text-[10px] text-slate-400 font-semibold truncate">{label}</span>
@@ -308,8 +308,8 @@ export default function ForgotPasswordPage() {
 
           {/* Status Message */}
           {statusMessage && (
-            <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-indigo-400 shrink-0" />
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-semibold flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-blue-400 shrink-0" />
               <span>{statusMessage}</span>
             </div>
           )}
@@ -334,7 +334,7 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="alex.dev@pesitm.edu.in"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 font-medium"
                     required
                   />
                 </div>
@@ -343,7 +343,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all active:scale-95 disabled:opacity-60"
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all active:scale-95 disabled:opacity-60"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                 <span>Send Reset Code</span>
@@ -355,19 +355,19 @@ export default function ForgotPasswordPage() {
           {step === 'otp' && (
             <form onSubmit={handleVerifyOtp} className="space-y-4 text-xs">
               {/* Info — no OTP shown on screen */}
-              <div className="p-3.5 rounded-2xl bg-indigo-950/70 border border-indigo-500/40 space-y-1">
-                <div className="flex items-center gap-1.5 text-indigo-300 font-bold text-xs">
-                  <ShieldCheck className="h-4 w-4 text-indigo-400" />
+              <div className="p-3.5 rounded-2xl bg-blue-950/70 border border-blue-500/40 space-y-1">
+                <div className="flex items-center gap-1.5 text-blue-300 font-bold text-xs">
+                  <ShieldCheck className="h-4 w-4 text-blue-400" />
                   <span>Check Your Email Inbox</span>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  A 6-digit password reset code was sent to <span className="text-indigo-300 font-bold">{email}</span>. Check your Gmail inbox and spam folder.
+                  A 6-digit password reset code was sent to <span className="text-blue-300 font-bold">{email}</span>. Check your Gmail inbox and spam folder.
                 </p>
               </div>
 
               <div>
                 <label className="block text-slate-300 font-semibold mb-2 text-center">
-                  Enter 6-Digit Code for <span className="text-indigo-400 font-bold">{email}</span>
+                  Enter 6-Digit Code for <span className="text-blue-400 font-bold">{email}</span>
                 </label>
                 <div className="flex gap-2 justify-center" onPaste={handlePasteOtp}>
                   {otpCode.map((digit, index) => (
@@ -380,7 +380,7 @@ export default function ForgotPasswordPage() {
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="w-11 h-12 bg-slate-950 border border-slate-800 rounded-xl text-center text-xl font-bold font-mono text-indigo-400 focus:outline-none focus:border-indigo-500 transition-colors"
+                      className="w-11 h-12 bg-slate-950 border border-slate-800 rounded-xl text-center text-xl font-bold font-mono text-blue-400 focus:outline-none focus:border-blue-500 transition-colors"
                     />
                   ))}
                 </div>
@@ -398,9 +398,9 @@ export default function ForgotPasswordPage() {
               <div className="text-center space-y-3">
                 {timeLeft > 0 ? (
                   <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-semibold text-slate-400">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-500" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
                     <span>
-                      Resend code in <span className="text-indigo-400 font-bold">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                      Resend code in <span className="text-blue-400 font-bold">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
                     </span>
                   </div>
                 ) : (
@@ -440,7 +440,7 @@ export default function ForgotPasswordPage() {
                     value={newPassword}
                     onChange={(e) => { setNewPassword(e.target.value); setErrorMessage(''); }}
                     placeholder="Min. 8 characters"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-10 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 font-medium font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-10 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 font-medium font-mono"
                     required
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-slate-500 hover:text-slate-300">
@@ -458,7 +458,7 @@ export default function ForgotPasswordPage() {
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); setErrorMessage(''); }}
                     placeholder="Re-enter new password"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 font-medium font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 font-medium font-mono"
                     required
                   />
                 </div>
@@ -467,7 +467,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all active:scale-95"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all active:scale-95"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 <span>Save New Password</span>
@@ -489,7 +489,7 @@ export default function ForgotPasswordPage() {
               </div>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all"
+                className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all"
               >
                 <span>Proceed to Login</span>
               </Link>

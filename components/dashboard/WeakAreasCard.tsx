@@ -26,17 +26,17 @@ export function WeakAreasCard() {
           {progress.weakAreas.map((weakness, i) => (
             <div
               key={i}
-              className="group p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between hover:border-indigo-500/40 hover:bg-indigo-50 transition-all shadow-sm"
+              className="group p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between hover:border-blue-500/40 hover:bg-blue-50 transition-all shadow-sm"
             >
               <div className="flex items-center gap-3">
-                <span className="h-6 w-6 rounded-md bg-amber-500/15 text-amber-400 text-xs font-bold flex items-center justify-center border border-amber-500/25">
+                <span className="h-6 w-6 rounded-md bg-amber-500/15 text-amber-500 text-xs font-bold flex items-center justify-center border border-amber-500/25">
                   {i + 1}
                 </span>
                 <span className="text-xs font-bold text-slate-900">{weakness}</span>
               </div>
               <Link
                 href="/learn"
-                className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 Fix <ArrowRight className="h-3 w-3" />
               </Link>
@@ -47,7 +47,7 @@ export function WeakAreasCard() {
 
       <div className="mt-4 pt-3 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between">
         <span>AI converts weaknesses into 15-min drills</span>
-        <Link href="/learn" className="text-indigo-400 font-bold hover:text-indigo-300">
+        <Link href="/learn" className="text-blue-600 font-bold hover:text-blue-700">
           View Roadmap →
         </Link>
       </div>

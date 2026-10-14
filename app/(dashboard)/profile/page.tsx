@@ -54,14 +54,14 @@ export default function ProfilePage() {
       <div className="bg-[#111113] rounded-3xl p-8 pb-6 text-white shadow-xl relative overflow-hidden border border-slate-800">
         <div className="flex flex-col md:flex-row justify-between gap-6 relative z-10 mb-6">
           <div className="flex gap-6 items-start">
-            <div className="h-20 w-20 rounded-2xl bg-indigo-600/30 border-2 border-indigo-500/50 flex items-center justify-center text-2xl font-black text-indigo-300 shrink-0 shadow-inner">
+            <div className="h-20 w-20 rounded-2xl bg-blue-600/30 border-2 border-blue-500/50 flex items-center justify-center text-2xl font-black text-blue-300 shrink-0 shadow-inner">
               {initials}
             </div>
             <div className="space-y-2">
               <div>
                 <h1 className="text-2xl md:text-3xl font-black tracking-tight flex flex-wrap items-center gap-3">
                   {profile.fullName || 'Student Career Profile'}
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 tracking-widest uppercase border border-indigo-500/30">
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 tracking-widest uppercase border border-blue-500/30">
                     Target: {profile.targetRole || 'Software Engineer'}
                   </span>
                 </h1>
@@ -101,11 +101,11 @@ export default function ProfilePage() {
 
           <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
             <div className="bg-white text-slate-900 rounded-2xl p-4 flex items-center gap-4 shadow-lg w-full md:w-64">
-              <div className="h-12 w-12 rounded-full border-4 border-indigo-500 flex items-center justify-center shrink-0">
+              <div className="h-12 w-12 rounded-full border-4 border-blue-500 flex items-center justify-center shrink-0">
                 <span className="text-sm font-black text-slate-900">{profile.readinessScore || 78}%</span>
               </div>
               <div>
-                <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-0.5">OVERALL READINESS</p>
+                <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-0.5">OVERALL READINESS</p>
                 <p className="text-[10px] font-bold text-slate-500">Verified Credentials: {skills.length + projects.length}</p>
               </div>
             </div>
@@ -123,7 +123,7 @@ export default function ProfilePage() {
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-indigo-600" /> Education & Academics
+            <GraduationCap className="h-5 w-5 text-blue-600" /> Education & Academics
           </h2>
           <span className="text-xs font-bold text-slate-400">{education.length} Records</span>
         </div>
@@ -153,7 +153,7 @@ export default function ProfilePage() {
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-indigo-600" /> Skills & Competencies
+            <Sparkles className="h-5 w-5 text-blue-600" /> Skills & Competencies
           </h2>
           <span className="text-xs font-bold text-slate-400">{skills.length} Skills</span>
         </div>
@@ -210,7 +210,7 @@ export default function ProfilePage() {
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-            <Code2 className="h-5 w-5 text-indigo-600" /> Verified Projects
+            <Code2 className="h-5 w-5 text-blue-600" /> Verified Projects
           </h2>
           <span className="text-xs font-bold text-slate-400">{projects.length} Projects</span>
         </div>
@@ -246,12 +246,12 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-3">
                     {proj.liveUrl && (
-                      <a href={proj.liveUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:underline">
+                      <a href={proj.liveUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline">
                         <ExternalLink className="h-3 w-3" /> Live Demo
                       </a>
                     )}
                     {proj.githubUrl && (
-                      <a href={proj.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:underline">
+                      <a href={proj.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline">
                         <Code2 className="h-3 w-3" /> Code
                       </a>
                     )}
@@ -269,7 +269,7 @@ export default function ProfilePage() {
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-indigo-600" /> Work Experience
+              <Briefcase className="h-5 w-5 text-blue-600" /> Work Experience
             </h2>
             <span className="text-xs font-bold text-slate-400">{experiences.length} Positions</span>
           </div>
@@ -311,7 +311,7 @@ export default function ProfilePage() {
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <Award className="h-5 w-5 text-indigo-600" /> Certifications & Honors
+              <Award className="h-5 w-5 text-blue-600" /> Certifications & Honors
             </h2>
             <span className="text-xs font-bold text-slate-400">{certifications.length} Credentials</span>
           </div>
