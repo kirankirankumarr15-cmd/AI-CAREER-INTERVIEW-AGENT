@@ -18,6 +18,33 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                function isExtensionError(e) {
+                  var src = (e && (e.filename || (e.error && e.error.stack))) || '';
+                  var msg = (e && (e.message || (e.error && e.error.message))) || '';
+                  return (
+                    src.indexOf('chrome-extension://') !== -1 ||
+                    src.indexOf('moz-extension://') !== -1 ||
+                    msg.indexOf('Minified React error #299') !== -1 ||
+                    msg.indexOf('embed_script.js') !== -1
+                  );
+                }
+                window.addEventListener('error', function(event) {
+                  if (isExtensionError(event)) {
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+                    return true;
+                  }
+                }, true);
+                window.addEventListener('unhandledrejection', function(event) {
+                  if (isExtensionError(event.reason)) {
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+                    return true;
+                  }
+                }, true);
+              })();
+
+              (function() {
                 try {
                   var stored = localStorage.getItem('careerpilot-theme') || 'system';
                   var isDark = stored === 'dark' || (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
