@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useProfileStore } from '@/store/useProfileStore';
-import { supabase } from '@/lib/supabase/client';
+import { clientLogout } from '@/lib/auth/logout';
 import {
   Bell, Target, ChevronDown, Flame, Award, LogOut,
   Mic, FileText, BookOpen, CheckCircle2, AlertCircle, Info, X, Menu, Keyboard,
@@ -95,7 +95,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
   }, []);
 
   const handleLogout = async () => {
-    try { await supabase.auth.signOut(); } catch {}
+    await clientLogout();
     router.push('/login');
   };
 

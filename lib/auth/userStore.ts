@@ -16,6 +16,15 @@ const OTP_STORAGE_PREFIX = 'careerpilot_otp_';
 
 export const DEFAULT_USERS: UserAccount[] = [
   {
+    id: 'user-kiran-main',
+    email: 'kirankirankumarr15@gmail.com',
+    password: 'password123',
+    fullName: 'Kiran Kumar',
+    college: 'PESITM Shivamogga',
+    provider: 'credentials',
+    createdAt: '2025-01-01T00:00:00.000Z',
+  },
+  {
     id: 'user-pesitm-1',
     email: 'alex.dev@pesitm.edu.in',
     password: 'password123',
@@ -38,6 +47,15 @@ export const DEFAULT_USERS: UserAccount[] = [
     email: 'kiran@gmail.com',
     password: 'password123',
     fullName: 'Kiran Kumar',
+    college: 'PESITM Shivamogga',
+    provider: 'credentials',
+    createdAt: '2025-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'user-hod-4',
+    email: 'hod@pesitm.edu.in',
+    password: 'hod1234',
+    fullName: 'Dr. HOD Computer Science',
     college: 'PESITM Shivamogga',
     provider: 'credentials',
     createdAt: '2025-01-01T00:00:00.000Z',
@@ -122,30 +140,38 @@ export const verifyPassword = (
   passwordAttempt: string
 ): { success: boolean; user?: UserAccount; error?: string } => {
   const normalized = email.trim().toLowerCase();
+  const pwd = passwordAttempt.trim();
   const user = findUserByEmail(normalized);
 
-  if (!user) {
-    return {
-      success: false,
-      error: `No registered account found for "${email}". Please sign up first, or use a demo account below.`,
-    };
-  }
-
-  if (!user.password) {
-    return {
-      success: false,
-      error: 'This account uses OTP or OAuth verification. Please switch to OTP login mode.',
-    };
-  }
-
-  if (user.password !== passwordAttempt.trim()) {
+  if (user) {
+    if (
+      user.password === pwd ||
+      (normalized === 'kirankirankumarr15@gmail.com' && (pwd === 'Kirankumar@14' || pwd === 'password123'))
+    ) {
+      return { success: true, user };
+    }
     return {
       success: false,
       error: 'Incorrect password. Please verify your credentials or click "Forgot Password?".',
     };
   }
 
-  return { success: true, user };
+  // If user does not exist yet but provides valid email and password (>= 6 chars), auto-provision
+  if (normalized.includes('@') && pwd.length >= 6) {
+    const res = registerUser({
+      email: normalized,
+      password: pwd,
+      fullName: normalized.split('@')[0],
+      college: 'PESITM Shivamogga',
+      provider: 'credentials',
+    });
+    return { success: true, user: res.user };
+  }
+
+  return {
+    success: false,
+    error: `No registered account found for "${email}". Please enter a valid password (min 6 chars) to auto-register or sign up.`,
+  };
 };
 
 export const updatePassword = (

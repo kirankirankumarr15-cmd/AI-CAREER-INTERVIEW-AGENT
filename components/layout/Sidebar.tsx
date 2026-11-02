@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useProfileStore } from '@/store/useProfileStore';
-import { supabase } from '@/lib/supabase/client';
+import { clientLogout } from '@/lib/auth/logout';
 import {
   LayoutDashboard,
   Compass,
@@ -73,7 +73,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     : 'CP';
 
   const handleLogout = async () => {
-    try { await supabase.auth.signOut(); } catch {}
+    await clientLogout();
     router.push('/login');
   };
 

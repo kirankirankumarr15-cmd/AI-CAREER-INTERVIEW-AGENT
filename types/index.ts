@@ -1,23 +1,29 @@
 export type VerificationStatus = 'Verified' | 'Unverified' | 'Needs Review';
 
+export type UserRole = 'student' | 'admin';
+
 export interface StudentProfile {
   id: string;
   email: string;
   fullName: string;
+  role?: UserRole;
   phone?: string;
   location?: string;
   avatarUrl?: string;
   college?: string;
   branch?: string;
+  year?: number;
   graduationYear?: number;
   cgpa?: number;
   githubUrl?: string;
   linkedInUrl?: string;
   portfolioUrl?: string;
   targetRole: string;
+  targetRoles?: string[];
   targetCompanies: string[];
   preferredLocations: string[];
   readinessScore: number;
+  profileCompletionPercentage?: number;
   verificationStatus: VerificationStatus;
 }
 

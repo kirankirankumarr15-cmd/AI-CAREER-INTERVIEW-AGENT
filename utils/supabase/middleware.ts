@@ -6,6 +6,16 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  // Fast check: If no Supabase auth token cookie exists, skip the network roundtrip
+  const cookies = request.cookies.getAll()
+  const hasAuthToken = cookies.some(
+    (c) => c.name.startsWith('sb-') && c.name.includes('-auth-token')
+  )
+
+  if (!hasAuthToken) {
+    return supabaseResponse
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -27,8 +37,16 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // This will refresh the session if expired.
-  await supabase.auth.getUser()
+  // Refresh session with a safety timeout so network issues never block page load
+  try {
+    const userPromise = supabase.auth.getUser()
+    const timeoutPromise = new Promise<{ data: { user: null }; error: Error }>((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase auth timeout')), 2500)
+    )
+    await Promise.race([userPromise, timeoutPromise])
+  } catch {
+    // Non-blocking fallback if Supabase is temporarily unreachable
+  }
 
   return supabaseResponse
 }

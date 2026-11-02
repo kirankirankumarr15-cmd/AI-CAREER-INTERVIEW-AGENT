@@ -20,20 +20,41 @@ import {
   deleteFromVectorDB
 } from '@/lib/rag/sync';
 
+export function computeProfileCompletion(
+  profile: StudentProfile,
+  skillsCount: number = 0,
+  educationCount: number = 0,
+  projectsCount: number = 0
+): number {
+  let score = 0;
+  if (profile.fullName && profile.email) score += 20;
+  if (profile.branch || educationCount > 0) score += 20;
+  if (profile.cgpa && profile.cgpa > 0) score += 10;
+  if (profile.targetRole || (profile.targetRoles && profile.targetRoles.length > 0)) score += 20;
+  if (skillsCount >= 3) score += 20;
+  else if (skillsCount > 0) score += 10;
+  if (projectsCount > 0 || profile.githubUrl || profile.linkedInUrl) score += 10;
+  return Math.min(100, Math.max(10, score));
+}
+
 const defaultProfile: StudentProfile = {
   id: '',
   email: '',
   fullName: '',
+  role: 'student',
   phone: '',
   location: '',
-  college: '',
-  branch: '',
+  college: 'PESITM Shivamogga',
+  branch: 'Computer Science & Engineering',
+  year: 4,
   graduationYear: new Date().getFullYear(),
-  cgpa: 0,
-  targetRole: '',
-  targetCompanies: [],
-  preferredLocations: [],
-  readinessScore: 0,
+  cgpa: 8.5,
+  targetRole: 'Software Developer',
+  targetRoles: ['Software Developer'],
+  targetCompanies: ['Google', 'Microsoft', 'Infosys'],
+  preferredLocations: ['Bengaluru'],
+  readinessScore: 65,
+  profileCompletionPercentage: 60,
   verificationStatus: 'Unverified',
 };
 
@@ -75,25 +96,44 @@ export const useProfileStore = create<ProfileState>()(
       documents: [],
 
       updateProfile: async (data) => {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        // Optimistic, offline-first local update
+        set((state) => {
+          const merged = { ...state.profile, ...data };
+          const completion = computeProfileCompletion(
+            merged,
+            state.skills.length,
+            state.education.length,
+            state.projects.length
+          );
+          return {
+            profile: {
+              ...merged,
+              profileCompletionPercentage: completion,
+            },
+          };
+        });
 
-        const updateData: Record<string, string | number | undefined> = {};
-        if (data.fullName) updateData.full_name = data.fullName;
-        if (data.location) updateData.location = data.location;
-        if (data.college) updateData.college = data.college;
-        if (data.branch) updateData.branch = data.branch;
-        if (data.graduationYear) updateData.graduation_year = data.graduationYear;
-        if (data.cgpa) updateData.cgpa = data.cgpa;
-        if (data.githubUrl) updateData.github_url = data.githubUrl;
-        if (data.linkedInUrl) updateData.linkedin_url = data.linkedInUrl;
-        if (data.portfolioUrl) updateData.portfolio_url = data.portfolioUrl;
-        if (data.targetRole) updateData.target_role = data.targetRole;
+        // Background sync to Supabase if connected
+        try {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
 
-        const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
-        if (!error) {
-          set((state) => ({ profile: { ...state.profile, ...data } }));
+          const updateData: Record<string, string | number | undefined> = {};
+          if (data.fullName) updateData.full_name = data.fullName;
+          if (data.location) updateData.location = data.location;
+          if (data.college) updateData.college = data.college;
+          if (data.branch) updateData.branch = data.branch;
+          if (data.graduationYear) updateData.graduation_year = data.graduationYear;
+          if (data.cgpa) updateData.cgpa = data.cgpa;
+          if (data.githubUrl) updateData.github_url = data.githubUrl;
+          if (data.linkedInUrl) updateData.linkedin_url = data.linkedInUrl;
+          if (data.portfolioUrl) updateData.portfolio_url = data.portfolioUrl;
+          if (data.targetRole) updateData.target_role = data.targetRole;
+
+          await supabase.from('profiles').update(updateData).eq('id', user.id);
+        } catch {
+          // Graceful fallback for offline mode
         }
       },
 
