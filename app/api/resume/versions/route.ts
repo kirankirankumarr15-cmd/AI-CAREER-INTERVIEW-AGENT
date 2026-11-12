@@ -32,7 +32,7 @@ export async function GET() {
 
     // Attach latest ATS analysis for each version
     const versionIds = (versions || []).map((v) => v.id);
-    let latestAnalyses: Record<string, { score_total: number; created_at: string }> = {};
+    const latestAnalyses: Record<string, { score_total: number; created_at: string }> = {};
 
     if (versionIds.length > 0) {
       const { data: analyses } = await supabase

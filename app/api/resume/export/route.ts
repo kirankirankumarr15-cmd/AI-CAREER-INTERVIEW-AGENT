@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Resume version not found' }, { status: 404 });
     }
 
-    const content = version.content as Record<string, any>;
+    const content = (version.content || {}) as ResumeContent;
 
     // 2. Build plain text representation (what ATS sees)
     const plainText = buildATSPlainText(content, version.name);
@@ -104,7 +104,42 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function buildATSPlainText(content: Record<string, any>, title: string): string {
+interface ResumeContent {
+  profile?: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    linkedin?: string;
+    github?: string;
+    bio?: string;
+    college?: string;
+    graduationYear?: string;
+    cgpa?: number | string;
+  };
+  summary?: string;
+  skills?: Array<string | { name: string }>;
+  projects?: Array<{
+    title?: string;
+    techStack?: string[];
+    tech_stack?: string[];
+    description?: string;
+  }>;
+  education?: Array<{
+    degree?: string;
+    institution?: string;
+    year?: string;
+    cgpa?: number | string;
+  }>;
+  experiences?: Array<{
+    role?: string;
+    company?: string;
+    duration?: string;
+    description?: string;
+  }>;
+}
+
+function buildATSPlainText(content: ResumeContent, _title: string): string {
   const profile = content.profile || {};
   const skills = content.skills || [];
   const projects = content.projects || [];
@@ -132,14 +167,14 @@ function buildATSPlainText(content: Record<string, any>, title: string): string 
   // Technical Skills
   if (skills.length > 0) {
     text += `TECHNICAL SKILLS\n`;
-    const skillNames = skills.map((s: any) => (typeof s === 'string' ? s : s.name));
+    const skillNames = skills.map((s) => (typeof s === 'string' ? s : s.name));
     text += `${skillNames.join(', ')}\n\n`;
   }
 
   // Work Experience
   if (experiences.length > 0) {
     text += `WORK EXPERIENCE\n`;
-    experiences.forEach((exp: any) => {
+    experiences.forEach((exp) => {
       text += `${exp.role || 'Role'} - ${exp.company || 'Company'} (${exp.duration || '2024'})\n`;
       if (exp.description) text += `• ${exp.description}\n`;
       text += `\n`;
@@ -149,7 +184,7 @@ function buildATSPlainText(content: Record<string, any>, title: string): string 
   // Technical Projects
   if (projects.length > 0) {
     text += `TECHNICAL PROJECTS\n`;
-    projects.forEach((proj: any) => {
+    projects.forEach((proj) => {
       const tech = (proj.techStack || proj.tech_stack || []).join(', ');
       text += `${proj.title || 'Project'} | Technologies: ${tech || 'Software Engineering'}\n`;
       if (proj.description) text += `• ${proj.description}\n`;
@@ -161,7 +196,7 @@ function buildATSPlainText(content: Record<string, any>, title: string): string 
   if (education.length > 0 || profile.college) {
     text += `EDUCATION\n`;
     if (education.length > 0) {
-      education.forEach((edu: any) => {
+      education.forEach((edu) => {
         text += `${edu.degree || 'B.Tech / B.E.'} - ${edu.institution || profile.college || 'University'} (${edu.year || profile.graduationYear || '2025'})\n`;
         if (edu.cgpa) text += `• CGPA: ${edu.cgpa}/10.0\n`;
       });

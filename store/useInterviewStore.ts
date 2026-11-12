@@ -10,6 +10,8 @@ interface InterviewState {
   difficulty: InterviewDifficulty;
   mode: InterviewMode;
   companyName: string;
+  technicalSubject?: string;
+  durationMinutes?: number;
   currentQuestionIndex: number;
   questions: InterviewQuestionItem[];
   isAiSpeaking: boolean;
@@ -35,6 +37,8 @@ interface InterviewState {
     difficulty: InterviewDifficulty;
     mode: InterviewMode;
     companyName?: string;
+    technicalSubject?: string;
+    durationMinutes?: number;
   }) => void;
   setQuestions: (questions: InterviewQuestionItem[]) => void;
   nextQuestion: () => void;
@@ -69,6 +73,8 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
       difficulty: config.difficulty,
       mode: config.mode,
       companyName: config.companyName || '',
+      technicalSubject: config.technicalSubject,
+      durationMinutes: config.durationMinutes || 15,
       currentQuestionIndex: 0,
       questions: [],
       transcript: '',

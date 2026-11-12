@@ -25,7 +25,8 @@ import {
   Search,
   Route,
   Settings,
-  Bot
+  Bot,
+  Users,
 } from 'lucide-react';
 
 const navItems = [
@@ -34,20 +35,24 @@ const navItems = [
   { label: 'Profile',        href: '/profile',       icon: UserCheck,       shortcut: 'P' },
   { label: 'AI Resume',      href: '/resume',        icon: FileText,        shortcut: 'R' },
   { label: 'ATS Analyzer',   href: '/resume/ats',    icon: Sparkles,        shortcut: 'T' },
-  { label: 'Mock Interview', href: '/interview',     icon: Mic,             shortcut: 'I', badge: 'AI Voice',
+  {
+    label: 'Mock Interview', href: '/interview',     icon: Mic,             shortcut: 'I', badge: 'AI Voice',
     subItems: [
       { label: 'Setup Room',      href: '/interview' },
+      { label: 'Group Discussion', href: '/interview/gd' },
       { label: 'Latest Results',  href: '/interview/results' },
     ]
   },
+  { label: 'Group Discussion', href: '/interview/gd', icon: Users,           shortcut: 'U', badge: 'AI Bots' },
+  { label: 'Career Audit',   href: '/career',        icon: Compass,         shortcut: 'C', badge: 'Radar' },
   { label: 'Job Matching',   href: '/jobs',          icon: Briefcase,       shortcut: 'J' },
-  { label: 'Career Track',   href: '/career',        icon: Compass,         shortcut: 'C' },
   { label: 'Applications',   href: '/applications',  icon: Send,            shortcut: 'A' },
   { label: 'Documents',      href: '/documents',     icon: FolderOpen,      shortcut: 'O' },
   { label: 'Progress',       href: '/progress',      icon: LineChart,       shortcut: 'G' },
   { label: 'Learn Roadmap',  href: '/learn',         icon: BookOpen,        shortcut: 'L' },
   { label: 'Roadmap Agent',  href: '/roadmap',       icon: Route,           shortcut: 'M', badge: 'Live AI' },
-  { label: 'Practice Hub',   href: '/practice',      icon: Dumbbell,        shortcut: 'X',
+  {
+    label: 'Practice Hub',   href: '/practice',      icon: Dumbbell,        shortcut: 'X',
     subItems: [
       { label: 'Categories',      href: '/practice' },
       { label: 'Technical & SQL', href: '/practice/technical' },
@@ -239,22 +244,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             <Bot className="h-4 w-4 text-blue-200" />
             <span className="flex-1 text-left">Ask CareerCoach AI</span>
           </button>
-
-          {/* WhatsApp Support Banner */}
-          <a
-            href="https://wa.me/919999999999?text=Hello%20CareerPilot%20AI%20Support"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mx-2.5 mb-2 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center justify-between transition-all group shadow-sm shadow-emerald-500/5"
-          >
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded-md bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/20">
-                <MessageCircle className="h-3 w-3 fill-white" />
-              </div>
-              <span className="font-bold text-[11px] text-emerald-800">WhatsApp Help</span>
-            </div>
-            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-[#25D366] text-white shadow-sm">24/7</span>
-          </a>
 
           {/* User Profile Footer */}
           <div className="p-2.5 mx-2.5 mb-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">

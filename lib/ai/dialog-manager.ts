@@ -13,6 +13,7 @@
  */
 
 import { callGeminiJSON } from './gemini';
+import { generatePrismJSON } from './claude';
 import type { StudentProfile, ProjectItem, InterviewType, InterviewDifficulty, InterviewMode } from '@/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -223,7 +224,14 @@ Return ONLY valid JSON matching this schema exactly:
 
   const fallback = buildFallback(input, isLastTwoTurns, isRambling, offTopicCount);
 
-  return callGeminiJSON<TurnOutput>(prompt, fallback);
+  try {
+    return await generatePrismJSON<TurnOutput>({
+      systemPrompt: 'You are the PRISM Interactive Interviewer Dialog Engine.',
+      userPrompt: prompt,
+    });
+  } catch {
+    return callGeminiJSON<TurnOutput>(prompt, fallback);
+  }
 }
 
 /**
@@ -287,7 +295,14 @@ Return ONLY valid JSON:
     isInterviewComplete: false,
   };
 
-  return callGeminiJSON<TurnOutput>(prompt, fallback);
+  try {
+    return await generatePrismJSON<TurnOutput>({
+      systemPrompt: 'You are the PRISM Interactive Interviewer Dialog Engine.',
+      userPrompt: prompt,
+    });
+  } catch {
+    return callGeminiJSON<TurnOutput>(prompt, fallback);
+  }
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────

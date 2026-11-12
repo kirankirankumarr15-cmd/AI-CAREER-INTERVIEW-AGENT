@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const dsaTopics = ['Arrays', 'Strings', 'Linked Lists', 'Trees', 'Graphs', 'Dynamic Programming', 'Sorting & Searching', 'Hash Tables'];
 const difficulties = ['Easy', 'Medium', 'Hard'];
 
-let newQuestions = [];
+const newQuestions = [];
 
 // Generate DSA problems
 for (let i = 0; i < 50; i++) {

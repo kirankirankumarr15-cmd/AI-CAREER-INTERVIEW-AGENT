@@ -19,12 +19,15 @@ import {
   Volume2,
   VolumeX,
   AlertCircle,
+  AlertTriangle,
+  Shield,
 } from 'lucide-react';
 
 interface ConversationEntry {
   role: 'ai' | 'user';
   text: string;
   questionId?: string;
+  category?: string;
 }
 
 export default function InterviewRoomPage() {
@@ -32,16 +35,26 @@ export default function InterviewRoomPage() {
   const { profile, projects } = useProfileStore();
   const { updateScores } = useProgressStore();
   const {
-    targetRole, interviewType, difficulty, mode, companyName,
-    setAiSpeaking, setListening, setProcessing,
-    isAiSpeaking, isListening, isProcessing,
+    targetRole,
+    interviewType,
+    difficulty,
+    mode,
+    companyName,
+    technicalSubject,
+    durationMinutes = 15,
+    setAiSpeaking,
+    setListening,
+    setProcessing,
+    isAiSpeaking,
+    isListening,
+    isProcessing,
     resetInterview,
   } = useInterviewStore();
 
-  // ─── Session state ──────────────────────────────────────────────────────────
+  // ─── Session State ──────────────────────────────────────────────────────────
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [turnIndex, setTurnIndex] = useState(0);
-  const [totalTurns] = useState(6);
+  const totalTurns = durationMinutes === 10 ? 4 : durationMinutes === 20 ? 8 : 6;
   const [lastQuestionId, setLastQuestionId] = useState<string | null>(null);
   const [lastQuestion, setLastQuestion] = useState('');
   const [lastQuestionCategory, setLastQuestionCategory] = useState('Introduction');
@@ -49,11 +62,13 @@ export default function InterviewRoomPage() {
   const [isFinishing, setIsFinishing] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  // ─── UI state ────────────────────────────────────────────────────────────────
-  const [timerSeconds, setTimerSeconds] = useState(0);
+  // ─── Server-Authoritative Timer (Resumes on refresh) ─────────────────────────
+  const totalDurationSeconds = durationMinutes * 60;
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(totalDurationSeconds);
+
+  // ─── Media State (Webcam OFF by default and optional) ───────────────────────
+  const [cameraEnabled, setCameraEnabled] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [cameraBlocked, setCameraBlocked] = useState(false);
-  const [cameraBypassed, setCameraBypassed] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [typedAnswer, setTypedAnswer] = useState('');
   const [liveTranscript, setLiveTranscript] = useState('');
@@ -63,28 +78,12 @@ export default function InterviewRoomPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // ─── Auto-scroll chat ────────────────────────────────────────────────────────
+  // Auto-scroll chat to latest message
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversationHistory, isProcessing]);
 
-  // ─── Request camera / mic permissions ───────────────────────────────────────
-  const requestPermissions = useCallback(() => {
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setCameraBlocked(true);
-      return;
-    }
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((s) => {
-        setStream(s);
-        setCameraBlocked(false);
-        if (videoRef.current) videoRef.current.srcObject = s;
-      })
-      .catch(() => setCameraBlocked(true));
-  }, []);
-
-  // ─── Speak via TTS ───────────────────────────────────────────────────────────
+  // ─── Speak via TTS with auto-stop on interruption ───────────────────────────
   const speakMessage = useCallback(
     (text: string) => {
       if (isMuted) return;
@@ -97,12 +96,12 @@ export default function InterviewRoomPage() {
     [isMuted, setAiSpeaking]
   );
 
-  // ─── Silence nudge: if student hasn't submitted in 30s, nudge ───────────────
+  // ─── Silence Nudge: gentle reminder after 30 seconds of quiet ───────────────
   const scheduleSilenceNudge = useCallback(() => {
     if (silenceTimer) clearTimeout(silenceTimer);
     const t = setTimeout(() => {
       if (!isProcessing && !isComplete) {
-        const nudgeText = "I'm here — take your time and answer when ready.";
+        const nudgeText = "Take your time. You can speak your thoughts aloud or type them in the box.";
         setConversationHistory((prev) => [...prev, { role: 'ai', text: nudgeText }]);
         speakMessage(nudgeText);
       }
@@ -110,13 +109,37 @@ export default function InterviewRoomPage() {
     setSilenceTimer(t);
   }, [silenceTimer, isProcessing, isComplete, speakMessage]);
 
-  // ─── Start interview session ─────────────────────────────────────────────────
+  // ─── Server-Authoritative Timer & Session Initialisation ─────────────────────
   useEffect(() => {
     let cancelled = false;
-    requestPermissions();
 
+    // 1. Authoritative Timer Initialisation from localStorage or new timestamp
+    const timerStorageKey = `prism_interview_timer_${targetRole}_${durationMinutes}`;
+    let startTime = Date.now();
+    try {
+      const stored = localStorage.getItem(timerStorageKey);
+      if (stored) {
+        startTime = parseInt(stored, 10);
+      } else {
+        localStorage.setItem(timerStorageKey, startTime.toString());
+      }
+    } catch {
+      startTime = Date.now();
+    }
+
+    const timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.max(0, totalDurationSeconds - elapsed);
+      setSecondsRemaining(remaining);
+
+      if (remaining === 0 && !isComplete && !isFinishing) {
+        clearInterval(timerInterval);
+        handleAutoSubmitOnTimeOut();
+      }
+    }, 1000);
+
+    // 2. Start Interview Session API
     const startSession = async () => {
-      if (!profile?.id) return;
       setProcessing(true);
       setSessionError(null);
 
@@ -125,8 +148,8 @@ export default function InterviewRoomPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            targetRole: targetRole || profile.targetRole || 'Software Engineer',
-            interviewType,
+            targetRole: targetRole || profile.targetRole || 'Software Developer (SDE)',
+            interviewType: interviewType === 'Resume-based' ? 'Project' : interviewType,
             difficulty,
             mode,
             companyName: companyName || undefined,
@@ -134,18 +157,18 @@ export default function InterviewRoomPage() {
             isFirstTimerMode: false,
             sessionMode: 'solo',
             profile: {
-              id:         profile.id,
-              fullName:   profile.fullName,
-              cgpa:       profile.cgpa,
-              college:    profile.college,
-              branch:     profile.branch,
+              id: profile.id || 'student-demo',
+              fullName: profile.fullName || 'Student',
+              cgpa: profile.cgpa,
+              college: profile.college || 'PESITM Shivamogga',
+              branch: profile.branch || 'Computer Science & Engineering',
               targetRole: profile.targetRole,
             },
             projects: (projects ?? []).slice(0, 3).map((p) => ({
-              id:          p.id,
-              title:       p.title,
+              id: p.id,
+              title: p.title,
               description: p.description,
-              techStack:   p.techStack,
+              techStack: p.techStack,
               verificationStatus: p.verificationStatus,
             })),
           }),
@@ -153,7 +176,7 @@ export default function InterviewRoomPage() {
 
         if (!res.ok) {
           const err = await res.json();
-          if (!cancelled) setSessionError(err.error || 'Failed to start interview.');
+          if (!cancelled) setSessionError(err.error || 'Failed to initialize session.');
           return;
         }
 
@@ -165,24 +188,23 @@ export default function InterviewRoomPage() {
         setLastQuestionCategory(data.greeting.category);
 
         setConversationHistory([
-          { role: 'ai', text: data.greeting.questionText },
+          { role: 'ai', text: data.greeting.questionText, category: data.greeting.category },
         ]);
         speakMessage(data.greeting.questionText);
         scheduleSilenceNudge();
       } catch (err) {
         console.error('[InterviewRoom] Start error:', err);
-        if (!cancelled) setSessionError('Network error starting interview. Please try again.');
+        if (!cancelled) setSessionError('Network error initializing interview simulation. Please try again.');
       } finally {
         if (!cancelled) setProcessing(false);
       }
     };
 
     startSession();
-    const interval = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      clearInterval(timerInterval);
       if (silenceTimer) clearTimeout(silenceTimer);
       ttsEngine.stop();
       sttEngine.stop();
@@ -190,23 +212,52 @@ export default function InterviewRoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── Cleanup media on unmount ────────────────────────────────────────────────
+  // ─── Webcam Optional Toggle (Client-side only, never uploaded) ──────────────
+  const toggleCamera = async () => {
+    if (cameraEnabled) {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        setStream(null);
+      }
+      setCameraEnabled(false);
+    } else {
+      try {
+        if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+          const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          setStream(media);
+          setCameraEnabled(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = media;
+          }
+        }
+      } catch (err) {
+        console.warn('Camera access denied or unavailable:', err);
+        alert('Camera access was not granted. The interview will proceed seamlessly in audio/text mode.');
+        setCameraEnabled(false);
+      }
+    }
+  };
+
+  // Cleanup camera stream on unmount
   useEffect(() => {
     return () => {
-      if (stream) stream.getTracks().forEach((t) => t.stop());
+      if (stream) stream.getTracks().forEach((track) => track.stop());
     };
   }, [stream]);
 
-  // ─── Toggle microphone ────────────────────────────────────────────────────────
+  // ─── Toggle Microphone / Voice STT with live captions ───────────────────────
   const toggleMic = () => {
     if (isListening) {
       sttEngine.stop();
       setListening(false);
     } else {
       if (!sttEngine.isSupported()) {
-        alert('Speech-to-text is not supported in this browser. Please type your answer.');
+        alert('Web Speech API speech-to-text is not supported in this browser. Please type your responses.');
         return;
       }
+      // Stop AI voice immediately if student starts speaking
+      ttsEngine.stop();
+      setAiSpeaking(false);
       setLiveTranscript('');
       sttEngine.start(
         (text) => {
@@ -219,33 +270,78 @@ export default function InterviewRoomPage() {
     }
   };
 
-  // ─── End interview early ──────────────────────────────────────────────────────
-  const handleEnd = async () => {
+  // Interruption handler when typing begins
+  const handleTypedInputChange = (val: string) => {
+    setTypedAnswer(val);
+    if (isAiSpeaking) {
+      ttsEngine.stop();
+      setAiSpeaking(false);
+    }
+  };
+
+  // ─── Finalise Interview via /api/interview/finish ───────────────────────────
+  const finishInterviewSession = async (history: ConversationEntry[]) => {
+    setIsComplete(true);
+    setIsFinishing(true);
     ttsEngine.stop();
     sttEngine.stop();
     if (stream) stream.getTracks().forEach((t) => t.stop());
 
-    if (sessionId && !isComplete) {
-      // Mark as abandoned
-      try {
-        await fetch('/api/interview/finish', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId }),
-        });
-      } catch { /* best effort */ }
+    try {
+      const finishRes = await fetch('/api/interview/finish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionId || 'session-local',
+          transcript: history,
+        }),
+      });
+
+      if (finishRes.ok) {
+        const finishData = await finishRes.json();
+        const report = finishData.report;
+
+        if (report?.overallScore) {
+          updateScores({ readinessScore: report.overallScore });
+        }
+
+        if (typeof window !== 'undefined' && report) {
+          sessionStorage.setItem('interview_report', JSON.stringify({ sessionId, report }));
+          // Clear timer
+          localStorage.removeItem(`prism_interview_timer_${targetRole}_${durationMinutes}`);
+        }
+      }
+    } catch (err) {
+      console.error('[InterviewRoom] Finish error:', err);
     }
 
-    resetInterview();
-    router.push('/interview');
+    setTimeout(() => {
+      router.push('/interview/results');
+    }, 2000);
   };
 
-  // ─── Submit answer and get next question ─────────────────────────────────────
+  const handleAutoSubmitOnTimeOut = () => {
+    const finalAnswer = typedAnswer || liveTranscript || '(Time expired during thought formulation)';
+    const updatedHistory: ConversationEntry[] = [
+      ...conversationHistory,
+      { role: 'user', text: finalAnswer },
+    ];
+    setConversationHistory(updatedHistory);
+    finishInterviewSession(updatedHistory);
+  };
+
+  const handleEnd = () => {
+    if (confirm('Are you sure you want to conclude this interview session? Your answers will be evaluated.')) {
+      finishInterviewSession(conversationHistory);
+    }
+  };
+
+  // ─── Submit Answer and Trigger Next Turn ────────────────────────────────────
   const handleSubmitAnswer = async () => {
     if (silenceTimer) clearTimeout(silenceTimer);
 
     const finalAnswer = (typedAnswer || liveTranscript || '').trim();
-    if (!finalAnswer || !sessionId) return;
+    if (!finalAnswer) return;
 
     setProcessing(true);
     ttsEngine.stop();
@@ -254,45 +350,54 @@ export default function InterviewRoomPage() {
       setListening(false);
     }
 
-    // Add user answer to chat
-    setConversationHistory((prev) => [
-      ...prev,
+    const updatedHistory: ConversationEntry[] = [
+      ...conversationHistory,
       { role: 'user', text: finalAnswer },
-    ]);
+    ];
+    setConversationHistory(updatedHistory);
     setTypedAnswer('');
     setLiveTranscript('');
+
+    const nextTurnIndex = turnIndex + 1;
+    const isLastTurn = nextTurnIndex >= totalTurns;
+
+    if (isLastTurn) {
+      // Reached turn budget -> finalize session
+      finishInterviewSession(updatedHistory);
+      return;
+    }
 
     try {
       const res = await fetch('/api/interview/turn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId,
+          sessionId: sessionId || 'session-local',
           turnIndex,
           totalTurns,
-          studentAnswer:        finalAnswer,
+          studentAnswer: finalAnswer,
           lastQuestion,
           lastQuestionCategory,
           lastQuestionId,
-          interviewType,
+          interviewType: interviewType === 'Resume-based' ? 'Project' : interviewType,
           difficulty,
           mode,
-          targetRole: targetRole || profile.targetRole || 'Software Engineer',
+          targetRole: targetRole || profile.targetRole || 'Software Developer (SDE)',
           companyName: companyName || undefined,
           isFirstTimerMode: false,
           profile: {
-            id:         profile.id,
-            fullName:   profile.fullName,
-            cgpa:       profile.cgpa,
-            college:    profile.college,
-            branch:     profile.branch,
+            id: profile.id || 'student-demo',
+            fullName: profile.fullName || 'Student',
+            cgpa: profile.cgpa,
+            college: profile.college || 'PESITM Shivamogga',
+            branch: profile.branch || 'Computer Science & Engineering',
             targetRole: profile.targetRole,
           },
           projects: (projects ?? []).slice(0, 3).map((p) => ({
-            id:          p.id,
-            title:       p.title,
+            id: p.id,
+            title: p.title,
             description: p.description,
-            techStack:   p.techStack,
+            techStack: p.techStack,
             verificationStatus: p.verificationStatus,
           })),
         }),
@@ -301,6 +406,7 @@ export default function InterviewRoomPage() {
       if (!res.ok) {
         const err = await res.json();
         setSessionError(err.error || 'Failed to process answer.');
+        setProcessing(false);
         return;
       }
 
@@ -311,72 +417,51 @@ export default function InterviewRoomPage() {
 
       const next = data.next;
 
-      // Show next question
       setConversationHistory((prev) => [
         ...prev,
-        { role: 'ai', text: next.questionText, questionId: next.questionId },
+        { role: 'ai', text: next.questionText, questionId: next.questionId, category: next.category },
       ]);
-      setTurnIndex((t) => t + 1);
+      setTurnIndex(nextTurnIndex);
       setLastQuestion(next.questionText);
       setLastQuestionCategory(next.category);
       setLastQuestionId(next.questionId ?? null);
       speakMessage(next.questionText);
 
       if (next.isInterviewComplete) {
-        setIsComplete(true);
-        setIsFinishing(true);
-
-        // Finish the session
-        const finishRes = await fetch('/api/interview/finish', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId }),
-        });
-
-        if (finishRes.ok) {
-          const finishData = await finishRes.json();
-          const report = finishData.report;
-
-          // Update readiness in progress store (real computed score)
-          if (report?.overallScore) {
-            updateScores({ readinessScore: report.overallScore });
-          }
-
-          // Store report for results page
-          if (typeof window !== 'undefined' && report) {
-            sessionStorage.setItem('interview_report', JSON.stringify({ sessionId, report }));
-          }
-        }
-
-        setTimeout(() => {
-          router.push('/interview/results');
-        }, 3000);
+        finishInterviewSession(updatedHistory);
       } else {
         scheduleSilenceNudge();
       }
     } catch (err) {
       console.error('[InterviewRoom] Turn error:', err);
-      setSessionError('Network error. Please try again.');
+      setSessionError('Network error connecting to interview intelligence. Please submit again.');
     } finally {
       setProcessing(false);
-      setIsFinishing(false);
     }
   };
 
-  const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
-  const secs = (timerSeconds % 60).toString().padStart(2, '0');
+  // Timer format (MM:SS)
+  const timerMins = Math.floor(secondsRemaining / 60).toString().padStart(2, '0');
+  const timerSecs = (secondsRemaining % 60).toString().padStart(2, '0');
+  const isUrgentTimer = secondsRemaining <= 30;
+  const isWarningTimer = secondsRemaining <= 120 && secondsRemaining > 30;
 
   return (
     <div className="fixed inset-0 z-[100] bg-[#070b19] font-sans flex flex-col text-slate-300">
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      {/* ── Top Bar ──────────────────────────────────────────────────────────── */}
       <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 shrink-0 bg-[#070b19]">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-blue-900/60 flex items-center justify-center border border-blue-500/20">
             <span className="text-white font-bold text-xs">🤖</span>
           </div>
           <div>
-            <h1 className="text-white text-[13px] font-bold leading-tight">
+            <h1 className="text-white text-[13px] font-bold leading-tight flex items-center gap-2">
               {targetRole || 'Technical'} Mock Interview
+              {technicalSubject && (
+                <span className="px-2 py-0.2 rounded text-[10px] font-semibold bg-blue-950 text-blue-300 border border-blue-800">
+                  {technicalSubject}
+                </span>
+              )}
             </h1>
             <p className="text-[10px] text-slate-400">
               {interviewType} Track • {difficulty} • Turn {turnIndex + 1}/{totalTurns}
@@ -385,14 +470,32 @@ export default function InterviewRoomPage() {
         </div>
 
         <div className="flex items-center gap-4 text-[11px] font-bold">
-          <div className="flex items-center gap-2 bg-[#2a131a] border border-[#3f1520] text-[#ff4c4c] px-3 py-1 rounded-full">
-            <div className="w-1.5 h-1.5 bg-[#ff4c4c] rounded-full animate-pulse" />
-            LIVE
-          </div>
-          <div className="flex items-center gap-1.5 text-slate-300 bg-[#161b2a] px-3 py-1 rounded-full border border-white/5">
+          {/* Warning Banner if remaining time is low */}
+          {isWarningTimer && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300 text-[10px] animate-pulse">
+              <AlertTriangle className="h-3 w-3" /> Under 2 min remaining
+            </div>
+          )}
+          {isUrgentTimer && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/90 border border-red-500/60 text-red-300 text-[10px] animate-pulse">
+              <AlertTriangle className="h-3 w-3" /> Final 30 seconds
+            </div>
+          )}
+
+          {/* Server-authoritative Countdown Timer */}
+          <div
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full border transition-colors ${
+              isUrgentTimer
+                ? 'bg-red-950/80 border-red-500/60 text-red-300 animate-pulse'
+                : isWarningTimer
+                ? 'bg-amber-950/80 border-amber-500/40 text-amber-300'
+                : 'bg-[#161b2a] border-white/5 text-slate-300'
+            }`}
+          >
             <Clock className="h-3.5 w-3.5 opacity-70" />
-            <span>{mins}:{secs}</span>
+            <span className="font-mono">{timerMins}:{timerSecs}</span>
           </div>
+
           <button
             onClick={() => setIsMuted(!isMuted)}
             className="text-slate-400 hover:text-white transition-colors"
@@ -401,40 +504,37 @@ export default function InterviewRoomPage() {
           >
             {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
+
           <button
             onClick={handleEnd}
-            className="bg-[#e11d48] hover:bg-[#be123c] text-white px-4 py-1 rounded-lg transition-colors cursor-pointer"
+            className="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-1 rounded-lg transition-colors cursor-pointer text-xs font-bold"
             aria-label="End interview"
           >
-            End
+            Conclude Round
           </button>
         </div>
       </div>
 
-      {/* ── Main Content ───────────────────────────────────────────────────── */}
+      {/* ── Main Screen ──────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left: Chat */}
+        {/* Left Pane: Conversation Stream & Inputs */}
         <div className="flex-1 flex flex-col p-6 relative">
-
-          {/* Session error banner */}
           {sessionError && (
             <div className="mb-4 flex items-center gap-2 bg-red-900/30 border border-red-500/30 text-red-300 text-xs px-4 py-3 rounded-xl">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{sessionError}</span>
-              <button
-                className="ml-auto text-red-400 hover:text-white"
-                onClick={() => setSessionError(null)}
-              >
+              <button className="ml-auto text-red-400 hover:text-white" onClick={() => setSessionError(null)}>
                 ✕
               </button>
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto pr-4 space-y-6">
+          {/* Transcript Scroll Area */}
+          <div className="flex-1 overflow-y-auto pr-4 space-y-5">
             {conversationHistory.map((item, idx) => (
               <div
                 key={idx}
-                className={`flex items-start gap-4 max-w-4xl ${
+                className={`flex items-start gap-3.5 max-w-4xl ${
                   item.role === 'user' ? 'ml-auto flex-row-reverse' : ''
                 }`}
               >
@@ -462,27 +562,27 @@ export default function InterviewRoomPage() {
             {isProcessing && (
               <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold animate-pulse">
                 <Sparkles className="h-4 w-4" />
-                {isFinishing ? 'Compiling your evaluation report...' : 'Generating next question...'}
+                {isFinishing ? 'Generating 4-metric diagnostic report & model answers...' : 'Synthesizing adaptive follow-up...'}
               </div>
             )}
 
             {isComplete && !isFinishing && (
               <div className="text-center text-slate-400 text-xs animate-pulse">
-                Interview complete. Redirecting to your results...
+                Interview completed. Preparing diagnostic evaluation...
               </div>
             )}
 
             <div ref={chatBottomRef} />
           </div>
 
-          {/* Input area */}
+          {/* Response Controls (Voice + Typing Fallback) */}
           {!isComplete && (
-            <div className="mt-4 shrink-0 space-y-3">
+            <div className="mt-4 shrink-0 space-y-2.5">
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={typedAnswer || liveTranscript}
-                  onChange={(e) => setTypedAnswer(e.target.value)}
+                  onChange={(e) => handleTypedInputChange(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -491,47 +591,53 @@ export default function InterviewRoomPage() {
                   }}
                   placeholder={
                     isListening
-                      ? 'Listening... speak now or type here'
-                      : 'Type your answer or use the microphone...'
+                      ? 'Listening via Web Speech API... Speak or type directly here'
+                      : 'Type your answer here or click Mic to speak...'
                   }
-                  disabled={isProcessing || !sessionId}
+                  disabled={isProcessing}
                   className="flex-1 bg-[#121629] border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
-                  aria-label="Your answer"
+                  aria-label="Your response"
                 />
+
                 <button
                   onClick={toggleMic}
-                  disabled={isProcessing || !sessionId}
+                  disabled={isProcessing}
                   className={`flex items-center gap-1.5 px-3.5 py-3 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
                     isListening
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
                       : 'bg-[#121629] border border-white/10 text-slate-300 hover:bg-[#1a2035]'
                   }`}
-                  title={isListening ? 'Stop listening' : 'Start microphone'}
+                  title={isListening ? 'Stop listening' : 'Start microphone speech input'}
                   aria-label={isListening ? 'Stop microphone' : 'Start microphone'}
                 >
                   {isListening ? <Mic className="h-4 w-4 text-white" /> : <MicOff className="h-4 w-4 text-slate-400" />}
-                  {isListening ? 'Listening' : 'Mic'}
+                  <span>{isListening ? 'Listening...' : 'Voice'}</span>
                 </button>
+
                 <button
                   onClick={handleSubmitAnswer}
-                  disabled={isProcessing || (!typedAnswer.trim() && !liveTranscript.trim()) || !sessionId}
+                  disabled={isProcessing || (!typedAnswer.trim() && !liveTranscript.trim())}
                   className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-blue-600/20"
-                  aria-label="Submit your answer"
+                  aria-label="Submit answer"
                 >
-                  <Send className="h-3.5 w-3.5" /> Submit Answer
+                  <Send className="h-3.5 w-3.5" /> Submit
                 </button>
               </div>
+
               <div className="flex justify-between items-center text-[11px] text-slate-500">
-                <span>{lastQuestionCategory ? `Category: ${lastQuestionCategory}` : 'Interview Active'}</span>
-                <span>Press Enter or click Submit when finished</span>
+                <span className="flex items-center gap-1">
+                  <Shield className="h-3 w-3 text-slate-400" />
+                  No mid-session scores shown • Evaluated objectively after round
+                </span>
+                <span>Press Enter or click Submit</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Right: Avatar + Camera */}
+        {/* Right Pane: AI Avatar & Optional Webcam */}
         <div className="w-[320px] lg:w-[380px] bg-[#050814] border-l border-white/5 flex flex-col shrink-0">
-          {/* AI Avatar */}
+          {/* Avatar Area */}
           <div className="flex-1 flex flex-col items-center justify-center border-b border-white/5 relative overflow-hidden p-6">
             <div
               className={`w-32 h-32 rounded-full bg-gradient-to-tr from-blue-600 via-blue-500 to-blue-400 blur-[30px] opacity-60 ${
@@ -546,88 +652,67 @@ export default function InterviewRoomPage() {
               >
                 Ava
               </div>
-              <h3 className="mt-6 text-xs font-black tracking-[0.2em] uppercase text-white">
-                AVA • AI INTERVIEWER
+              <h3 className="mt-5 text-xs font-black tracking-[0.2em] uppercase text-white">
+                AVA • PRISM INTERVIEWER
               </h3>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span
-                  className={`text-[10px] font-bold lowercase tracking-widest ${
-                    isAiSpeaking ? 'text-blue-400' : 'text-slate-500'
-                  }`}
-                >
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span className={`text-[10px] font-bold lowercase tracking-wider ${isAiSpeaking ? 'text-blue-400' : 'text-slate-500'}`}>
                   {isAiSpeaking
                     ? 'Speaking...'
                     : isProcessing
                     ? 'Thinking...'
                     : isListening
-                    ? 'Listening to you...'
-                    : 'Ready'}
+                    ? 'Listening...'
+                    : 'Awaiting your answer'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* User Camera */}
+          {/* User Video Box (OFF BY DEFAULT & OPTIONAL) */}
           <div className="h-[280px] p-6 flex flex-col">
-            <div className="flex-1 rounded-2xl bg-[#0f1423] border border-white/10 overflow-hidden relative shadow-inner">
-              {stream && !cameraBlocked ? (
+            <div className="flex-1 rounded-2xl bg-[#0f1423] border border-white/10 overflow-hidden relative shadow-inner flex flex-col items-center justify-center">
+              {cameraEnabled && stream ? (
                 <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 gap-2">
-                  <VideoOff className="h-8 w-8 text-slate-600" />
-                  <span className="text-[10px] uppercase font-bold tracking-wider">
-                    {cameraBypassed ? 'Audio & Text Mode' : 'Camera Off'}
-                  </span>
+                <div className="text-center p-4 space-y-2">
+                  <div className="w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center mx-auto text-slate-400">
+                    <VideoOff className="h-5 w-5" />
+                  </div>
+                  <p className="text-[11px] font-bold text-slate-400">Webcam OFF (Default)</p>
+                  <p className="text-[10px] text-slate-500 max-w-[200px] mx-auto">
+                    Video stream is purely local and never uploaded or stored.
+                  </p>
+                  <button
+                    onClick={toggleCamera}
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold transition-colors inline-flex items-center gap-1.5 mt-1"
+                  >
+                    <Video className="h-3.5 w-3.5 text-blue-400" /> Enable Webcam
+                  </button>
                 </div>
               )}
+
+              {cameraEnabled && (
+                <button
+                  onClick={toggleCamera}
+                  className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white text-[10px] font-semibold flex items-center gap-1"
+                  title="Turn off webcam"
+                >
+                  <VideoOff className="h-3 w-3" /> Turn Off
+                </button>
+              )}
             </div>
-            <div className="mt-4 flex flex-col items-center justify-center">
-              <span className="text-[11px] font-bold text-white uppercase tracking-wider mb-1.5">
-                {profile?.fullName?.split(' ')[0] || 'Student'}
+
+            <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+              <span>{profile?.fullName?.split(' ')[0] || 'Candidate'}</span>
+              <span className="flex items-center gap-1">
+                <div className={`w-1.5 h-1.5 rounded-full ${cameraEnabled ? 'bg-emerald-500' : 'bg-slate-500'}`} />
+                {cameraEnabled ? 'Video active' : 'Audio/Text only'}
               </span>
-              <div className="flex items-center gap-1.5">
-                <div
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    stream && !cameraBlocked ? 'bg-emerald-500' : 'bg-slate-500'
-                  }`}
-                />
-                <span className="text-[10px] text-slate-400 font-bold">
-                  {stream && !cameraBlocked ? 'Camera active' : 'Audio/Text active'}
-                </span>
-              </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Camera permission overlay */}
-      {cameraBlocked && !cameraBypassed && (
-        <div className="absolute inset-0 z-50 bg-[#050814]/80 backdrop-blur-sm flex flex-col items-center justify-center px-4">
-          <div className="bg-[#121629] border border-blue-500/30 rounded-3xl p-8 max-w-[440px] w-full text-center shadow-2xl flex flex-col items-center">
-            <div className="w-14 h-14 rounded-full bg-blue-950/60 border border-blue-500/30 flex items-center justify-center mb-6">
-              <Video className="h-6 w-6 text-blue-400" />
-            </div>
-            <h2 className="text-xl font-black text-white tracking-tight mb-3">Camera Access Notice</h2>
-            <p className="text-[13px] text-slate-300 leading-relaxed mb-6 px-2">
-              For an authentic mock interview simulation, video is recommended. You can enable your camera or continue in audio and text mode.
-            </p>
-            <div className="w-full space-y-3">
-              <button
-                onClick={requestPermissions}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                Enable Camera &amp; Microphone
-              </button>
-              <button
-                onClick={() => setCameraBypassed(true)}
-                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                Continue in Audio &amp; Text Mode
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

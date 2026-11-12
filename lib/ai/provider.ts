@@ -122,7 +122,7 @@ export class OpenAIProvider implements AIProvider {
         stream_options: { include_usage: true },
       });
 
-      let accumulatedToolCalls: Record<number, { id: string; name: string; args: string }> = {};
+      const accumulatedToolCalls: Record<number, { id: string; name: string; args: string }> = {};
 
       for await (const chunk of stream) {
         // 1. Check for token deltas
@@ -275,7 +275,7 @@ export class GeminiProvider implements AIProvider {
     }
 
     try {
-      let promptEstimate = Math.round(params.messages.reduce((acc, m) => acc + m.content.length / 4, 0));
+      const promptEstimate = Math.round(params.messages.reduce((acc, m) => acc + m.content.length / 4, 0));
       let completionChars = 0;
 
       for await (const chunk of stream.stream) {

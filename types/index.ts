@@ -22,6 +22,7 @@ export interface StudentProfile {
   targetRoles?: string[];
   targetCompanies: string[];
   preferredLocations: string[];
+  skills?: string[];
   readinessScore: number;
   profileCompletionPercentage?: number;
   verificationStatus: VerificationStatus;
@@ -155,7 +156,7 @@ export interface JobApplicationRecord {
   notes?: string;
 }
 
-export type InterviewType = 'Technical' | 'HR' | 'Behavioral' | 'DSA' | 'Project' | 'Full Interview' | 'Company Simulation';
+export type InterviewType = 'Technical' | 'HR' | 'Resume-based' | 'Behavioral' | 'DSA' | 'Project' | 'Full Interview' | 'Company Simulation';
 export type InterviewDifficulty = 'Beginner' | 'Intermediate' | 'Advanced';
 export type InterviewMode = 'Friendly' | 'Professional' | 'Strict' | 'Pressure';
 
@@ -215,6 +216,7 @@ export interface LearningTopic {
 }
 
 export interface UserProgressData {
+  skills?: string[];
   readinessScore: number;
   questionsSolved: number;
   interviewsCompleted: number;
@@ -235,3 +237,106 @@ export interface UserProgressData {
     tasks: Array<{ id: string; text: string; category: string; done: boolean }>;
   };
 }
+
+// ==========================================
+// PRISM Phase 3: Career Audit & GD Types
+// ==========================================
+
+export interface CareerAuditSkillGap {
+  skill: string;
+  category: string;
+  status: 'have' | 'partial' | 'missing';
+  evidence: string;
+  weight: number;
+}
+
+export interface CareerAuditSalaryBenchmark {
+  minLpa: number;
+  maxLpa: number;
+  medianLpa: number;
+  currency: string;
+  source: string;
+  sourceDate: string;
+  region: string;
+  hasReliableData: boolean;
+}
+
+export interface CareerAuditRadarScores {
+  skillsCoverage: number;
+  projectsReadiness: number;
+  academicAlignment: number;
+  practicalDepth: number;
+  coreFundamentals: number;
+  placementPreparedness: number;
+}
+
+export interface CareerAuditResult {
+  id: string;
+  targetRole: string;
+  researchedAt: string;
+  sectorAlignment: {
+    sector: string;
+    alignmentPercentage: number;
+    demandOutlook: string;
+    rationale: string;
+  };
+  skillGaps: CareerAuditSkillGap[];
+  expectedSalaryRange: CareerAuditSalaryBenchmark;
+  competitivenessSummary: string;
+  radarScores: CareerAuditRadarScores;
+  createdAt: string;
+}
+
+export interface GDParticipant {
+  id: string;
+  role: 'moderator' | 'human' | 'bot';
+  name: string;
+  persona?: string;
+  stance?: string;
+}
+
+export interface GDTurn {
+  id: string;
+  sessionId: string;
+  participantId?: string;
+  speakerName: string;
+  speakerRole: 'moderator' | 'human' | 'bot';
+  turnIndex: number;
+  content: string;
+  inputMethod: 'voice' | 'text' | 'system';
+  timestampMs: number;
+  durationSeconds?: number;
+}
+
+export interface GDEvaluation {
+  contentScore: number;
+  clarityScore: number;
+  initiativeScore: number;
+  listeningScore: number;
+  overallScore: number;
+  evidenceQuotes: Array<{
+    metric: string;
+    quote: string;
+    analysis: string;
+  }>;
+  strengths: string[];
+  improvementTips: string[];
+  modelContributions?: Array<{
+    phase: string;
+    suggestedArgument: string;
+  }>;
+}
+
+export interface GDSession {
+  id: string;
+  userId: string;
+  topic: string;
+  status: 'in_progress' | 'completed' | 'abandoned';
+  durationSeconds: number;
+  startedAt: string;
+  completedAt?: string;
+  participants: GDParticipant[];
+  turns: GDTurn[];
+  evaluation?: GDEvaluation;
+}
+
