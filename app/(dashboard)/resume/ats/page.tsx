@@ -26,10 +26,12 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
-  Info
+  Info,
+  Save,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ATSAnalysisResult } from '@/lib/resume/ats-engine';
+import { ATS34EvaluationReport } from '@/lib/resume/ats-rubric-34';
 
 export default function AtsAnalyzerPage() {
   const router = useRouter();
@@ -52,10 +54,25 @@ export default function AtsAnalyzerPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzingStep, setAnalyzingStep] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<ATSAnalysisResult | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'keywords' | 'sections' | 'issues'>('overview');
+  const [rubricResult, setRubricResult] = useState<ATS34EvaluationReport | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'rubric34' | 'keywords' | 'bullet_improver' | 'tailoring' | 'sections' | 'issues'>('overview');
+  const [rubricFilter, setRubricFilter] = useState<'all' | 'pass' | 'warn' | 'fail'>('all');
   const [keywordCategory, setKeywordCategory] = useState<'all' | 'hard_skill' | 'tool' | 'soft_skill' | 'certification'>('all');
   const [showFormulaModal, setShowFormulaModal] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+
+  // Bullet Improver State (Google XYZ Formula)
+  const [targetBulletText, setTargetBulletText] = useState('');
+  const [metricUserCount, setMetricUserCount] = useState('');
+  const [metricPercent, setMetricPercent] = useState('');
+  const [metricLatency, setMetricLatency] = useState('');
+  const [isImprovingBullet, setIsImprovingBullet] = useState(false);
+  const [bulletImprovements, setBulletImprovements] = useState<any>(null);
+
+  // Tailoring State
+  const [tailorResult, setTailorResult] = useState<any>(null);
+  const [isTailoring, setIsTailoring] = useState(false);
+  const [tailorSaved, setTailorSaved] = useState(false);
 
   useEffect(() => {
     syncWithSupabase();
@@ -208,12 +225,126 @@ export default function AtsAnalyzerPage() {
 
       const data = await res.json();
       setAnalysisResult(data.analysis);
-      setActiveTab('overview');
+      if (data.analysis?.rubric34) {
+        setRubricResult(data.analysis.rubric34);
+      }
+      setActiveTab('rubric34');
     } catch (err: any) {
       alert(`Analysis error: ${err.message}`);
     } finally {
       setIsAnalyzing(false);
       setAnalyzingStep('');
+    }
+  };
+
+  // ─── Bullet Improver Action ────────────────────────────────────────────────
+  const handleImproveBullet = async () => {
+    if (!targetBulletText.trim()) return;
+    setIsImprovingBullet(true);
+    setBulletImprovements(null);
+
+    try {
+      const res = await fetch('/api/resume/bullet-improver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bullet: targetBulletText,
+          projectContext: {
+            title: projects[0]?.title || 'Technical Project',
+            techStack: projects[0]?.techStack || ['Java', 'React', 'PostgreSQL'],
+            description: projects[0]?.description || '',
+          },
+          providedMetrics: {
+            userCount: metricUserCount || undefined,
+            percentageImprovement: metricPercent || undefined,
+            latencyOrSpeed: metricLatency || undefined,
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to generate XYZ improvements');
+      const data = await res.json();
+      setBulletImprovements(data);
+    } catch (err: any) {
+      alert(`Bullet improver error: ${err.message}`);
+    } finally {
+      setIsImprovingBullet(false);
+    }
+  };
+
+  // ─── Resume Tailoring Action ────────────────────────────────────────────────
+  const handleTailorResume = async () => {
+    const jdText = jdSource === 'job'
+      ? savedJobs.find((j) => j.id === selectedJobId)?.description || ''
+      : customJdText;
+
+    if (!jdText.trim()) {
+      alert('Please provide a job description first.');
+      return;
+    }
+
+    setIsTailoring(true);
+    setTailorResult(null);
+    setTailorSaved(false);
+
+    try {
+      const res = await fetch('/api/resume/tailor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          versionId: resumeSource === 'version' ? selectedVersionId : undefined,
+          jobId: jdSource === 'job' ? selectedJobId : undefined,
+          jdText,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to tailor resume to JD');
+      const data = await res.json();
+      setTailorResult(data.proposal);
+    } catch (err: any) {
+      alert(`Tailoring error: ${err.message}`);
+    } finally {
+      setIsTailoring(false);
+    }
+  };
+
+  // ─── Save Tailored Version Action ───────────────────────────────────────────
+  const handleSaveTailoredVersion = async () => {
+    if (!tailorResult) return;
+    const targetRole = tailorResult.targetRole || 'Software Engineer';
+    const versionName = `v2 - Tailored for ${targetRole.slice(0, 25)}`;
+
+    try {
+      const res = await fetch('/api/resume/versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: versionName,
+          template: 'modern',
+          source: 'tailored',
+          content: {
+            profile: {
+              fullName: profile.fullName,
+              email: profile.email,
+              phone: profile.phone,
+              college: profile.college,
+              targetRole,
+            },
+            summary: analysisResult?.breakdown ? (analysisResult as any).profileSummaryRewrite : profile.targetRole,
+            skills: tailorResult.skillsOrder || skills.map((s: any) => s.name),
+            projects: projects.map((p: any) => ({
+              title: p.title,
+              techStack: p.techStack,
+              description: p.description,
+            })),
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to save tailored version');
+      setTailorSaved(true);
+    } catch (err: any) {
+      alert(`Failed to save tailored version: ${err.message}`);
     }
   };
 
@@ -524,19 +655,21 @@ export default function AtsAnalyzerPage() {
                 </div>
               </div>
 
-              {/* Sub-Tabs: Overview / Keywords / Sections / Issues */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-2 flex gap-1 text-xs font-bold">
+              {/* Sub-Tabs Navigation */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-2 flex flex-wrap gap-1 text-xs font-bold">
                 {[
+                  { id: 'rubric34', label: `34-Point Rubric (${rubricResult ? rubricResult.overallScore : 0}/100)` },
+                  { id: 'bullet_improver', label: 'XYZ Bullet Improver' },
+                  { id: 'tailoring', label: 'JD Tailoring & Diff' },
                   { id: 'overview', label: 'Overview & Summary' },
                   { id: 'keywords', label: `Keywords (${analysisResult.keywords.matched.length} Matched)` },
-                  { id: 'sections', label: 'Layout & Sections' },
-                  { id: 'issues', label: `Issues & Fixes (${analysisResult.issues.length})` },
+                  { id: 'issues', label: `Issues (${analysisResult.issues.length})` },
                 ].map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id as any)}
                     className={cn(
-                      'flex-1 py-2 rounded-xl transition-all',
+                      'px-3.5 py-2 rounded-xl transition-all',
                       activeTab === t.id
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -546,6 +679,404 @@ export default function AtsAnalyzerPage() {
                   </button>
                 ))}
               </div>
+
+              {/* ──────────────────────────────────────────────────────── */}
+              {/* TAB: 34-CHECKPOINT ATS RUBRIC                            */}
+              {/* ──────────────────────────────────────────────────────── */}
+              {activeTab === 'rubric34' && rubricResult && (
+                <div className="space-y-6">
+                  {/* Published Formula Banner */}
+                  <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 text-xs text-blue-900 space-y-2">
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="flex items-center gap-1.5 uppercase tracking-wider text-[11px] text-blue-700">
+                        <ShieldCheck className="h-4 w-4 text-blue-600" />
+                        <span>Published 34-Point Diagnostic Formula</span>
+                      </span>
+                      <span className="text-blue-800 font-black text-sm">
+                        Total Score: {rubricResult.overallScore} / 100
+                      </span>
+                    </div>
+                    <p className="text-slate-600 font-mono text-[11px]">
+                      Formula: Score = Σ (Checkpoint_Weight × Factor) [Pass = 1.0, Warn = 0.5, Fail = 0.0]
+                    </p>
+                    <p className="text-[11px] text-slate-500 italic">
+                      {rubricResult.disclaimer}
+                    </p>
+                  </div>
+
+                  {/* Filter Pills */}
+                  <div className="flex items-center gap-2 text-xs font-bold">
+                    <span className="text-slate-500 text-[11px] mr-1">Filter Checks:</span>
+                    {(['all', 'pass', 'warn', 'fail'] as const).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setRubricFilter(f)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-lg border text-xs capitalize transition-all',
+                          rubricFilter === f
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        )}
+                      >
+                        {f === 'all'
+                          ? `All (34)`
+                          : f === 'pass'
+                          ? `Passed (${rubricResult.passedCount})`
+                          : f === 'warn'
+                          ? `Warnings (${rubricResult.warnCount})`
+                          : `Failed (${rubricResult.failedCount})`}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 34 Checkpoint Cards by Category */}
+                  <div className="space-y-3">
+                    {rubricResult.checkpoints
+                      .filter((cp) => rubricFilter === 'all' || cp.status === rubricFilter)
+                      .map((cp) => (
+                        <div
+                          key={cp.checkpointId}
+                          className={cn(
+                            'p-4 rounded-2xl border transition-all space-y-2 text-xs',
+                            cp.status === 'pass'
+                              ? 'bg-emerald-50/40 border-emerald-200/80'
+                              : cp.status === 'warn'
+                              ? 'bg-amber-50/40 border-amber-200/80'
+                              : 'bg-rose-50/40 border-rose-200/80'
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              {cp.status === 'pass' ? (
+                                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                              ) : cp.status === 'warn' ? (
+                                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                              )}
+                              <span className="font-black text-slate-900 text-sm">{cp.name}</span>
+                              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-200/60 text-slate-700">
+                                {cp.category}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span
+                                className={cn(
+                                  'text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full',
+                                  cp.status === 'pass'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : cp.status === 'warn'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-rose-100 text-rose-800'
+                                )}
+                              >
+                                {cp.status.toUpperCase()} (+{cp.pointsEarned}/{cp.maxPoints} pts)
+                              </span>
+                              {cp.status !== 'pass' && (
+                                <button
+                                  onClick={() => {
+                                    if (cp.actionType === 'improve_bullet') {
+                                      setActiveTab('bullet_improver');
+                                      if (projects[0]?.description) {
+                                        setTargetBulletText(projects[0].description.split('\n')[0] || '');
+                                      }
+                                    } else {
+                                      router.push('/resume');
+                                    }
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shadow-xs transition-colors"
+                                >
+                                  Apply Fix →
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <p className="text-slate-700 font-medium text-[11px] leading-relaxed">
+                            <strong>Finding:</strong> {cp.finding}
+                          </p>
+
+                          <div className="pt-1 border-t border-slate-200/50 flex items-center justify-between text-[11px] text-slate-600">
+                            <span>
+                              <strong>Recommendation:</strong> {cp.fixSuggestion}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-400">
+                              ID: {cp.checkpointId}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ──────────────────────────────────────────────────────── */}
+              {/* TAB: GOOGLE XYZ BULLET IMPROVER                          */}
+              {/* ──────────────────────────────────────────────────────── */}
+              {activeTab === 'bullet_improver' && (
+                <div className="space-y-6">
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-blue-600" />
+                        <span>Google XYZ Bullet Improver</span>
+                      </h4>
+                      <p className="text-xs text-slate-600 font-medium">
+                        Standard: &quot;Accomplished [X] as measured by [Y], by doing [Z]&quot;. Strict truthfulness: AI never hallucinates or invents numbers.
+                      </p>
+                    </div>
+
+                    {/* Pre-fill from verified projects */}
+                    {projects.length > 0 && (
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-600 block">
+                          Select bullet from verified projects (or paste below):
+                        </label>
+                        <select
+                          onChange={(e) => setTargetBulletText(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 bg-slate-50 focus:outline-none"
+                        >
+                          <option value="">-- Choose a project bullet --</option>
+                          {projects.map((p: any) =>
+                            (p.description || '')
+                              .split('\n')
+                              .filter((l: string) => l.trim().length > 10)
+                              .map((line: string, idx: number) => (
+                                <option key={`${p.id}-${idx}`} value={line.replace(/^[•\-\*]\s*/, '')}>
+                                  {p.title}: {line.slice(0, 75)}...
+                                </option>
+                              ))
+                          )}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Bullet Text Input */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-slate-700 block">
+                        Original Bullet Text:
+                      </label>
+                      <textarea
+                        value={targetBulletText}
+                        onChange={(e) => setTargetBulletText(e.target.value)}
+                        placeholder="e.g., Worked on backend API for student portal and made it faster."
+                        rows={3}
+                        className="w-full p-3 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Verified Metrics Inputs (To prevent AI hallucinations) */}
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                      <span className="text-[11px] font-bold text-slate-700 block">
+                        Student-Supplied Verified Metrics (Optional, ensures zero AI guesswork):
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <input
+                          type="text"
+                          value={metricUserCount}
+                          onChange={(e) => setMetricUserCount(e.target.value)}
+                          placeholder="User count (e.g. 500+ users)"
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-800"
+                        />
+                        <input
+                          type="text"
+                          value={metricPercent}
+                          onChange={(e) => setMetricPercent(e.target.value)}
+                          placeholder="% Improvement (e.g. 35%)"
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-800"
+                        />
+                        <input
+                          type="text"
+                          value={metricLatency}
+                          onChange={(e) => setMetricLatency(e.target.value)}
+                          placeholder="Speed / Scale (e.g. 120ms)"
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleImproveBullet}
+                      disabled={isImprovingBullet || !targetBulletText.trim()}
+                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-colors"
+                    >
+                      {isImprovingBullet ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      <span>{isImprovingBullet ? 'Applying XYZ Rubric...' : 'Generate 3 XYZ Variations'}</span>
+                    </button>
+                  </div>
+
+                  {/* Bullet Improver Results */}
+                  {bulletImprovements && (
+                    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5 animate-fade-in-up">
+                      {/* Metric Request Alert if metrics missing */}
+                      {bulletImprovements.needsMetricInput && (
+                        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <span className="font-bold">Honest Metric Request (Zero Guesswork):</span>
+                            <p className="text-[11px] text-amber-800">
+                              {bulletImprovements.metricPromptQuestion || 'Provide the specific number or % improvement above to finalize your metric-focused bullet.'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3 Variations */}
+                      <div className="space-y-4">
+                        <h5 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                          Suggested Improvements:
+                        </h5>
+                        {bulletImprovements.suggestions?.map((sug: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2 text-xs"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-blue-700 uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-blue-100">
+                                Variant {idx + 1}: {sug.variant.replace('_', ' ')}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(sug.improvedBullet);
+                                  alert('Copied to clipboard!');
+                                }}
+                                className="text-xs text-blue-600 font-bold flex items-center gap-1 hover:underline"
+                              >
+                                <Copy className="h-3 w-3" />
+                                <span>Copy</span>
+                              </button>
+                            </div>
+
+                            <p className="font-semibold text-slate-900 text-sm leading-relaxed">
+                              • {sug.improvedBullet}
+                            </p>
+
+                            <p className="text-[11px] text-slate-500 italic">
+                              <strong>Why it scores higher:</strong> {sug.whyBetter}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ──────────────────────────────────────────────────────── */}
+              {/* TAB: RESUME AI TAILORING & DIFF VIEW                     */}
+              {/* ──────────────────────────────────────────────────────── */}
+              {activeTab === 'tailoring' && (
+                <div className="space-y-6">
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                          <Layers className="h-4 w-4 text-blue-600" />
+                          <span>Job Description Tailoring &amp; Diff Engine</span>
+                        </h4>
+                        <p className="text-xs text-slate-600 font-medium">
+                          Align your verified resume structure with target JD keywords and preview diff changes before saving.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={handleTailorResume}
+                        disabled={isTailoring}
+                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-colors"
+                      >
+                        {isTailoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        <span>{isTailoring ? 'Aligning...' : 'Generate Tailored Alignment'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {tailorResult && (
+                    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6 animate-fade-in-up">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div>
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Target Alignment</span>
+                          <span className="text-base font-black text-slate-900">{tailorResult.targetRole}</span>
+                        </div>
+
+                        <button
+                          onClick={handleSaveTailoredVersion}
+                          disabled={tailorSaved}
+                          className={cn(
+                            'px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors',
+                            tailorSaved
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-900 hover:bg-slate-800 text-white'
+                          )}
+                        >
+                          {tailorSaved ? <CheckCircle2 className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                          <span>{tailorSaved ? 'Saved to Versions (v2)' : 'Save as Tailored Version (v2)'}</span>
+                        </button>
+                      </div>
+
+                      {/* Keyword Diff Matrix */}
+                      <div className="space-y-3">
+                        <h5 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                          Keyword Coverage Diff
+                        </h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-2">
+                            <span className="text-xs font-bold text-emerald-900 block flex items-center gap-1.5">
+                              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                              <span>Matched Keywords ({tailorResult.matchedKeywords?.length || 0})</span>
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {tailorResult.matchedKeywords?.map((kw: string) => (
+                                <span key={kw} className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                                  {kw}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                            <span className="text-xs font-bold text-slate-700 block flex items-center gap-1.5">
+                              <Info className="h-4 w-4 text-slate-500" />
+                              <span>Optimized Skills Order</span>
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {tailorResult.skillsOrder?.slice(0, 10).map((sk: string) => (
+                                <span key={sk} className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 text-[11px] font-medium">
+                                  {sk}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bullet Diff View */}
+                      <div className="space-y-3">
+                        <h5 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                          Project Bullet Diff View (Before vs After)
+                        </h5>
+                        <div className="space-y-3">
+                          {tailorResult.bulletSuggestions?.map((b: any, idx: number) => (
+                            <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/40 space-y-2 text-xs">
+                              <span className="font-bold text-slate-900 block">{b.projectTitle}</span>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                <div className="p-3 rounded-lg bg-rose-50/60 border border-rose-200 text-rose-900 space-y-1">
+                                  <span className="text-[10px] font-bold text-rose-700 uppercase">Original:</span>
+                                  <p className="line-through text-[11px]">{b.originalBullet}</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-emerald-50/60 border border-emerald-200 text-emerald-950 space-y-1">
+                                  <span className="text-[10px] font-bold text-emerald-700 uppercase">Tailored (Action Verb):</span>
+                                  <p className="font-bold text-[11px]">{b.proposedBullet}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Tab 1: Overview & Verified Profile Summary Rewrite */}
               {activeTab === 'overview' && (

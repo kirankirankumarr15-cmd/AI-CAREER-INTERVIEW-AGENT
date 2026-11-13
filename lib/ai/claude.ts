@@ -62,7 +62,7 @@ export async function generatePrismAI(options: AIGenerationOptions): Promise<str
   if (claude) {
     try {
       const response = await claude.messages.create({
-        model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
+        model: process.env.ANTHROPIC_MODEL || process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-latest',
         max_tokens: maxTokens,
         system: systemPrompt + (jsonMode ? '\nYou MUST respond ONLY with valid, parseable JSON. Do not include markdown code blocks or conversational text.' : ''),
         messages: [{ role: 'user', content: userPrompt }],
@@ -101,7 +101,8 @@ export async function generatePrismAI(options: AIGenerationOptions): Promise<str
   const gemini = getGeminiClient();
   if (gemini) {
     try {
-      const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+      const model = gemini.getGenerativeModel({ model: modelName });
       const prompt = `${systemPrompt}\n\n${userPrompt}`;
       const result = await model.generateContent(prompt);
       return result.response.text().trim();

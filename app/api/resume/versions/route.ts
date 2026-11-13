@@ -69,7 +69,7 @@ export async function GET() {
 
 const CreateVersionSchema = z.object({
   name: z.string().min(1, 'Version name is required').max(100),
-  template: z.enum(['standard_single_column', 'modern_technical', 'compact_one_page']).default('standard_single_column'),
+  template: z.enum(['modern', 'classic', 'technical', 'standard_single_column', 'modern_technical', 'compact_one_page']).default('modern'),
   content: z.record(z.string(), z.unknown()),
   source: z.enum(['builder', 'upload', 'tailored']).default('builder'),
 });

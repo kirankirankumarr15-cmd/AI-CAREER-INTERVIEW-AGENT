@@ -11,12 +11,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { z } from 'zod';
+import { generateResumePDF, type ResumeData } from '@/lib/resume/pdf-templates';
 
 export const dynamic = 'force-dynamic';
 
 const ExportRequestSchema = z.object({
   versionId: z.string().uuid(),
   format: z.enum(['pdf', 'docx', 'txt']).default('pdf'),
+  template: z.enum(['modern', 'classic', 'technical']).default('modern'),
 });
 
 export async function POST(req: NextRequest) {
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { versionId, format } = parsed.data;
+    const { versionId, format, template } = parsed.data;
 
     // 1. Fetch version content
     const { data: version, error: vErr } = await supabase
@@ -49,16 +51,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Resume version not found' }, { status: 404 });
     }
 
-    const content = (version.content || {}) as ResumeContent;
+    const content = (version.content || {}) as ResumeData;
 
     // 2. Build plain text representation (what ATS sees)
     const plainText = buildATSPlainText(content, version.name);
 
-    // 3. Upload file to Supabase private storage
-    const storagePath = `${user.id}/${versionId}.${format}`;
-    const fileBuffer = Buffer.from(plainText, 'utf-8');
+    // 3. Generate binary file buffer (@react-pdf/renderer for real selectable PDF)
+    let fileBuffer: Buffer;
+    if (format === 'pdf') {
+      try {
+        fileBuffer = await generateResumePDF(content, template);
+      } catch (renderErr) {
+        console.error('[PDF Export] Failed rendering with react-pdf:', renderErr);
+        fileBuffer = Buffer.from(plainText, 'utf-8');
+      }
+    } else {
+      fileBuffer = Buffer.from(plainText, 'utf-8');
+    }
 
-    const mimeType = format === 'pdf' ? 'application/pdf' : format === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/plain';
+    const storagePath = `${user.id}/${versionId}.${format}`;
+    const mimeType =
+      format === 'pdf'
+        ? 'application/pdf'
+        : format === 'docx'
+        ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        : 'text/plain';
 
     const { error: uploadError } = await supabase.storage
       .from('resumes')
@@ -95,6 +112,8 @@ export async function POST(req: NextRequest) {
       downloadUrl,
       plainTextPreview: plainText,
       format,
+      template,
+      pdfBase64: format === 'pdf' ? fileBuffer.toString('base64') : undefined,
     });
   } catch (err: unknown) {
     return NextResponse.json(

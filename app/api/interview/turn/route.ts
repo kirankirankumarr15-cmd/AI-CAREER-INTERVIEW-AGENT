@@ -24,33 +24,33 @@ import { computeNextTurn } from '@/lib/ai/dialog-manager';
 import { evaluateStudentAnswer } from '@/lib/ai/agents/interview-agent';
 
 const TurnSchema = z.object({
-  sessionId:           z.string().uuid(),
-  turnIndex:           z.number().int().min(0),
-  totalTurns:          z.number().int().min(3).max(20),
-  studentAnswer:       z.string().max(5000),
-  lastQuestion:        z.string(),
+  sessionId: z.string().uuid(),
+  turnIndex: z.number().int().min(0),
+  totalTurns: z.number().int().min(3).max(20),
+  studentAnswer: z.string().max(5000),
+  lastQuestion: z.string(),
   lastQuestionCategory: z.string(),
-  lastQuestionId:      z.string().optional(),
-  interviewType:       z.enum(['Technical','HR','Behavioral','DSA','Project','Full Interview','Company Simulation']),
-  difficulty:          z.enum(['Beginner','Intermediate','Advanced']),
-  mode:                z.enum(['Friendly','Professional','Strict','Pressure']),
-  targetRole:          z.string(),
-  companyName:         z.string().optional(),
+  lastQuestionId: z.string().optional(),
+  interviewType: z.enum(['Technical', 'HR', 'Behavioral', 'DSA', 'Project', 'Full Interview', 'Company Simulation']),
+  difficulty: z.enum(['Beginner', 'Intermediate', 'Advanced']),
+  mode: z.enum(['Friendly', 'Professional', 'Strict', 'Pressure']),
+  targetRole: z.string(),
+  companyName: z.string().optional(),
   panelInterviewerName: z.string().optional(),
-  isFirstTimerMode:    z.boolean().optional().default(false),
+  isFirstTimerMode: z.boolean().optional().default(false),
   profile: z.object({
-    id:         z.string(),
-    fullName:   z.string(),
-    cgpa:       z.number().optional(),
-    college:    z.string().optional(),
-    branch:     z.string().optional(),
+    id: z.string(),
+    fullName: z.string(),
+    cgpa: z.number().optional(),
+    college: z.string().optional(),
+    branch: z.string().optional(),
     targetRole: z.string().optional(),
   }),
   projects: z.array(z.object({
-    id:          z.string(),
-    title:       z.string(),
+    id: z.string(),
+    title: z.string(),
     description: z.string(),
-    techStack:   z.array(z.string()),
+    techStack: z.array(z.string()),
     verificationStatus: z.string().optional(),
   })).optional().default([]),
 });
@@ -79,16 +79,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
     }
 
-    // Verify session ownership
+    // Verify session ownership and deadline
     const { data: session } = await supabase
       .from('interview_sessions')
-      .select('id, status, dialog_state, silence_count, off_topic_count')
+      .select('id, status, dialog_state, silence_count, off_topic_count, deadline_at, started_at, duration_seconds')
       .eq('id', sessionId)
       .eq('user_id', user.id)
       .single();
 
     if (!session || session.status !== 'In Progress') {
       return NextResponse.json({ error: 'Session not found or already completed' }, { status: 404 });
+    }
+
+    // Check server-authoritative deadline
+    if (session.deadline_at && new Date() > new Date(session.deadline_at)) {
+      return NextResponse.json(
+        {
+          error: 'Session timed out',
+          timeExpired: true,
+          message: 'The interview allocated time has elapsed. Please proceed to the performance evaluation.',
+        },
+        { status: 410 }
+      );
     }
 
     // Load memory
@@ -102,7 +114,7 @@ export async function POST(req: Request) {
     const questionsAsked: string[] = memory?.questions_asked ?? [];
     const weakAreasDetected: string[] = memory?.weak_areas_detected ?? [];
     const strongAreasDetected: string[] = memory?.strong_areas_detected ?? [];
-    const contextWindow: Array<{role:string;text:string}> = memory?.context_window ?? [];
+    const contextWindow: Array<{ role: string; text: string }> = memory?.context_window ?? [];
 
     // Run Dialog Manager
     const next = await computeNextTurn({
@@ -141,19 +153,19 @@ export async function POST(req: Request) {
       await supabase
         .from('interview_questions')
         .update({
-          student_answer:      studentAnswer,
-          answer_score:        evaluation?.answerScore,
-          technical_accuracy:  evaluation?.technicalAccuracy,
-          relevance:           evaluation?.relevance,
-          structure_score:     evaluation?.structureScore,
+          student_answer: studentAnswer,
+          answer_score: evaluation?.answerScore,
+          technical_accuracy: evaluation?.technicalAccuracy,
+          relevance: evaluation?.relevance,
+          structure_score: evaluation?.structureScore,
           communication_score: evaluation?.communicationScore,
           estimated_confidence: evaluation?.estimatedConfidence,
-          speaking_speed:      evaluation?.speakingSpeed,
+          speaking_speed: evaluation?.speakingSpeed,
           filler_words_detected: evaluation?.fillerWords ?? [],
-          feedback_good:       evaluation?.feedbackGood,
+          feedback_good: evaluation?.feedbackGood,
           feedback_improvement: evaluation?.feedbackImprovement,
-          answer_quality:      next.answerQuality,
-          updated_at:          new Date().toISOString(),
+          answer_quality: next.answerQuality,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', lastQuestionId)
         .eq('user_id', user.id);
@@ -165,17 +177,17 @@ export async function POST(req: Request) {
       const { data: savedQ } = await supabase
         .from('interview_questions')
         .insert({
-          session_id:      sessionId,
-          user_id:         user.id,
+          session_id: sessionId,
+          user_id: user.id,
           question_number: turnIndex + 2,
-          question_text:   next.questionText,
-          category:        next.category,
+          question_text: next.questionText,
+          category: next.category,
           expected_key_points: next.expectedKeyPoints ?? [],
-          turn_index:      turnIndex + 1,
-          dialog_move:     next.move,
-          is_follow_up:    ['follow_up','probe','clarify'].includes(next.move),
+          turn_index: turnIndex + 1,
+          dialog_move: next.move,
+          is_follow_up: ['follow_up', 'probe', 'clarify'].includes(next.move),
           parent_question_id: lastQuestionId || null,
-          ai_tone_note:    next.toneNote,
+          ai_tone_note: next.toneNote,
         })
         .select('id')
         .single();
@@ -201,14 +213,14 @@ export async function POST(req: Request) {
     await supabase
       .from('interview_memory')
       .update({
-        topics_asked:        newTopics,
-        questions_asked:     newQuestions,
+        topics_asked: newTopics,
+        questions_asked: newQuestions,
         weak_areas_detected: newWeak,
         strong_areas_detected: newStrong,
-        total_turns:         turnIndex + 1,
-        last_move:           next.move,
-        context_window:      newContext,
-        updated_at:          new Date().toISOString(),
+        total_turns: turnIndex + 1,
+        last_move: next.move,
+        context_window: newContext,
+        updated_at: new Date().toISOString(),
       })
       .eq('session_id', sessionId);
 
@@ -223,9 +235,9 @@ export async function POST(req: Request) {
     await supabase
       .from('interview_sessions')
       .update({
-        turn_count:      turnIndex + 1,
-        dialog_state:    next.isInterviewComplete ? 'closing' : next.move,
-        silence_count:   newSilenceCount,
+        turn_count: turnIndex + 1,
+        dialog_state: next.isInterviewComplete ? 'closing' : next.move,
+        silence_count: newSilenceCount,
         off_topic_count: newOffTopicCount,
       })
       .eq('id', sessionId);
@@ -233,21 +245,21 @@ export async function POST(req: Request) {
     // Log turn event
     const eventType = next.answerQuality === 'silence' ? 'silence_nudge'
       : next.answerQuality === 'off_topic' ? 'off_topic_detected'
-      : ['follow_up','probe'].includes(next.move) ? 'follow_up_triggered'
-      : 'answer_received';
+        : ['follow_up', 'probe'].includes(next.move) ? 'follow_up_triggered'
+          : 'answer_received';
 
     await supabase.from('interview_turn_events').insert({
-      session_id:  sessionId,
-      user_id:     user.id,
+      session_id: sessionId,
+      user_id: user.id,
       question_id: nextQuestionId,
-      turn_index:  turnIndex + 1,
-      event_type:  eventType,
+      turn_index: turnIndex + 1,
+      event_type: eventType,
       event_data: {
-        answerQuality:        next.answerQuality,
-        move:                 next.move,
-        weakArea:             next.weakArea,
-        falseClaimDetected:   next.falseClaimDetected,
-        answerWordCount:      studentAnswer.trim().split(/\s+/).filter(Boolean).length,
+        answerQuality: next.answerQuality,
+        move: next.move,
+        weakArea: next.weakArea,
+        falseClaimDetected: next.falseClaimDetected,
+        answerWordCount: studentAnswer.trim().split(/\s+/).filter(Boolean).length,
       },
       latency_ms: Date.now() - startMs,
     });

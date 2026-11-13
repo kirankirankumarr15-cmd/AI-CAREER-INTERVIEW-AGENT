@@ -203,3 +203,4 @@ Return ONLY valid JSON:
     return NextResponse.json({ error: 'Failed to initialize Group Discussion' }, { status: 500 });
   }
 }
+

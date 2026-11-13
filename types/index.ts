@@ -1,6 +1,6 @@
 export type VerificationStatus = 'Verified' | 'Unverified' | 'Needs Review';
 
-export type UserRole = 'student' | 'admin';
+export type UserRole = 'student' | 'tpo' | 'admin';
 
 export interface StudentProfile {
   id: string;

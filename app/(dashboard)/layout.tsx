@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { CareerChat } from '@/components/chat/CareerChat';
 import { GlobalShortcuts } from '@/components/common/GlobalShortcuts';
+import { DatabaseStatusBanner } from '@/components/ui/DatabaseStatusBanner';
 import { useProfileStore } from '@/store/useProfileStore';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex font-sans antialiased">
       <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
+        <DatabaseStatusBanner />
         <TopBar onMobileMenuToggle={() => setMobileOpen((prev) => !prev)} />
         <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-[1400px] w-full mx-auto">
           {children}

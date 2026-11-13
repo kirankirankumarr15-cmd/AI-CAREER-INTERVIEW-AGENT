@@ -103,3 +103,4 @@ CREATE POLICY "Users and system can update their own GD evaluations"
   ON public.gd_evaluations
   FOR UPDATE
   USING (user_id = auth.uid() OR public.is_admin(auth.uid()));
+

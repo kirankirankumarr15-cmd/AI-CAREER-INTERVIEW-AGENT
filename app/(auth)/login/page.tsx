@@ -33,14 +33,14 @@ export default function LoginPage() {
 
     const cleanEmail = email.trim();
 
-    // 1. Attempt Supabase Auth (with 2s timeout so network failures never block login)
+    // 1. Attempt Server-Side Supabase Authentication
     try {
       const authPromise = supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
       });
       const timeoutPromise = new Promise<{ data: { session: unknown } | null; error: Error | null }>((resolve) =>
-        setTimeout(() => resolve({ data: null, error: new Error('Supabase network timeout') }), 2000)
+        setTimeout(() => resolve({ data: null, error: new Error('Supabase network timeout') }), 2500)
       );
 
       const res = await Promise.race([authPromise, timeoutPromise]);
@@ -50,57 +50,58 @@ export default function LoginPage() {
         return;
       }
     } catch {
-      // Supabase is offline/paused; seamlessly fall back to local authentication
+      // Supabase is offline/paused
     }
 
-    // 2. HOD Tab Authentication
-    if (activeTab === 'HOD') {
-      const isHodEmail =
-        cleanEmail.toLowerCase().includes('hod') ||
-        cleanEmail.toLowerCase().includes('admin') ||
-        cleanEmail.length >= 3;
-
-      if (isHodEmail && password.length >= 4) {
-        setSessionCookies();
-        localStorage.setItem(
-          'careerpilot_current_user',
-          JSON.stringify({
-            email: cleanEmail,
-            role: 'HOD',
-            fullName: 'Head of Department',
-          })
-        );
-        useProfileStore.getState().updateProfile({
-          email: cleanEmail,
-          fullName: 'Dr. HOD (Computer Science)',
-          targetRole: 'Department Administrator',
-        });
-        router.push('/dashboard');
-        return;
-      }
+    // 2. Production Security Gate: Fallbacks are disallowed in production builds
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction) {
+      setErrorMsg('Cloud authentication service is currently unreachable. Please verify system health.');
+      setLoading(false);
+      return;
     }
 
-    // 3. Student Tab: Local user store validation & auto-provisioning
+    // 3. Development Fallback Verification (RBAC Enforced: Tab cannot grant staff access)
     const verification = verifyPassword(cleanEmail, password);
     if (verification.success && verification.user) {
+      // Institutional accounts (e.g. hod@pesitm.edu.in) get their pre-seeded staff role;
+      // All other accounts are strictly student role regardless of the active tab.
+      const isInstitutionalStaff = cleanEmail.toLowerCase() === 'hod@pesitm.edu.in' || cleanEmail.toLowerCase() === 'admin@pesitm.edu.in';
+      const userRole = isInstitutionalStaff ? 'tpo' : 'student';
+
+      if (activeTab === 'HOD' && !isInstitutionalStaff) {
+        setErrorMsg('Access Denied: This account does not possess institutional Faculty / TPO credentials.');
+        setLoading(false);
+        return;
+      }
+
       setSessionCookies();
-      localStorage.setItem('careerpilot_current_user', JSON.stringify(verification.user));
+      localStorage.setItem('careerpilot_current_user', JSON.stringify({
+        ...verification.user,
+        role: userRole,
+      }));
       useProfileStore.getState().updateProfile({
         email: verification.user.email,
         fullName: verification.user.fullName,
+        role: userRole,
       });
       router.push('/dashboard');
       return;
     }
 
-    // Password mismatch for an existing account
     if (verification.error && verification.error.includes('Incorrect password')) {
       setErrorMsg(verification.error);
       setLoading(false);
       return;
     }
 
-    // Auto-register any new student email with valid password (min 6 chars)
+    // 4. Student Auto-Provisioning (Strictly assigns 'student' role, never staff)
+    if (activeTab === 'HOD') {
+      setErrorMsg('Access Denied: Faculty and TPO accounts cannot be auto-registered. They must be provisioned by the placement cell.');
+      setLoading(false);
+      return;
+    }
+
     if (cleanEmail.includes('@') && password.length >= 6) {
       const reg = registerUser({
         email: cleanEmail,
@@ -110,17 +111,21 @@ export default function LoginPage() {
         provider: 'credentials',
       });
       setSessionCookies();
-      localStorage.setItem('careerpilot_current_user', JSON.stringify(reg.user));
+      localStorage.setItem('careerpilot_current_user', JSON.stringify({
+        ...reg.user,
+        role: 'student',
+      }));
       useProfileStore.getState().updateProfile({
         email: cleanEmail,
         fullName: cleanEmail.split('@')[0],
+        role: 'student',
       });
       router.push('/dashboard');
       return;
     }
 
     setErrorMsg(
-      verification.error || 'Please enter a valid email address and password (at least 6 characters).'
+      verification.error || 'Please enter a valid email address and password (minimum 6 characters).'
     );
     setLoading(false);
   };
@@ -139,149 +144,135 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-slate-900/40" />
       </div>
 
-      <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center">
-        {/* Top Tabs Container */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl p-1.5 flex w-full mb-6 shadow-lg border border-slate-200/50">
-          <button
-            onClick={() => {
-              setActiveTab('HOD');
-              setErrorMsg('');
-              setEmail('');
-              setPassword('');
-            }}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all ${
-              activeTab === 'HOD'
-                ? 'bg-blue-50 border-2 border-blue-200 shadow-sm text-blue-700'
-                : 'border-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Shield className={`h-5 w-5 mb-1 ${activeTab === 'HOD' ? 'text-blue-600' : 'text-slate-400'}`} />
-            <span
-              className={`text-[10px] font-extrabold uppercase tracking-widest ${
-                activeTab === 'HOD' ? 'text-blue-700' : 'text-slate-500'
-              }`}
-            >
-              HOD
-            </span>
-          </button>
+      {/* Main Container */}
+      <div className="relative z-10 w-full max-w-[440px] my-auto">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 p-8 sm:p-10 space-y-6">
 
-          <button
-            onClick={() => {
-              setActiveTab('STUDENT');
-              setErrorMsg('');
-              setEmail('');
-              setPassword('');
-            }}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all ${
-              activeTab === 'STUDENT'
-                ? 'bg-blue-50 border-2 border-blue-200 shadow-sm text-blue-700'
-                : 'border-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <GraduationCap
-              className={`h-5 w-5 mb-1 ${activeTab === 'STUDENT' ? 'text-blue-600' : 'text-slate-400'}`}
-            />
-            <span
-              className={`text-[10px] font-extrabold uppercase tracking-widest ${
-                activeTab === 'STUDENT' ? 'text-blue-700' : 'text-slate-500'
-              }`}
-            >
-              STUDENT
-            </span>
-          </button>
-        </div>
-
-        {/* Main Form Card */}
-        <div className="w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in-up">
-          {/* Header Section */}
-          <div className="flex flex-col items-center mb-6">
-            <div className="h-12 w-12 rounded-[14px] bg-blue-50 flex items-center justify-center mb-3 shadow-sm border border-blue-100">
-              {activeTab === 'STUDENT' && <GraduationCap className="h-6 w-6 text-blue-600" />}
-              {activeTab === 'HOD' && <Shield className="h-6 w-6 text-blue-600" />}
-            </div>
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight capitalize">
-              {activeTab.toLowerCase()} Login
+          {/* College Header */}
+          <div className="text-center space-y-2">
+            <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+              PESITM Shivamogga
             </h1>
-            <p className="text-[13px] font-medium text-slate-500 mt-1">
-              Sign in to access {activeTab.charAt(0) + activeTab.slice(1).toLowerCase()} dashboard
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+              PRISM Placement Intelligence
             </p>
           </div>
 
-          <form className="space-y-4" onSubmit={handleLogin}>
-            {errorMsg && (
-              <div className="bg-red-50 text-red-600 text-[13px] font-bold p-3 rounded-xl border border-red-200 text-center">
-                {errorMsg}
-              </div>
-            )}
+          {/* Role Navigation Tabs (UI filter only, role is server-verified) */}
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => { setActiveTab('STUDENT'); setErrorMsg(''); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'STUDENT'
+                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <GraduationCap className="h-4 w-4" />
+              Student
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('HOD'); setErrorMsg(''); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'HOD'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Shield className="h-4 w-4" />
+              Faculty / TPO
+            </button>
+          </div>
 
-            {/* Email / USN Address */}
+          {/* Informational Subtext */}
+          <div className="text-center">
+            <p className="text-xs text-slate-500 font-medium">
+              {activeTab === 'HOD'
+                ? 'Authorized Placement Cell & Department Faculty Portal'
+                : 'Sign in to access your placement preparation modules'}
+            </p>
+          </div>
+
+          {/* Error Message */}
+          {errorMsg && (
+            <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-medium">
+              {errorMsg}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest pl-1">
-                {activeTab === 'STUDENT' ? 'Email Address or USN' : 'Email Address'}
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {activeTab === 'HOD' ? 'Institutional Email' : 'Student Email'}
               </label>
-              <div className="relative flex items-center">
-                <Mail className="absolute left-3.5 h-4 w-4 text-slate-400" />
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
-                  type={activeTab === 'STUDENT' ? 'text' : 'email'}
+                  type="email"
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder={activeTab === 'STUDENT' ? 'Email or USN (e.g. 4PM22CS001)' : 'hod@pesitm.edu.in'}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-semibold shadow-sm"
+                  placeholder={activeTab === 'HOD' ? 'hod@pesitm.edu.in' : 'student@pesitm.edu.in'}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div className="space-y-1.5">
-              <div className="flex justify-between items-center pl-1 pr-1">
-                <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">
-                  Password
-                </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Password</label>
                 <Link
                   href="/forgot-password"
-                  className="text-[10px] font-extrabold text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                  className="text-[11px] font-semibold text-blue-600 hover:underline"
                 >
                   Forgot password?
                 </Link>
               </div>
-              <div className="relative flex items-center">
-                <Lock className="absolute left-3.5 h-4 w-4 text-slate-400" />
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="password"
+                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Enter your password"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-semibold shadow-sm"
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
-            {/* Submit Button */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[14px] font-bold shadow-md shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center disabled:opacity-70"
-              >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Sign In'}
-              </button>
-            </div>
-
-            {/* Footer */}
-            {activeTab === 'STUDENT' && (
-              <div className="text-center pt-2">
-                <span className="text-[12px] font-medium text-slate-500">Don&apos;t have an account? </span>
-                <Link
-                  href="/signup"
-                  className="text-[12px] font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-3 rounded-xl text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 ${
+                activeTab === 'HOD'
+                  ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+                  : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+              } disabled:opacity-50`}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Authenticating...
+                </>
+              ) : (
+                `Sign In as ${activeTab === 'HOD' ? 'Faculty / TPO' : 'Student'}`
+              )}
+            </button>
           </form>
+
+          {/* Footer Signup Link */}
+          {activeTab === 'STUDENT' && (
+            <p className="text-center text-xs text-slate-500">
+              New placement candidate?{' '}
+              <Link href="/signup" className="font-bold text-blue-600 hover:underline">
+                Create Account
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>

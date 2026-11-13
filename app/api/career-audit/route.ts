@@ -14,6 +14,13 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user && process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required. Production reads only the real database.' },
+        { status: 401 }
+      );
+    }
+
     if (!user) {
       // In offline / local demo session
       return NextResponse.json({
@@ -55,6 +62,13 @@ export async function POST(req: Request) {
     const { targetRole, forceRefresh } = parsed.data;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user && process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required. Production reads only the real database.' },
+        { status: 401 }
+      );
+    }
 
     // 1. Check for 14-day cache if not forcing refresh
     if (!forceRefresh && user) {
@@ -178,3 +192,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to process career audit' }, { status: 500 });
   }
 }
+

@@ -112,31 +112,23 @@ export default function InterviewRoomPage() {
   // ─── Server-Authoritative Timer & Session Initialisation ─────────────────────
   useEffect(() => {
     let cancelled = false;
+    let timerInterval: ReturnType<typeof setInterval> | null = null;
+    let authoritativeDeadline = Date.now() + totalDurationSeconds * 1000;
 
-    // 1. Authoritative Timer Initialisation from localStorage or new timestamp
-    const timerStorageKey = `prism_interview_timer_${targetRole}_${durationMinutes}`;
-    let startTime = Date.now();
-    try {
-      const stored = localStorage.getItem(timerStorageKey);
-      if (stored) {
-        startTime = parseInt(stored, 10);
-      } else {
-        localStorage.setItem(timerStorageKey, startTime.toString());
-      }
-    } catch {
-      startTime = Date.now();
-    }
+    const startTimerCountdown = (deadlineMs: number) => {
+      authoritativeDeadline = deadlineMs;
+      if (timerInterval) clearInterval(timerInterval);
 
-    const timerInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const remaining = Math.max(0, totalDurationSeconds - elapsed);
-      setSecondsRemaining(remaining);
+      timerInterval = setInterval(() => {
+        const remaining = Math.max(0, Math.floor((authoritativeDeadline - Date.now()) / 1000));
+        setSecondsRemaining(remaining);
 
-      if (remaining === 0 && !isComplete && !isFinishing) {
-        clearInterval(timerInterval);
-        handleAutoSubmitOnTimeOut();
-      }
-    }, 1000);
+        if (remaining === 0 && !isComplete && !isFinishing) {
+          if (timerInterval) clearInterval(timerInterval);
+          handleAutoSubmitOnTimeOut();
+        }
+      }, 1000);
+    };
 
     // 2. Start Interview Session API
     const startSession = async () => {
@@ -180,12 +172,27 @@ export default function InterviewRoomPage() {
           return;
         }
 
-        const data: { sessionId: string; greeting: TurnOutput } = await res.json();
+        const data: {
+          sessionId: string;
+          greeting: TurnOutput;
+          startedAt?: string;
+          deadlineAt?: string;
+          durationSeconds?: number;
+        } = await res.json();
+
         if (cancelled) return;
 
         setSessionId(data.sessionId);
         setLastQuestion(data.greeting.questionText);
         setLastQuestionCategory(data.greeting.category);
+
+        // Synchronize server-authoritative deadline
+        if (data.deadlineAt) {
+          const deadlineMs = new Date(data.deadlineAt).getTime();
+          startTimerCountdown(deadlineMs);
+        } else {
+          startTimerCountdown(Date.now() + totalDurationSeconds * 1000);
+        }
 
         setConversationHistory([
           { role: 'ai', text: data.greeting.questionText, category: data.greeting.category },
@@ -204,7 +211,7 @@ export default function InterviewRoomPage() {
 
     return () => {
       cancelled = true;
-      clearInterval(timerInterval);
+      if (timerInterval) clearInterval(timerInterval);
       if (silenceTimer) clearTimeout(silenceTimer);
       ttsEngine.stop();
       sttEngine.stop();

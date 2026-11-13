@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { z } from 'zod';
 import { runDeterministicATSAnalysis } from '@/lib/resume/ats-engine';
+import { evaluateResume34 } from '@/lib/resume/ats-evaluator-34';
 import { extractJDRequirements, computeJDHash, generateVerifiedProfileSummary } from '@/lib/resume/jd-extractor';
 
 export const dynamic = 'force-dynamic';
@@ -55,11 +56,12 @@ export async function POST(req: NextRequest) {
     const requirements = await extractJDRequirements(jdText, supabase);
     const jdHash = computeJDHash(jdText);
 
-    // 2. Run deterministic ATS scoring engine
+    // 2. Run deterministic ATS scoring engine & 34-checkpoint rubric
     const analysis = runDeterministicATSAnalysis(resumeText, requirements, {
       isSingleColumn,
       hasNoTables,
     });
+    const rubric34 = evaluateResume34(resumeText, requirements.roleTitle, jdText);
 
     // 3. Fetch verified profile data to generate truthful profile summary rewrite
     let profileSummaryRewrite = '';
@@ -108,6 +110,7 @@ export async function POST(req: NextRequest) {
       success: true,
       analysis: {
         ...analysis,
+        rubric34,
         profileSummaryRewrite,
         injectionAttemptDetected: requirements.injectionAttemptDetected,
         jdHash,

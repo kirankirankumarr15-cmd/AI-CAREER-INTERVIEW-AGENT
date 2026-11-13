@@ -42,10 +42,17 @@ export async function GET() {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      // Fallback response for offline / demo mode
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: 'Authentication required. Database connection or active session missing.' },
+          { status: 401 }
+        );
+      }
+      // Gated development-only fallback when remote DB is offline
       return NextResponse.json({
         success: true,
         isDemo: true,
+        devFallback: true,
         profile: {
           id: 'demo-student-id',
           email: 'alex.dev@pesitm.edu.in',
@@ -114,10 +121,17 @@ export async function PUT(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      // Return updated profile in mock/demo mode
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: 'Authentication required. Production builds read and write only the database.' },
+          { status: 401 }
+        );
+      }
+      // Return updated profile in mock/demo mode for local development
       return NextResponse.json({
         success: true,
-        message: 'Profile updated (Demo Mode)',
+        message: 'Profile updated (Dev Sandbox Mode)',
+        devFallback: true,
         profile: {
           ...validData,
           profileCompletionPercentage: completion,

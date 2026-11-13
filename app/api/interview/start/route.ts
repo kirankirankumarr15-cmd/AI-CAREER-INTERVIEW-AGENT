@@ -98,7 +98,12 @@ export async function POST(req: Request) {
       isFirstTimerMode
     );
 
-    // Create interview session
+    // Calculate server-authoritative timer values
+    const durationSeconds = (totalTurns <= 4 ? 10 : totalTurns <= 6 ? 15 : 20) * 60;
+    const startedAt = new Date();
+    const deadlineAt = new Date(startedAt.getTime() + durationSeconds * 1000);
+
+    // Create interview session with server-authoritative timer in DB
     const { data: session, error: sessionErr } = await supabase
       .from('interview_sessions')
       .insert({
@@ -114,8 +119,11 @@ export async function POST(req: Request) {
         dialog_state:    'greeting',
         turn_count:      0,
         session_metadata: { totalTurns, isFirstTimerMode },
+        started_at:      startedAt.toISOString(),
+        deadline_at:     deadlineAt.toISOString(),
+        duration_seconds: durationSeconds,
       })
-      .select('id')
+      .select('id, started_at, deadline_at, duration_seconds')
       .single();
 
     if (sessionErr || !session) {
@@ -157,7 +165,13 @@ export async function POST(req: Request) {
       latency_ms:  Date.now() - startMs,
     });
 
-    return NextResponse.json({ sessionId: session.id, greeting });
+    return NextResponse.json({
+      sessionId: session.id,
+      greeting,
+      startedAt: session.started_at,
+      deadlineAt: session.deadline_at,
+      durationSeconds: session.duration_seconds,
+    });
   } catch (err) {
     console.error('[/api/interview/start] Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

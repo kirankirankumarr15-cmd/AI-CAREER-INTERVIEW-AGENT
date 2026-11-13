@@ -32,6 +32,13 @@ import { cn } from '@/lib/utils';
 
 type TemplateType = 'standard_single_column' | 'modern_technical' | 'compact_one_page';
 
+/** Map legacy UI template IDs → PDF engine template names */
+const TEMPLATE_TO_PDF: Record<TemplateType, 'modern' | 'classic' | 'technical'> = {
+  standard_single_column: 'modern',
+  modern_technical: 'technical',
+  compact_one_page: 'classic',
+};
+
 interface SavedVersion {
   id: string;
   name: string;
@@ -268,6 +275,7 @@ export default function ResumePage() {
         body: JSON.stringify({
           versionId: versionIdToExport,
           format,
+          template: TEMPLATE_TO_PDF[selectedTemplate] ?? 'modern',
         }),
       });
 
