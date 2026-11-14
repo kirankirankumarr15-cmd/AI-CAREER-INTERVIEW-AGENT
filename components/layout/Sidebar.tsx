@@ -27,6 +27,7 @@ import {
   Settings,
   Bot,
   Users,
+  Award,
 } from 'lucide-react';
 
 const navItems = [
@@ -48,6 +49,7 @@ const navItems = [
   { label: 'Job Matching',   href: '/jobs',          icon: Briefcase,       shortcut: 'J' },
   { label: 'Applications',   href: '/applications',  icon: Send,            shortcut: 'A' },
   { label: 'Documents',      href: '/documents',     icon: FolderOpen,      shortcut: 'O' },
+  { label: 'Readiness Index', href: '/readiness',     icon: Award,           shortcut: 'K', badge: '5 Pillars' },
   { label: 'Progress',       href: '/progress',      icon: LineChart,       shortcut: 'G' },
   { label: 'Learn Roadmap',  href: '/learn',         icon: BookOpen,        shortcut: 'L' },
   { label: 'Roadmap Agent',  href: '/roadmap',       icon: Route,           shortcut: 'M', badge: 'Live AI' },

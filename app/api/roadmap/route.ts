@@ -4,6 +4,9 @@ import { getActiveRoadmapForUser, getCachedRoleRequirements } from '@/lib/roadma
 import { analyzeSkillGaps } from '@/lib/roadmap/skillGap';
 import { getDbClient } from '@/lib/auth/userService';
 import { SkillItem, ProjectItem, CertificationItem } from '@/types';
+import { getActiveRoadmap, generateDynamic12WeekPlan } from '@/lib/roadmap/dynamic-roadmap';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,65 +15,39 @@ export async function GET(req: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const userId = user?.id || 'd2760b39-2de1-4803-946b-f1f659063887';
+    const userId = user?.id || (process.env.NODE_ENV !== 'production' ? 'dev_student_user' : 'd2760b39-2de1-4803-946b-f1f659063887');
     const { searchParams } = new URL(req.url);
     const roadmapId = searchParams.get('roadmapId') || undefined;
 
-    const roadmap = await getActiveRoadmapForUser(userId, roadmapId);
-
-    if (!roadmap) {
-      return NextResponse.json({
-        success: true,
-        roadmap: null,
+    // 1. Get or generate Dynamic 12-Week Roadmap
+    let dynamic12WeekPlan = getActiveRoadmap(userId);
+    if (!dynamic12WeekPlan) {
+      dynamic12WeekPlan = generateDynamic12WeekPlan({
+        userId,
+        targetRole: 'Full Stack Developer',
+        targetCompany: 'Top Tier Placement Drive',
       });
     }
 
-    // Attach fresh skill gap analysis
-    let skillGap = undefined;
-    const requirements = await getCachedRoleRequirements(roadmap.role);
-
-    if (requirements) {
-      const db = getDbClient();
-      let verifiedSkills: SkillItem[] = [];
-      let verifiedProjects: ProjectItem[] = [];
-      let verifiedCerts: CertificationItem[] = [];
-
-      try {
-        await db.connect();
-        const profRes = await db.query(
-          'SELECT skills, projects, certifications FROM public.profiles WHERE id = $1',
-          [userId]
-        );
-        if (profRes.rows.length > 0) {
-          const row = profRes.rows[0];
-          verifiedSkills = Array.isArray(row.skills) ? row.skills : [];
-          verifiedProjects = Array.isArray(row.projects) ? row.projects : [];
-          verifiedCerts = Array.isArray(row.certifications) ? row.certifications : [];
-        }
-        await db.end();
-      } catch {
-        try { await db.end(); } catch {}
-      }
-
-      skillGap = analyzeSkillGaps(requirements, {
-        skills: verifiedSkills,
-        projects: verifiedProjects,
-        certifications: verifiedCerts,
-      });
+    // 2. Fetch legacy roadmap for compatibility if available
+    let roadmap = null;
+    try {
+      roadmap = await getActiveRoadmapForUser(userId, roadmapId);
+    } catch {
+      // Handled
     }
 
     return NextResponse.json({
       success: true,
-      roadmap: {
-        ...roadmap,
-        skillGap: skillGap || roadmap.skillGap,
-      },
+      dynamicPlan: dynamic12WeekPlan,
+      roadmap: roadmap ? { ...roadmap } : null,
     });
   } catch (error: unknown) {
-    console.error('Error fetching roadmap:', error);
-    const errMsg = error instanceof Error ? error.message : 'Failed to fetch roadmap.';
     return NextResponse.json(
-      { success: false, error: errMsg },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error fetching roadmap',
+      },
       { status: 500 }
     );
   }

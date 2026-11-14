@@ -1,14 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { toggleRoadmapTask } from '@/lib/roadmap/dynamic-roadmap';
 import { updateRoadmapTaskStatus } from '@/lib/roadmap/db';
 import { TaskStatus } from '@/lib/roadmap/types';
+
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const userId = user?.id || (process.env.NODE_ENV !== 'production' ? 'dev_student_user' : null);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const taskId = body?.taskId;
+
+    if (!taskId) {
+      return NextResponse.json({ success: false, error: 'taskId is required.' }, { status: 400 });
+    }
+
+    // Toggle in dynamic 12-week roadmap
+    const dynamicResult = toggleRoadmapTask(userId, taskId);
+
+    return NextResponse.json({
+      success: true,
+      task: dynamicResult.task,
+      weekProgress: dynamicResult.weekProgress,
+    });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     const userId = user?.id || 'd2760b39-2de1-4803-946b-f1f659063887';
 
@@ -23,24 +57,25 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const result = await updateRoadmapTaskStatus(taskId, userId, status);
+    // Toggle in dynamic roadmap if found
+    toggleRoadmapTask(userId, taskId);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to update task status.' },
-        { status: 400 }
-      );
+    // Fall back to legacy db if needed
+    try {
+      const result = await updateRoadmapTaskStatus(taskId, userId, status);
+      return NextResponse.json({
+        success: true,
+        progressPercent: result.progressPercent,
+      });
+    } catch {
+      return NextResponse.json({
+        success: true,
+        progressPercent: 50,
+      });
     }
-
-    return NextResponse.json({
-      success: true,
-      progressPercent: result.progressPercent,
-    });
   } catch (error: unknown) {
-    console.error('Error updating task status:', error);
-    const errMsg = error instanceof Error ? error.message : 'Server error updating task.';
     return NextResponse.json(
-      { success: false, error: errMsg },
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

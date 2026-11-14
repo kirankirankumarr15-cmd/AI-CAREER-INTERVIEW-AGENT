@@ -340,3 +340,239 @@ export interface GDSession {
   evaluation?: GDEvaluation;
 }
 
+
+// =====================================================================
+// Phase 4: Timed Assessment, Readiness Index & Dynamic Roadmap Types
+// =====================================================================
+
+export type QuestionPaletteState =
+  | 'answered'
+  | 'unanswered'
+  | 'marked_for_review'
+  | 'answered_and_marked_for_review'
+  | 'review'
+  | 'not_visited';
+
+export type AssessmentStatus = 'in_progress' | 'completed' | 'expired' | 'abandoned';
+export type ProctorSeverity = 'low' | 'medium' | 'high';
+export type ProctorReviewStatus = 'pending' | 'reviewed' | 'flagged' | 'cleared';
+
+export type ProctorEventType =
+  | 'tab_hidden'
+  | 'tab_visible'
+  | 'window_blur'
+  | 'window_focus'
+  | 'fullscreen_exit'
+  | 'fullscreen_enter'
+  | 'copy_attempt'
+  | 'paste_attempt'
+  | 'navigation_event'
+  | 'repeated_activity'
+  | 'suspicious_shortcut';
+
+export interface QuestionOption {
+  id: string; // e.g. "A", "B", "C", "D"
+  text: string;
+}
+
+export interface AssessmentQuestionPublic {
+  id: string;
+  assessmentId: string;
+  sectionId?: string;
+  questionText: string;
+  questionType: 'mcq' | 'multi_choice' | 'coding' | 'short_text';
+  options: QuestionOption[];
+  topic: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  marks: number;
+  negativeMarks: number;
+  orderIndex: number;
+}
+
+export interface AssessmentQuestionFull extends AssessmentQuestionPublic {
+  correctOption: string;
+  explanation: string;
+}
+
+export interface AssessmentSection {
+  id: string;
+  assessmentId: string;
+  title: string;
+  description?: string;
+  orderIndex: number;
+  durationMinutes?: number;
+  marksPerQuestion: number;
+  negativeMarks: number;
+}
+
+export interface AssessmentSummary {
+  id: string;
+  title: string;
+  description?: string;
+  category: string;
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
+  durationMinutes: number;
+  totalMarks: number;
+  passMarks: number;
+  totalQuestions?: number;
+  questionCount: number;
+  negativeMarking: boolean;
+  status?: 'draft' | 'published' | 'archived';
+  sections?: AssessmentSection[];
+  previousAttemptsCount?: number;
+  latestScore?: number;
+  latestPercentage?: number;
+  latestResultStatus?: 'passed' | 'failed' | 'pending';
+}
+
+export interface AttemptAnswerState {
+  questionId: string;
+  selectedOption: string | null;
+  isMarkedReview: boolean;
+  timeSpentSecs: number;
+  updatedAt?: string;
+}
+
+export interface AttemptAnswerResult extends AttemptAnswerState {
+  isCorrect?: boolean;
+  marksAwarded?: number;
+  correctOption?: string;
+  explanation?: string;
+  topic?: string;
+}
+
+export interface ProctorEventItem {
+  id?: string;
+  attemptId: string;
+  userId?: string;
+  eventType: ProctorEventType;
+  timestamp: string;
+  severity?: ProctorSeverity;
+  reviewStatus?: ProctorReviewStatus;
+  metadata?: Record<string, unknown>;
+  details?: Record<string, unknown>;
+}
+
+export interface AssessmentAttemptResult {
+  id: string;
+  assessmentId: string;
+  assessmentTitle: string;
+  startedAt: string;
+  deadlineAt: string;
+  submittedAt: string;
+  status: AssessmentStatus;
+  resultStatus: 'passed' | 'failed' | 'pending';
+  timeTakenSecs: number;
+  score: number;
+  totalMarks: number;
+  passMarks?: number;
+  percentage: number;
+  tabSwitchCount: number;
+  totalQuestions: number;
+  correctCount: number;
+  incorrectCount: number;
+  unansweredCount: number;
+  sectionBreakdown: Array<{
+    sectionTitle: string;
+    score: number;
+    totalMarks: number;
+    percentage: number;
+  }>;
+  topicBreakdown: Array<{
+    topic: string;
+    total: number;
+    correct: number;
+    percentage: number;
+  }>;
+  weakTopics: string[];
+  recommendations: string[];
+  proctorEvents: ProctorEventItem[];
+  answers: AttemptAnswerResult[];
+}
+
+// 4.2 Readiness Index Types
+export interface ReadinessPillarScore {
+  score: number;        // 0-100
+  weight: number;       // e.g. 25
+  isAssessed: boolean;
+  evidence: string;
+  lastUpdated?: string;
+}
+
+export interface ReadinessRecommendation {
+  id: string;
+  pillar: 'Assessments' | 'Resume' | 'Interview' | 'Group Discussion' | 'Profile';
+  title: string;
+  actionText: string;
+  currentScore: number;
+  targetScore: number;
+  priorityScore: number; // calculated via Priority = Weight * (100 - Score) / Effort
+  estimatedEffortHours: number;
+  href: string;
+}
+
+export interface ReadinessIndexReport {
+  overallScore: number;     // Normalized 0-100
+  rawWeightedScore: number; // Raw sum
+  coveragePercentage: number; // Sum of assessed weights
+  formulaDescription: string;
+  calculatedAt: string;
+  pillars: {
+    assessments: ReadinessPillarScore;
+    resume: ReadinessPillarScore;
+    interview: ReadinessPillarScore;
+    groupDiscussion: ReadinessPillarScore;
+    profile: ReadinessPillarScore;
+  };
+  strengths: string[];
+  weaknesses: string[];
+  topRecommendations: ReadinessRecommendation[];
+  history: Array<{
+    date: string;
+    overallScore: number;
+    coveragePercentage: number;
+  }>;
+}
+
+// 4.3 Dynamic 12-Week Roadmap Types
+export interface RoadmapTaskItem {
+  id: string;
+  weekId: string;
+  planId: string;
+  title: string;
+  description: string;
+  category: 'dsa' | 'aptitude' | 'technical' | 'communication' | 'resume' | 'interview' | 'gd' | 'profile';
+  taskType: 'daily' | 'milestone' | 'assessment' | 'revision';
+  estimatedMinutes: number;
+  priority: 'high' | 'medium' | 'low';
+  dayOfWeek: number; // 1-7
+  isCompleted: boolean;
+  completedAt?: string;
+  resources: Array<{ title: string; url?: string; type: string }>;
+  sourceModule?: string;
+}
+
+export interface RoadmapWeekItem {
+  id: string;
+  planId: string;
+  weekNumber: number;
+  objective: string;
+  milestoneName: string;
+  estimatedHours: number;
+  status: 'pending' | 'in_progress' | 'completed';
+  tasks: RoadmapTaskItem[];
+}
+
+export interface DynamicRoadmapPlan {
+  id: string;
+  userId: string;
+  targetRole: string;
+  targetCompany?: string;
+  startingReadiness: number;
+  currentReadiness: number;
+  currentWeek: number;
+  totalWeeks: number;
+  createdAt: string;
+  updatedAt: string;
+  weeks: RoadmapWeekItem[];
+}

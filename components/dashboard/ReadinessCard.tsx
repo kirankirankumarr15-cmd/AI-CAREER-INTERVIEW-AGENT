@@ -3,7 +3,8 @@
 import { useProgressStore } from '@/store/useProgressStore';
 import { useProfileStore } from '@/store/useProfileStore';
 import { RadialProgressRing } from '@/components/common/RadialProgressRing';
-import { Award, TrendingUp } from 'lucide-react';
+import { Award, TrendingUp, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export function ReadinessCard() {
   const { profile } = useProfileStore();
@@ -33,8 +34,17 @@ export function ReadinessCard() {
             Overall Placement Readiness
           </h2>
           <p className="text-xs text-slate-500 mt-1 max-w-md font-medium">
-            Calculated across 9 technical, communication, resume & interview metrics.
+            Calculated across 5 pillars: Assessments (25%), Resume (20%), Interview (25%), GD (15%), Profile (15%).
           </p>
+          <div className="mt-2">
+            <Link
+              href="/readiness"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
+            >
+              <span>Explore 5-Pillar Breakdown & Recommendations</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
 
         {/* Radial Gauge */}
