@@ -15,6 +15,19 @@ interface RetrievedChunk {
   similarity: number;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms = 2000, fallback: T): Promise<T> {
+  let timer: NodeJS.Timeout;
+  return Promise.race([
+    promise.then((res) => {
+      clearTimeout(timer);
+      return res;
+    }),
+    new Promise<T>((resolve) => {
+      timer = setTimeout(() => resolve(fallback), ms);
+    }),
+  ]);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -35,28 +48,35 @@ export async function POST(req: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 1: Vector search career_embeddings (top 8-12, filtered to user_id)
+    // STEP 1: Vector search career_embeddings (with fast timeout fallback)
     // ─────────────────────────────────────────────────────────────
     let retrievedChunks: RetrievedChunk[] = [];
     let groundingSources: string[] = [];
 
     if (userId) {
       try {
-        const { success, embedding } = await generateEmbeddingAction(messageText);
-        if (success && embedding && embedding.length === 1536) {
-          const { data, error } = await supabase.rpc('match_career_embeddings', {
-            query_embedding: embedding,
-            match_count: 10, // top 8-12 chunks
-            filter_user_id: userId,
-          });
-
-          if (!error && Array.isArray(data) && data.length > 0) {
-            retrievedChunks = data as RetrievedChunk[];
-            groundingSources = retrievedChunks.map((chunk) => {
-              const preview = chunk.content.split('\n')[0] || `${chunk.source_type} record`;
-              return `${preview} (${Math.round(chunk.similarity * 100)}% match)`;
+        const ragSearch = async () => {
+          const { success, embedding } = await generateEmbeddingAction(messageText);
+          if (success && embedding && embedding.length === 1536) {
+            const { data, error } = await supabase.rpc('match_career_embeddings', {
+              query_embedding: embedding,
+              match_count: 8,
+              filter_user_id: userId,
             });
+            if (!error && Array.isArray(data) && data.length > 0) {
+              return data as RetrievedChunk[];
+            }
           }
+          return [];
+        };
+
+        const chunks = await withTimeout(ragSearch(), 2000, []);
+        if (chunks.length > 0) {
+          retrievedChunks = chunks;
+          groundingSources = chunks.map((chunk) => {
+            const preview = chunk.content.split('\n')[0] || `${chunk.source_type} record`;
+            return `${preview} (${Math.round(chunk.similarity * 100)}% match)`;
+          });
         }
       } catch (ragErr) {
         console.warn('Vector retrieval error:', ragErr);
@@ -64,7 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 2: Pull fixed current-state facts directly from DB (or state)
+    // STEP 2: Pull current-state facts (parallel DB queries with fast timeout)
     // ─────────────────────────────────────────────────────────────
     let readinessScore = profileState?.readinessScore ?? 65;
     let targetRole = profileState?.targetRole ?? 'Software Engineer';
@@ -73,46 +93,34 @@ export async function POST(req: NextRequest) {
 
     if (userId) {
       try {
-        // Query profile facts
-        const { data: profData } = await supabase
-          .from('profiles')
-          .select('readiness_score, target_role')
-          .eq('id', userId)
-          .single();
+        const fetchDbFacts = async () => {
+          const [profRes, interviewRes] = await Promise.allSettled([
+            supabase.from('profiles').select('readiness_score, target_role').eq('id', userId).single(),
+            supabase
+              .from('interview_sessions')
+              .select('overall_score, technical_score, interview_type, weak_areas, created_at')
+              .eq('user_id', userId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single(),
+          ]);
 
-        if (profData) {
-          if (profData.readiness_score !== null) readinessScore = profData.readiness_score;
-          if (profData.target_role) targetRole = profData.target_role;
-        }
-
-        // Query latest completed interview
-        const { data: latestInterview } = await supabase
-          .from('interview_sessions')
-          .select('overall_score, technical_score, interview_type, weak_areas, created_at')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (latestInterview) {
-          latestInterviewScore = `${latestInterview.overall_score}/100 in ${latestInterview.interview_type} (Tech: ${latestInterview.technical_score || latestInterview.overall_score}/100)`;
-          if (latestInterview.weak_areas && latestInterview.weak_areas.length > 0) {
-            activeWeakAreas = Array.from(new Set([...activeWeakAreas, ...latestInterview.weak_areas]));
+          if (profRes.status === 'fulfilled' && profRes.value.data) {
+            const profData = profRes.value.data;
+            if (profData.readiness_score !== null) readinessScore = profData.readiness_score;
+            if (profData.target_role) targetRole = profData.target_role;
           }
-        }
 
-        // Query user_progress for streak and questions solved
-        const { data: progressData } = await supabase
-          .from('user_progress')
-          .select('questions_solved, daily_streak')
-          .eq('user_id', userId)
-          .single();
-
-        if (progressData) {
-          if (activeWeakAreas.length === 0) {
-            activeWeakAreas = ['System Design trade-offs', 'DSA edge cases'];
+          if (interviewRes.status === 'fulfilled' && interviewRes.value.data) {
+            const latestInterview = interviewRes.value.data;
+            latestInterviewScore = `${latestInterview.overall_score}/100 in ${latestInterview.interview_type} (Tech: ${latestInterview.technical_score || latestInterview.overall_score}/100)`;
+            if (latestInterview.weak_areas && latestInterview.weak_areas.length > 0) {
+              activeWeakAreas = Array.from(new Set([...activeWeakAreas, ...latestInterview.weak_areas]));
+            }
           }
-        }
+        };
+
+        await withTimeout(fetchDbFacts(), 1500, undefined);
       } catch (factsErr) {
         console.warn('Could not pull fixed facts from DB:', factsErr);
       }
@@ -217,9 +225,9 @@ ${conversationHistory ? `## RECENT SESSION CONVERSATION:\n${conversationHistory}
 ## STUDENT'S QUESTION:
 "${messageText}"`;
 
-    // STEP 6: Call LLM (Gemini 3.5 Flash / Flash Latest with streaming/fallback)
+    // STEP 6: Call LLM (Fast flash-lite models first for sub-2s streaming)
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const candidateModels = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-3.8-flash'];
+    const candidateModels = ['gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
 
     // Handle Streaming Response if requested
     if (shouldStream) {
