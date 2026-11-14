@@ -1,7 +1,7 @@
 // CareerPilot Practice Hub — Question Database
 // All questions are original, curated educational content
-import { webProblems, backendProblems, cnProblems, systemDesignProblems } from './more-questions';
-import { generatedProblems } from './generated-questions';
+import { webProblems, backendProblems, cnProblems, systemDesignProblems } from './more-questions.ts';
+import { generatedProblems } from './generated-questions.ts';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type QuestionType = 'sql' | 'coding' | 'conceptual' | 'aptitude' | 'hr';

@@ -35,8 +35,8 @@ const ProctorSchema = z.object({
     'repeated_activity',
     'suspicious_shortcut',
   ]),
-  details: z.record(z.string(), z.unknown()).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  details: z.object({}).catchall(z.unknown()).optional(),
+  metadata: z.object({}).catchall(z.unknown()).optional(),
 });
 
 export async function POST(req: NextRequest) {

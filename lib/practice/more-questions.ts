@@ -1,4 +1,4 @@
-import { Question } from './questions';
+import type { Question } from './questions.ts';
 
 export const webProblems: Question[] = [
   {
