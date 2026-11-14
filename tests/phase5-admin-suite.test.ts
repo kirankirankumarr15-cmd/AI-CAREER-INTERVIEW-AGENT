@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { buildPermissions, isStaffRole, normalizeAdminRole } from '@/lib/admin/permissions';
-import { sanitizeCsvCell, parseCsvText, detectMapping } from '@/lib/admin/csv';
-import { ADMIN_ROLES, PERMISSIONS } from '@/lib/admin/types';
+import { buildPermissions, isStaffRole, normalizeAdminRole } from '../lib/admin/permissions';
+import { sanitizeCsvCell, parseCsvText, detectMapping } from '../lib/admin/csv';
+import { ADMIN_ROLES, PERMISSIONS } from '../lib/admin/types';
 
 describe('Phase 5 — Admin/TPO Suite Domain Tests', () => {
   describe('RBAC & Role Permissions', () => {
