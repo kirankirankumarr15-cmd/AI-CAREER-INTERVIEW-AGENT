@@ -5,8 +5,10 @@
  * - Server-authoritative timer logic (started_at, deadline_at)
  * - Safe question delivery (correct answers & explanations strictly stripped before submit)
  * - Answer scoring with negative marking support
- * - Tab-switch proctoring event tracker
+ * - Tab-switch and focus proctoring event tracker
+ * - 4-state Question Palette evaluator
  * - Weak topic identification and recommendation generator
+ * - Duplicate finalization prevention
  * - Admin CSV question parser with spreadsheet formula injection protection
  */
 
@@ -16,6 +18,8 @@ import {
   AssessmentAttemptResult,
   AttemptAnswerResult,
   ProctorEventType,
+  ProctorSeverity,
+  QuestionPaletteState,
 } from '@/types';
 import { SEED_ASSESSMENTS, SEED_SECTIONS, SEED_QUESTIONS } from './assessment-bank';
 
@@ -27,16 +31,27 @@ interface InMemAttempt {
   startedAt: string;
   deadlineAt: string;
   submittedAt?: string;
-  status: 'in_progress' | 'completed' | 'expired';
+  status: 'in_progress' | 'completed' | 'expired' | 'abandoned';
+  resultStatus?: 'passed' | 'failed' | 'pending';
   tabSwitchCount: number;
   answers: Record<string, { selectedOption: string | null; isMarkedReview: boolean; timeSpentSecs: number }>;
-  proctorEvents: Array<{ eventType: ProctorEventType; timestamp: string; details?: Record<string, unknown> }>;
+  proctorEvents: Array<{
+    eventType: ProctorEventType;
+    timestamp: string;
+    severity?: ProctorSeverity;
+    details?: Record<string, unknown>;
+  }>;
+  cachedResult?: AssessmentAttemptResult;
 }
 
-const localAttemptsStore = new Map<string, InMemAttempt>();
+const globalStore = globalThis as unknown as { __prismAttemptsStore?: Map<string, InMemAttempt> };
+const localAttemptsStore = globalStore.__prismAttemptsStore || new Map<string, InMemAttempt>();
+if (!globalStore.__prismAttemptsStore) {
+  globalStore.__prismAttemptsStore = localAttemptsStore;
+}
 
 /**
- * 1. Safe Question Delivery: Strips answer keys and explanations
+ * 1. Safe Question Delivery: Strips answer keys and explanations strictly server-side
  */
 export function sanitizeQuestionsForClient(questions: AssessmentQuestionFull[]): AssessmentQuestionPublic[] {
   return questions.map((q) => ({
@@ -55,7 +70,37 @@ export function sanitizeQuestionsForClient(questions: AssessmentQuestionFull[]):
 }
 
 /**
- * 2. Start Assessment with Server-Authoritative Timer
+ * 2. Question Palette Evaluator (4 states according to Module 4.1 specification)
+ * - Answered
+ * - Unanswered
+ * - Marked for Review
+ * - Answered and Marked for Review
+ */
+export function evaluatePaletteState(
+  selectedOption: string | null | undefined,
+  isMarkedReview: boolean | undefined,
+  isVisited: boolean = false
+): QuestionPaletteState {
+  const hasAnswer = Boolean(selectedOption && selectedOption.trim().length > 0);
+  const isFlagged = Boolean(isMarkedReview);
+
+  if (hasAnswer && isFlagged) {
+    return 'answered_and_marked_for_review';
+  }
+  if (!hasAnswer && isFlagged) {
+    return 'marked_for_review';
+  }
+  if (hasAnswer && !isFlagged) {
+    return 'answered';
+  }
+  if (isVisited) {
+    return 'unanswered';
+  }
+  return 'not_visited';
+}
+
+/**
+ * 3. Start Assessment Session with Server-Authoritative Timer
  */
 export function startAssessmentSession(
   assessmentId: string,
@@ -75,22 +120,21 @@ export function startAssessmentSession(
   const fullQuestions = SEED_QUESTIONS[assessment.id] || SEED_QUESTIONS['asmt-tcs-nqt-full'] || [];
   const sections = SEED_SECTIONS[assessment.id] || [];
 
-  // Check existing active in_progress session for user
-  const existingKey = `${userId}_${assessment.id}`;
+  const now = new Date();
+
+  // Check if an existing in_progress session exists for this user and assessment
   let attempt = Array.from(localAttemptsStore.values()).find(
     (a) => a.userId === userId && a.assessmentId === assessment.id && a.status === 'in_progress'
   );
 
-  const now = new Date();
-
   if (attempt) {
     const deadline = new Date(attempt.deadlineAt);
     if (now.getTime() > deadline.getTime()) {
-      // Expired on the server!
+      // Server deadline has passed! Auto-finalize expired attempt
       attempt.status = 'expired';
       attempt.submittedAt = deadline.toISOString();
     } else {
-      // Resumed active attempt! Remaining time calculated from server deadline
+      // Active attempt resumed! Time remaining is strictly based on server deadline
       const remainingSecs = Math.max(0, Math.floor((deadline.getTime() - now.getTime()) / 1000));
       return {
         attemptId: attempt.id,
@@ -106,7 +150,7 @@ export function startAssessmentSession(
     }
   }
 
-  // Create fresh attempt
+  // Create fresh server-authoritative attempt
   const durationMinutes = assessment.durationMinutes;
   const deadlineAt = new Date(now.getTime() + durationMinutes * 60 * 1000);
   const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -139,7 +183,8 @@ export function startAssessmentSession(
 }
 
 /**
- * 3. Save Question Answer (with server deadline verification)
+ * 4. Save Question Answer (enforces server-authoritative deadline)
+ * Supports answer updates, clearing response (selectedOption = null), and review toggles.
  */
 export function recordQuestionAnswer(
   attemptId: string,
@@ -147,11 +192,15 @@ export function recordQuestionAnswer(
   questionId: string,
   selectedOption: string | null,
   isMarkedReview: boolean,
-  timeSpentSecs: number
-): { success: boolean; isExpired: boolean } {
+  timeSpentSecs: number = 0
+): { success: boolean; isExpired: boolean; error?: string } {
   const attempt = localAttemptsStore.get(attemptId);
   if (!attempt || attempt.userId !== userId) {
-    return { success: false, isExpired: false };
+    return { success: false, isExpired: false, error: 'Attempt not found or unauthorized' };
+  }
+
+  if (attempt.status !== 'in_progress') {
+    return { success: false, isExpired: true, error: 'Attempt is already submitted or expired' };
   }
 
   const now = new Date();
@@ -159,54 +208,78 @@ export function recordQuestionAnswer(
 
   if (now.getTime() > deadline.getTime()) {
     attempt.status = 'expired';
-    return { success: false, isExpired: true };
+    attempt.submittedAt = deadline.toISOString();
+    return { success: false, isExpired: true, error: 'Server deadline has passed' };
   }
 
   attempt.answers[questionId] = {
-    selectedOption,
+    selectedOption: selectedOption ? selectedOption.trim() : null,
     isMarkedReview,
-    timeSpentSecs: (attempt.answers[questionId]?.timeSpentSecs || 0) + timeSpentSecs,
+    timeSpentSecs: (attempt.answers[questionId]?.timeSpentSecs || 0) + Math.max(0, timeSpentSecs),
   };
 
   return { success: true, isExpired: false };
 }
 
 /**
- * 4. Record Proctor Event (Tab switch / blur / focus)
+ * 5. Record Proctoring Event
+ * Tracks browser visibility, focus, fullscreen exits, copy/paste, navigation, and repeated actions.
  */
 export function logProctoringEvent(
   attemptId: string,
   userId: string,
   eventType: ProctorEventType,
   details?: Record<string, unknown>
-): { logged: boolean; currentTabSwitches: number; shouldAutoSubmit: boolean } {
+): {
+  logged: boolean;
+  currentTabSwitches: number;
+  severity: ProctorSeverity;
+  warningMessage?: string;
+} {
   const attempt = localAttemptsStore.get(attemptId);
   if (!attempt || attempt.userId !== userId) {
-    return { logged: false, currentTabSwitches: 0, shouldAutoSubmit: false };
+    return { logged: false, currentTabSwitches: 0, severity: 'low' };
+  }
+
+  // Assess event severity
+  let severity: ProctorSeverity = 'low';
+  if (eventType === 'tab_hidden' || eventType === 'fullscreen_exit') {
+    severity = 'medium';
+    attempt.tabSwitchCount += 1;
+  } else if (eventType === 'window_blur') {
+    severity = 'low';
+    attempt.tabSwitchCount += 1;
+  } else if (eventType === 'paste_attempt' || eventType === 'copy_attempt') {
+    severity = 'medium';
+  } else if (eventType === 'repeated_activity' || eventType === 'suspicious_shortcut') {
+    severity = 'high';
   }
 
   attempt.proctorEvents.push({
     eventType,
     timestamp: new Date().toISOString(),
+    severity,
     details,
   });
 
-  if (eventType === 'tab_hidden' || eventType === 'window_blur') {
-    attempt.tabSwitchCount += 1;
+  let warningMessage: string | undefined;
+  if (attempt.tabSwitchCount === 1) {
+    warningMessage = 'Notice: Window blur or tab switch recorded. Assessment events are monitored.';
+  } else if (attempt.tabSwitchCount >= 3) {
+    warningMessage = `Integrity advisory: ${attempt.tabSwitchCount} browser window focus changes recorded.`;
   }
-
-  // Soft threshold recommendation: 5 or more tab switches signals extreme caution
-  const shouldAutoSubmit = attempt.tabSwitchCount >= 5;
 
   return {
     logged: true,
     currentTabSwitches: attempt.tabSwitchCount,
-    shouldAutoSubmit,
+    severity,
+    warningMessage,
   };
 }
 
 /**
- * 5. Submit Assessment & Calculate Scores Server-Side
+ * 6. Finalize Assessment Attempt & Server-Authoritative Scoring
+ * Safe against duplicate submissions: returns cached result if already completed.
  */
 export function finalizeAssessmentAttempt(
   attemptId: string,
@@ -214,6 +287,11 @@ export function finalizeAssessmentAttempt(
   isAutoSubmit: boolean = false
 ): AssessmentAttemptResult {
   const attempt = localAttemptsStore.get(attemptId);
+  if (attempt && attempt.cachedResult) {
+    // Prevent duplicate calculation / replay
+    return attempt.cachedResult;
+  }
+
   const assessment = SEED_ASSESSMENTS.find((a) => a.id === attempt?.assessmentId) || SEED_ASSESSMENTS[0];
   const fullQuestions = SEED_QUESTIONS[assessment.id] || SEED_QUESTIONS['asmt-tcs-nqt-full'] || [];
   const sections = SEED_SECTIONS[assessment.id] || [];
@@ -298,13 +376,14 @@ export function finalizeAssessmentAttempt(
 
   totalScore = Math.max(0, Number(totalScore.toFixed(2)));
   const percentage = totalMarks > 0 ? Number(((totalScore / totalMarks) * 100).toFixed(1)) : 0;
+  const resultStatus: 'passed' | 'failed' = totalScore >= assessment.passMarks ? 'passed' : 'failed';
 
   // Weak topics detection: topics where accuracy is under 60%
   const weakTopics = Object.entries(topicStats)
     .filter(([_, stats]) => stats.total > 0 && stats.correct / stats.total < 0.6)
     .map(([topic]) => topic);
 
-  // Recommendations generator
+  // Recommendations generator based on actual results
   const recommendations: string[] = [];
   if (weakTopics.length > 0) {
     recommendations.push(`Prioritize targeted revision in weak areas: ${weakTopics.join(', ')}.`);
@@ -317,26 +396,22 @@ export function finalizeAssessmentAttempt(
   } else if (percentage >= 60) {
     recommendations.push('Good foundation. Strengthen speed and accuracy under timed conditions.');
   } else {
-    recommendations.push('Core gaps identified. Complete the 12-week roadmap milestones before company screening drives.');
+    recommendations.push('Core gaps identified. Complete targeted practice drills before company placement drives.');
   }
 
-  // Update status in attempt record
-  if (attempt) {
-    attempt.status = isAutoSubmit ? 'expired' : 'completed';
-    attempt.submittedAt = now.toISOString();
-  }
-
-  return {
+  const result: AssessmentAttemptResult = {
     id: attempt?.id || `att_eval_${Date.now()}`,
     assessmentId: assessment.id,
     assessmentTitle: assessment.title,
     startedAt: attempt?.startedAt || now.toISOString(),
     deadlineAt: attempt?.deadlineAt || now.toISOString(),
     submittedAt: now.toISOString(),
-    status: attempt?.status || 'completed',
+    status: isAutoSubmit ? 'expired' : 'completed',
+    resultStatus,
     timeTakenSecs,
     score: totalScore,
     totalMarks,
+    passMarks: assessment.passMarks,
     percentage,
     tabSwitchCount: attempt?.tabSwitchCount || 0,
     totalQuestions: fullQuestions.length,
@@ -361,14 +436,64 @@ export function finalizeAssessmentAttempt(
       attemptId: attempt.id,
       eventType: e.eventType,
       timestamp: e.timestamp,
+      severity: e.severity || 'low',
       details: e.details,
     })) || [],
     answers: answersResult,
   };
+
+  // Cache result to prevent duplicate re-calculation
+  if (attempt) {
+    attempt.status = isAutoSubmit ? 'expired' : 'completed';
+    attempt.resultStatus = resultStatus;
+    attempt.submittedAt = now.toISOString();
+    attempt.cachedResult = result;
+  }
+
+  return result;
 }
 
 /**
- * 6. Admin CSV Import Parser with Spreadsheet Formula Injection Prevention
+ * 7. Retrieve Attempt Result by Attempt ID
+ */
+export function getAttemptEvaluation(attemptId: string, userId: string): AssessmentAttemptResult | null {
+  const attempt = localAttemptsStore.get(attemptId);
+  if (!attempt || attempt.userId !== userId) {
+    return null;
+  }
+  if (attempt.cachedResult) {
+    return attempt.cachedResult;
+  }
+  if (attempt.status === 'completed' || attempt.status === 'expired') {
+    return finalizeAssessmentAttempt(attemptId, userId, attempt.status === 'expired');
+  }
+  return null;
+}
+
+/**
+ * 8. Retrieve Previous Attempts History for a User
+ */
+export function getUserAssessmentHistory(userId: string): Record<string, { count: number; latestScore: number; latestPercentage: number; latestResultStatus: 'passed' | 'failed' | 'pending' }> {
+  const history: Record<string, { count: number; latestScore: number; latestPercentage: number; latestResultStatus: 'passed' | 'failed' | 'pending' }> = {};
+
+  Array.from(localAttemptsStore.values()).forEach((att) => {
+    if (att.userId === userId && (att.status === 'completed' || att.status === 'expired')) {
+      const existing = history[att.assessmentId] || { count: 0, latestScore: 0, latestPercentage: 0, latestResultStatus: 'pending' };
+      existing.count += 1;
+      if (att.cachedResult) {
+        existing.latestScore = att.cachedResult.score;
+        existing.latestPercentage = att.cachedResult.percentage;
+        existing.latestResultStatus = att.cachedResult.resultStatus;
+      }
+      history[att.assessmentId] = existing;
+    }
+  });
+
+  return history;
+}
+
+/**
+ * 9. Admin CSV Import Parser with Spreadsheet Formula Injection Prevention
  * Strips formula execution characters: '=', '+', '-', '@', '\t', '\r'
  */
 export function sanitizeCSVCell(value: string): string {
@@ -398,12 +523,8 @@ export function parseQuestionCSV(csvText: string, assessmentId: string): CSVPars
     return { validQuestions, invalidRows, totalRows: 0 };
   }
 
-  // Header inspection: expected Question, OptionA, OptionB, OptionC, OptionD, Correct, Explanation, Topic, Difficulty, Marks
-  const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-
   for (let i = 1; i < lines.length; i++) {
     const rawLine = lines[i];
-    // Simple CSV splitter handling quotes
     const cells = rawLine.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || rawLine.split(',');
     const sanitizedCells = cells.map((c) => sanitizeCSVCell(c.replace(/^"|"$/g, '')));
 

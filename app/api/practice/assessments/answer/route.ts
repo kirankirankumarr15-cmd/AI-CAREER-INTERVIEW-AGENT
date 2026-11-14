@@ -2,7 +2,8 @@
  * /api/practice/assessments/answer
  *
  * Saves a student's answer for a specific question.
- * Validates attempt ownership and server deadline.
+ * Strictly verifies attempt ownership and validates the server deadline.
+ * If the attempt has expired, rejects new answer modifications with HTTP 410 Gone.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -38,17 +39,38 @@ export async function POST(req: NextRequest) {
 
     const { attemptId, questionId, selectedOption, isMarkedReview, timeSpentSecs } = parsed.data;
 
+    // Validate server deadline and save answer
     const result = recordQuestionAnswer(attemptId, userId, questionId, selectedOption, isMarkedReview, timeSpentSecs);
 
     if (result.isExpired) {
       return NextResponse.json(
-        { error: 'Assessment time has expired. Submissions are closed.', isExpired: true },
+        { error: 'Assessment deadline has expired. Answer submissions are closed.', isExpired: true },
         { status: 410 } // HTTP 410 Gone
       );
     }
 
     if (!result.success) {
-      return NextResponse.json({ error: 'Attempt not found or invalid ownership' }, { status: 404 });
+      return NextResponse.json(
+        { error: result.error || 'Attempt not found or invalid ownership' },
+        { status: 404 }
+      );
+    }
+
+    // If Supabase is available and attempt is a UUID, sync answer to DB
+    if (user && !attemptId.startsWith('att_')) {
+      try {
+        await supabase.from('assessment_answers').upsert({
+          attempt_id: attemptId,
+          question_id: questionId,
+          user_id: user.id,
+          selected_option: selectedOption,
+          is_marked_review: isMarkedReview,
+          time_spent_secs: timeSpentSecs,
+          updated_at: new Date().toISOString(),
+        });
+      } catch {
+        // Handled in resilient fallback
+      }
     }
 
     return NextResponse.json({

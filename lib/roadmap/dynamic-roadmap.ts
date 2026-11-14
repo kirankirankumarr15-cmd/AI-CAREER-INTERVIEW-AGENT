@@ -11,7 +11,11 @@
 import { DynamicRoadmapPlan, RoadmapWeekItem, RoadmapTaskItem, ReadinessIndexReport } from '@/types';
 
 // In-memory store for fallback mode when database is uninitialized
-const localRoadmapsStore = new Map<string, DynamicRoadmapPlan>();
+const globalRoadmapStore = globalThis as unknown as { __prismRoadmapsStore?: Map<string, DynamicRoadmapPlan> };
+const localRoadmapsStore = globalRoadmapStore.__prismRoadmapsStore || new Map<string, DynamicRoadmapPlan>();
+if (!globalRoadmapStore.__prismRoadmapsStore) {
+  globalRoadmapStore.__prismRoadmapsStore = localRoadmapsStore;
+}
 
 export interface RoadmapGenerationInput {
   userId: string;

@@ -1,9 +1,9 @@
 /**
  * /api/practice/assessments/start
  *
- * Starts or resumes a timed assessment session.
- * Stores started_at and deadline_at server-side.
- * Strictly returns sanitized questions (no correct options or explanations).
+ * Starts or resumes a timed assessment session with server-authoritative timing.
+ * Generates started_at and deadline_at server-side.
+ * Strictly delivers sanitized questions (correct answers and explanations are stripped).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -41,7 +41,6 @@ export async function POST(req: NextRequest) {
     if (user) {
       try {
         await supabase.from('assessment_attempts').upsert({
-          id: session.attemptId.startsWith('att_') ? undefined : session.attemptId,
           assessment_id: session.assessment.id,
           user_id: user.id,
           started_at: session.startedAt,
@@ -49,7 +48,7 @@ export async function POST(req: NextRequest) {
           status: 'in_progress',
         });
       } catch {
-        // Silently handled in dev fallback
+        // Handled in resilient fallback
       }
     }
 
@@ -58,7 +57,7 @@ export async function POST(req: NextRequest) {
       attemptId: session.attemptId,
       assessment: session.assessment,
       sections: session.sections,
-      questions: session.questions, // Already sanitized!
+      questions: session.questions, // Securely sanitized on the server
       startedAt: session.startedAt,
       deadlineAt: session.deadlineAt,
       remainingSeconds: session.remainingSeconds,

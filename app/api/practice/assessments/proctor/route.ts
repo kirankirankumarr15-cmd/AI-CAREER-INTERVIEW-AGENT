@@ -2,11 +2,14 @@
  * /api/practice/assessments/proctor
  *
  * Logs browser-based proctoring events:
- * - tab_hidden (visibilitychange)
- * - window_blur (focus lost)
- * - window_focus (focus regained)
+ * - tab visibility changes (tab_hidden, tab_visible)
+ * - window focus changes (window_blur, window_focus)
+ * - fullscreen exit and enter (fullscreen_exit, fullscreen_enter)
+ * - copy and paste events (copy_attempt, paste_attempt)
+ * - navigation events
+ * - repeated activity
  *
- * Does not disqualify students automatically; records evidence for review.
+ * Integrity events are treated as review signals, never as automatic disqualification.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,8 +22,21 @@ export const dynamic = 'force-dynamic';
 
 const ProctorSchema = z.object({
   attemptId: z.string().min(1),
-  eventType: z.enum(['tab_hidden', 'window_blur', 'window_focus', 'fullscreen_exit', 'paste_attempt']),
+  eventType: z.enum([
+    'tab_hidden',
+    'tab_visible',
+    'window_blur',
+    'window_focus',
+    'fullscreen_exit',
+    'fullscreen_enter',
+    'copy_attempt',
+    'paste_attempt',
+    'navigation_event',
+    'repeated_activity',
+    'suspicious_shortcut',
+  ]),
   details: z.record(z.string(), z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -39,21 +55,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { attemptId, eventType, details } = parsed.data;
+    const { attemptId, eventType, details, metadata } = parsed.data;
 
-    const result = logProctoringEvent(attemptId, userId, eventType as ProctorEventType, details);
+    const mergedDetails = { ...(details || {}), ...(metadata || {}) };
+    const result = logProctoringEvent(attemptId, userId, eventType as ProctorEventType, mergedDetails);
+
+    // If Supabase is available, record event in database
+    if (user && !attemptId.startsWith('att_')) {
+      try {
+        await supabase.from('proctor_events').insert({
+          attempt_id: attemptId,
+          user_id: user.id,
+          event_type: eventType,
+          severity: result.severity,
+          review_status: 'pending',
+          metadata: mergedDetails,
+          details: mergedDetails,
+        });
+      } catch {
+        // Handled in resilient fallback
+      }
+    }
 
     return NextResponse.json({
       success: true,
       logged: result.logged,
       currentTabSwitches: result.currentTabSwitches,
-      shouldAutoSubmit: result.shouldAutoSubmit,
-      warningMessage:
-        result.currentTabSwitches === 1
-          ? 'Notice: Window blur/tab switch detected. Please remain on the assessment screen.'
-          : result.currentTabSwitches >= 3
-          ? `Warning: ${result.currentTabSwitches} focus changes recorded. Exam integrity policy is enforced.`
-          : undefined,
+      severity: result.severity,
+      warningMessage: result.warningMessage,
     });
   } catch (err) {
     return NextResponse.json(

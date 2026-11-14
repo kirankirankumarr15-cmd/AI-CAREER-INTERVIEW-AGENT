@@ -1,9 +1,11 @@
 /**
  * /api/practice/assessments/submit
  *
- * Submits an assessment attempt, computes server-side scoring,
- * section breakdowns, weak topics, and recommendations.
- * Returns full evaluation including correct options and explanations.
+ * Finalizes an assessment attempt and calculates scores server-side.
+ * Strictly prevents client-side score manipulation and duplicate finalizations.
+ * Once finalized, securely returns the comprehensive evaluation report,
+ * correct answers, explanations, section breakdowns, and weak area analysis.
+ * Integrates results with student profile and readiness tracking.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -36,30 +38,56 @@ export async function POST(req: NextRequest) {
 
     const { attemptId, isAutoSubmit } = parsed.data;
 
+    // Server-authoritative scoring & duplicate finalization protection
     const evaluation = finalizeAssessmentAttempt(attemptId, userId, isAutoSubmit);
 
-    // If Supabase is connected, persist completion result
+    // If Supabase is connected, persist attempt completion and integrate with student modules
     if (user) {
       try {
+        if (!attemptId.startsWith('att_')) {
+          await supabase
+            .from('assessment_attempts')
+            .update({
+              status: evaluation.status,
+              result_status: evaluation.resultStatus,
+              submitted_at: evaluation.submittedAt,
+              time_taken_secs: evaluation.timeTakenSecs,
+              score: evaluation.score,
+              total_marks: evaluation.totalMarks,
+              percentage: evaluation.percentage,
+              tab_switch_count: evaluation.tabSwitchCount,
+              summary: {
+                weakTopics: evaluation.weakTopics,
+                recommendations: evaluation.recommendations,
+                sectionBreakdown: evaluation.sectionBreakdown,
+                topicBreakdown: evaluation.topicBreakdown,
+              },
+            })
+            .eq('id', attemptId)
+            .eq('user_id', user.id);
+        }
+
+        // Integration with Career Readiness & User Progress:
+        // Update user_progress with real assessment weak areas and technical score
+        const { data: currentProgress } = await supabase
+          .from('user_progress')
+          .select('weak_areas, technical_knowledge')
+          .eq('user_id', user.id)
+          .single();
+
+        const existingWeak = currentProgress?.weak_areas || [];
+        const combinedWeak = Array.from(new Set([...existingWeak, ...evaluation.weakTopics]));
+
         await supabase
-          .from('assessment_attempts')
-          .update({
-            status: evaluation.status,
-            submitted_at: evaluation.submittedAt,
-            time_taken_secs: evaluation.timeTakenSecs,
-            score: evaluation.score,
-            total_marks: evaluation.totalMarks,
-            percentage: evaluation.percentage,
-            tab_switch_count: evaluation.tabSwitchCount,
-            summary: {
-              weakTopics: evaluation.weakTopics,
-              recommendations: evaluation.recommendations,
-              sectionBreakdown: evaluation.sectionBreakdown,
-            },
-          })
-          .eq('user_id', user.id);
+          .from('user_progress')
+          .upsert({
+            user_id: user.id,
+            technical_knowledge: Math.round(evaluation.percentage),
+            weak_areas: combinedWeak,
+            updated_at: new Date().toISOString(),
+          });
       } catch {
-        // Handled in dev fallback
+        // Handled in resilient fallback
       }
     }
 
