@@ -18,7 +18,19 @@ export async function GET(req: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
+      return NextResponse.json({
+        sessions: [
+          {
+            id: 'guest_session',
+            title: 'Welcome to Ask CareerPilot',
+            pinned: false,
+            remember_across_chats: false,
+            last_active_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+          },
+        ],
+        isGuest: true,
+      });
     }
 
     const { searchParams } = new URL(req.url);
@@ -62,7 +74,19 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
+      return NextResponse.json({
+        sessions: [
+          {
+            id: 'guest_session',
+            title: 'Welcome to Ask CareerPilot',
+            pinned: false,
+            remember_across_chats: false,
+            last_active_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+          },
+        ],
+        isGuest: true,
+      });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -97,7 +121,19 @@ export async function DELETE() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
+      return NextResponse.json({
+        sessions: [
+          {
+            id: 'guest_session',
+            title: 'Welcome to Ask CareerPilot',
+            pinned: false,
+            remember_across_chats: false,
+            last_active_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+          },
+        ],
+        isGuest: true,
+      });
     }
 
     // Delete all sessions for this user (cascades to chat_messages via FK)

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { useProfileStore } from '@/store/useProfileStore';
 import { createClient } from '@/utils/supabase/client';
 import ReactMarkdown from 'react-markdown';
@@ -393,11 +394,11 @@ export default function ChatPage() {
                   prev.map((m) =>
                     m.id === assistantMsgId
                       ? {
-                          ...m,
-                          content: streamedAnswer,
-                          grounding: activeGrounding,
-                          deepLinks: activeDeepLinks,
-                        }
+                        ...m,
+                        content: streamedAnswer,
+                        grounding: activeGrounding,
+                        deepLinks: activeDeepLinks,
+                      }
                       : m
                   )
                 );
@@ -413,15 +414,15 @@ export default function ChatPage() {
                   prev.map((m) =>
                     m.id === assistantMsgId
                       ? {
-                          ...m,
-                          content: streamedAnswer,
-                          grounding: activeGrounding,
-                          deepLinks: activeDeepLinks,
-                          proposal: activeProposal,
-                          tokens_prompt: eventData.tokens?.promptTokens,
-                          tokens_completion: eventData.tokens?.completionTokens,
-                          latency_ms: eventData.latencyMs,
-                        }
+                        ...m,
+                        content: streamedAnswer,
+                        grounding: activeGrounding,
+                        deepLinks: activeDeepLinks,
+                        proposal: activeProposal,
+                        tokens_prompt: eventData.tokens?.promptTokens,
+                        tokens_completion: eventData.tokens?.completionTokens,
+                        latency_ms: eventData.latencyMs,
+                      }
                       : m
                   )
                 );
@@ -1150,11 +1151,11 @@ export default function ChatPage() {
                     <div className="h-8 w-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 shrink-0 mt-0.5 font-bold text-xs">
                       {profile.fullName
                         ? profile.fullName
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .slice(0, 2)
-                            .toUpperCase()
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .slice(0, 2)
+                          .toUpperCase()
                         : 'ME'}
                     </div>
                   )}
@@ -1193,12 +1194,22 @@ export default function ChatPage() {
                 <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
-              <button
-                onClick={() => handleSendMessage()}
-                className="px-2.5 py-1 rounded bg-rose-900/60 hover:bg-rose-800 text-white font-medium text-[11px] shrink-0"
-              >
-                Retry
-              </button>
+              <div className="flex items-center gap-2">
+                {/sign in|unauthenticated/i.test(errorMessage) && (
+                  <Link
+                    href="/login"
+                    className="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-medium text-[11px] shrink-0"
+                  >
+                    Sign In
+                  </Link>
+                )}
+                <button
+                  onClick={() => handleSendMessage()}
+                  className="px-2.5 py-1 rounded bg-rose-900/60 hover:bg-rose-800 text-white font-medium text-[11px] shrink-0"
+                >
+                  Retry
+                </button>
+              </div>
             </div>
           )}
 

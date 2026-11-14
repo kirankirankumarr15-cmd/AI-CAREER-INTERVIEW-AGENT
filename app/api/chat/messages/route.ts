@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
+      return NextResponse.json({ messages: [], isGuest: true });
     }
 
     const { searchParams } = new URL(req.url);

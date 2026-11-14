@@ -61,37 +61,33 @@ export async function POST(req: NextRequest) {
     let sessionId = isUuid ? rawSessionId : undefined;
 
     // ─────────────────────────────────────────────────────────────
-    // 1. Authenticate user via Supabase session
+    // 1. Authenticate user via Supabase session (with Guest fallback)
     // ─────────────────────────────────────────────────────────────
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthenticated. Please sign in to access Ask CareerPilot.' },
-        { status: 401 }
-      );
-    }
-
-    const userId = user.id;
+    const isGuest = !user;
+    const userId = user?.id || 'guest_user';
 
     // ─────────────────────────────────────────────────────────────
-    // 2. Rate limit & token quota enforcement
+    // 2. Rate limit & token quota enforcement (for authenticated users)
     // ─────────────────────────────────────────────────────────────
-    const quotaCheck = await checkUserQuota(userId, supabase);
-    if (!quotaCheck.allowed) {
-      return NextResponse.json(
-        {
-          error: quotaCheck.reason,
-          quota: {
-            messagesUsed: quotaCheck.messagesUsed,
-            messagesLimit: quotaCheck.messagesLimit,
-            tokensUsed: quotaCheck.tokensUsed,
-            tokensLimit: quotaCheck.tokensLimit,
+    if (!isGuest) {
+      const quotaCheck = await checkUserQuota(userId, supabase);
+      if (!quotaCheck.allowed) {
+        return NextResponse.json(
+          {
+            error: quotaCheck.reason,
+            quota: {
+              messagesUsed: quotaCheck.messagesUsed,
+              messagesLimit: quotaCheck.messagesLimit,
+              tokensUsed: quotaCheck.tokensUsed,
+              tokensLimit: quotaCheck.tokensLimit,
+            },
           },
-        },
-        { status: 429 }
-      );
+          { status: 429 }
+        );
+      }
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -114,7 +110,9 @@ export async function POST(req: NextRequest) {
     // ─────────────────────────────────────────────────────────────
     // 4. Ensure or Create Chat Session
     // ─────────────────────────────────────────────────────────────
-    if (!sessionId) {
+    if (isGuest) {
+      sessionId = sessionId || 'guest_session';
+    } else if (!sessionId) {
       // Auto-generate title from first 6 words of student prompt
       const words = messageText.trim().split(/\s+/).slice(0, 6).join(' ');
       const cleanTitle = words.length > 35 ? words.slice(0, 35) + '...' : words;
@@ -129,12 +127,11 @@ export async function POST(req: NextRequest) {
         .select('id')
         .single();
 
-      if (sessErr || !newSession) {
-        console.error('Failed to create chat session:', sessErr);
-        return NextResponse.json({ error: 'Failed to initialize chat session' }, { status: 500 });
+      if (!sessErr && newSession) {
+        sessionId = newSession.id;
+      } else {
+        sessionId = `session_${Date.now()}`;
       }
-
-      sessionId = newSession.id;
     } else {
       // Touch session last_active_at
       await supabase
@@ -214,15 +211,21 @@ export async function POST(req: NextRequest) {
     });
 
     // ─────────────────────────────────────────────────────────────
-    // 7. Save Student Turn to chat_messages
+    // 7. Save Student Turn to chat_messages (for authenticated users)
     // ─────────────────────────────────────────────────────────────
-    await supabase.from('chat_messages').insert({
-      session_id: sessionId,
-      user_id: userId,
-      role: 'user',
-      content: messageText,
-      retrieved_chunk_ids: retrievedChunkIds,
-    });
+    if (!isGuest) {
+      try {
+        await supabase.from('chat_messages').insert({
+          session_id: sessionId,
+          user_id: userId,
+          role: 'user',
+          content: messageText,
+          retrieved_chunk_ids: retrievedChunkIds,
+        });
+      } catch (err) {
+        console.warn('Could not save user chat message:', err);
+      }
+    }
 
     // ─────────────────────────────────────────────────────────────
     // 8. Stream Response to Client via Server-Sent Events (SSE)
@@ -290,33 +293,40 @@ export async function POST(req: NextRequest) {
           const costCents = estimateCostCents(provider.name, promptTokens, completionTokens);
 
           // ─────────────────────────────────────────────────────────
-          // 9. Persist Assistant Reply to chat_messages
+          // 9. Persist Assistant Reply to chat_messages (for authenticated users)
           // ─────────────────────────────────────────────────────────
-          const { data: savedMsg } = await supabase
-            .from('chat_messages')
-            .insert({
-              session_id: sessionId,
-              user_id: userId,
-              role: 'assistant',
-              content: accumulatedText,
-              retrieved_chunk_ids: retrievedChunkIds,
-              tokens_prompt: promptTokens,
-              tokens_completion: completionTokens,
-              model: provider.name,
-              latency_ms: latencyMs,
-              cost_cents: costCents,
-              tool_results: pendingProposal ? [pendingProposal] : [],
-            })
-            .select('id')
-            .single();
-
-          // 10. Record usage in daily quota tracking
-          await recordUserUsage(userId, promptTokens, completionTokens, supabase);
+          let savedMsgId: string | undefined = undefined;
+          if (!isGuest) {
+            try {
+              const { data: savedMsg } = await supabase
+                .from('chat_messages')
+                .insert({
+                  session_id: sessionId,
+                  user_id: userId,
+                  role: 'assistant',
+                  content: accumulatedText,
+                  retrieved_chunk_ids: retrievedChunkIds,
+                  tokens_prompt: promptTokens,
+                  tokens_completion: completionTokens,
+                  model: provider.name,
+                  latency_ms: latencyMs,
+                  cost_cents: costCents,
+                  tool_results: pendingProposal ? [pendingProposal] : [],
+                })
+                .select('id')
+                .single();
+              savedMsgId = savedMsg?.id;
+              // 10. Record usage in daily quota tracking
+              await recordUserUsage(userId, promptTokens, completionTokens, supabase);
+            } catch (saveErr) {
+              console.warn('Could not save assistant message:', saveErr);
+            }
+          }
 
           // Final completion event
           sendEvent({
             type: 'done',
-            messageId: savedMsg?.id,
+            messageId: savedMsgId,
             tokens: { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens },
             latencyMs,
             costCents,
