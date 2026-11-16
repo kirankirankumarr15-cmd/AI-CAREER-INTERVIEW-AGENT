@@ -8,6 +8,9 @@ import { getDbClient } from '@/lib/auth/userService';
 import { syncRoadmapTasksToVectorDB } from '@/lib/rag/sync';
 import { SkillItem, ProjectItem, CertificationItem } from '@/types';
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();

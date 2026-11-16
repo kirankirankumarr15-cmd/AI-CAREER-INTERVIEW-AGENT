@@ -817,11 +817,11 @@ export default function ChatPage() {
                 <h1 className="text-xs font-semibold text-slate-100 flex items-center gap-2">
                   <span>Ask CareerPilot</span>
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-900/60 text-blue-300 border border-blue-700">
-                    ChatGPT Powered
+                    AI Powered
                   </span>
                 </h1>
                 <p className="text-[10px] text-slate-500">
-                  Grounded in verified profile ({skills.length} skills, {profile.readinessScore || 65}% readiness)
+                  Grounded in verified profile ({skills.length} skills, {profile.readinessScore || 0}% readiness)
                 </p>
               </div>
             </div>

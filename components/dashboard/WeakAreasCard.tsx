@@ -23,25 +23,40 @@ export function WeakAreasCard() {
         </div>
 
         <div className="space-y-2">
-          {progress.weakAreas.map((weakness, i) => (
-            <div
-              key={i}
-              className="group p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between hover:border-blue-500/40 hover:bg-blue-50 transition-all shadow-sm"
-            >
-              <div className="flex items-center gap-3">
-                <span className="h-6 w-6 rounded-md bg-amber-500/15 text-amber-500 text-xs font-bold flex items-center justify-center border border-amber-500/25">
-                  {i + 1}
-                </span>
-                <span className="text-xs font-bold text-slate-900">{weakness}</span>
-              </div>
-              <Link
-                href="/learn"
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          {progress.weakAreas && progress.weakAreas.length > 0 ? (
+            progress.weakAreas.map((weakness, i) => (
+              <div
+                key={i}
+                className="group p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between hover:border-blue-500/40 hover:bg-blue-50 transition-all shadow-sm"
               >
-                Fix <ArrowRight className="h-3 w-3" />
+                <div className="flex items-center gap-3">
+                  <span className="h-6 w-6 rounded-md bg-amber-500/15 text-amber-500 text-xs font-bold flex items-center justify-center border border-amber-500/25">
+                    {i + 1}
+                  </span>
+                  <span className="text-xs font-bold text-slate-900">{weakness}</span>
+                </div>
+                <Link
+                  href="/learn"
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  Fix <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            ))
+          ) : (
+            <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-1.5">
+              <p className="text-xs font-semibold text-slate-700">No weak areas detected yet</p>
+              <p className="text-[11px] text-slate-500">
+                Complete a Mock Interview or Skill Assessment to diagnose gaps and generate custom drills.
+              </p>
+              <Link
+                href="/interview"
+                className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 pt-1"
+              >
+                Start Diagnostic Interview <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
-          ))}
+          )}
         </div>
       </div>
 

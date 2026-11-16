@@ -8,15 +8,18 @@ import { CareerChat } from '@/components/chat/CareerChat';
 import { GlobalShortcuts } from '@/components/common/GlobalShortcuts';
 import { DatabaseStatusBanner } from '@/components/ui/DatabaseStatusBanner';
 import { useProfileStore } from '@/store/useProfileStore';
+import { useProgressStore } from '@/store/useProgressStore';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const syncWithSupabase = useProfileStore((state) => state.syncWithSupabase);
+  const syncProfile = useProfileStore((state) => state.syncWithSupabase);
+  const syncProgress = useProgressStore((state) => state.syncWithSupabase);
 
   useEffect(() => {
-    syncWithSupabase();
-  }, [syncWithSupabase]);
+    syncProfile();
+    syncProgress();
+  }, [syncProfile, syncProgress]);
 
   // Chrome-minimal full-bleed mode for the interview room
   const isInterviewRoom = pathname === '/interview/room';

@@ -44,19 +44,29 @@ const defaultProfile: StudentProfile = {
   role: 'student',
   phone: '',
   location: '',
-  college: 'PESITM Shivamogga',
-  branch: 'Computer Science & Engineering',
-  year: 4,
+  college: '',
+  branch: '',
+  year: 1,
   graduationYear: new Date().getFullYear(),
-  cgpa: 8.5,
+  cgpa: 0,
   targetRole: 'Software Developer',
   targetRoles: ['Software Developer'],
-  targetCompanies: ['Google', 'Microsoft', 'Infosys'],
-  preferredLocations: ['Bengaluru'],
-  readinessScore: 65,
-  profileCompletionPercentage: 60,
+  targetCompanies: [],
+  preferredLocations: [],
+  readinessScore: 0,
+  profileCompletionPercentage: 0,
   verificationStatus: 'Unverified',
 };
+
+// Clean legacy stale dummy profile from user browser storage
+if (typeof window !== 'undefined') {
+  try {
+    const legacy = localStorage.getItem('careerpilot-profile-store');
+    if (legacy && (legacy.includes('PESITM Shivamogga') || legacy.includes('"readinessScore":65') || legacy.includes('"cgpa":8.5'))) {
+      localStorage.removeItem('careerpilot-profile-store');
+    }
+  } catch {}
+}
 
 interface ProfileState {
   profile: StudentProfile;
@@ -525,7 +535,26 @@ export const useProfileStore = create<ProfileState>()(
       },
     }),
     {
-      name: 'careerpilot-profile-store',
+      name: 'careerpilot-profile-store-v2',
+      version: 2,
+      migrate: (persistedState: any) => {
+        if (
+          persistedState?.profile?.readinessScore === 65 &&
+          persistedState?.profile?.cgpa === 8.5
+        ) {
+          return {
+            ...persistedState,
+            profile: {
+              ...persistedState.profile,
+              readinessScore: 0,
+              cgpa: 0,
+              college: '',
+              branch: '',
+            },
+          };
+        }
+        return persistedState;
+      },
       storage: createJSONStorage(() => (typeof window !== 'undefined' ? localStorage : {
         getItem: () => null,
         setItem: () => {},

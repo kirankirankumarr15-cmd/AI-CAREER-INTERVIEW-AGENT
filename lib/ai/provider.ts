@@ -179,6 +179,21 @@ export class OpenAIProvider implements AIProvider {
 
       yield { type: 'done' };
     } catch (err: unknown) {
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          console.warn(
+            '[OpenAIProvider] OpenAI request failed (e.g. quota exhausted / 429), automatically failing over to Gemini:',
+            err instanceof Error ? err.message : err
+          );
+          const gemini = new GeminiProvider();
+          for await (const chunk of gemini.chatStream(params)) {
+            yield chunk;
+          }
+          return;
+        } catch (fallbackErr) {
+          console.error('[OpenAIProvider] Gemini fallback also failed:', fallbackErr);
+        }
+      }
       const errorMessage = err instanceof Error ? err.message : String(err);
       yield { type: 'error', error: errorMessage };
     }
@@ -218,7 +233,7 @@ export class OpenAIProvider implements AIProvider {
 export class GeminiProvider implements AIProvider {
   public name = 'gemini' as const;
   private genAI: GoogleGenerativeAI;
-  private preferredModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+  private preferredModels = ['gemini-1.5-flash', 'gemini-flash-lite-latest', 'gemini-2.0-flash', 'gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -329,7 +344,31 @@ export class GeminiProvider implements AIProvider {
 // Provider Factory
 // ─────────────────────────────────────────────────────────────
 export function getAIProvider(): { provider: AIProvider | null; providerName: string; isConfigured: boolean; reason?: string } {
-  const chosenProvider = (process.env.AI_PROVIDER || 'openai').toLowerCase();
+  const chosenProvider = (process.env.AI_PROVIDER || (process.env.GEMINI_API_KEY ? 'gemini' : 'openai')).toLowerCase();
+
+  if (chosenProvider === 'gemini') {
+    if (!process.env.GEMINI_API_KEY) {
+      if (process.env.OPENAI_API_KEY) {
+        return {
+          provider: new OpenAIProvider(),
+          providerName: 'openai',
+          isConfigured: true,
+          reason: 'Gemini key not configured; operating in OpenAI fallback mode.',
+        };
+      }
+      return {
+        provider: null,
+        providerName: 'gemini',
+        isConfigured: false,
+        reason: 'GEMINI_API_KEY is not configured in server environment.',
+      };
+    }
+    return {
+      provider: new GeminiProvider(),
+      providerName: 'gemini',
+      isConfigured: true,
+    };
+  }
 
   if (chosenProvider === 'openai') {
     if (!process.env.OPENAI_API_KEY) {
@@ -352,22 +391,6 @@ export function getAIProvider(): { provider: AIProvider | null; providerName: st
     return {
       provider: new OpenAIProvider(),
       providerName: 'openai',
-      isConfigured: true,
-    };
-  }
-
-  if (chosenProvider === 'gemini') {
-    if (!process.env.GEMINI_API_KEY) {
-      return {
-        provider: null,
-        providerName: 'gemini',
-        isConfigured: false,
-        reason: 'GEMINI_API_KEY is not configured in server environment.',
-      };
-    }
-    return {
-      provider: new GeminiProvider(),
-      providerName: 'gemini',
       isConfigured: true,
     };
   }

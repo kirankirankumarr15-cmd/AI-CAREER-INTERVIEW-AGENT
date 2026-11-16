@@ -50,18 +50,18 @@ export function ReadinessCard() {
         {/* Radial Gauge */}
         <div className="flex items-center gap-5 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4">
           <RadialProgressRing
-            score={profile.readinessScore}
+            score={profile.readinessScore || 0}
             size={110}
             strokeWidth={9}
             sublabel="Readiness"
           />
           <div className="space-y-2">
             <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-lg bg-blue-500/15 text-blue-600 border border-blue-500/25 block text-center">
-              Job Ready Pace
+              {profile.readinessScore > 0 ? 'Job Ready Pace' : 'Diagnostic Pending'}
             </span>
             <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600">
               <TrendingUp className="h-3.5 w-3.5" />
-              <span>+6% this week</span>
+              <span>{profile.readinessScore > 0 ? `${profile.readinessScore}% Readiness` : 'Take First Assessment'}</span>
             </div>
           </div>
         </div>
@@ -78,9 +78,11 @@ export function ReadinessCard() {
               <span className="text-xs font-semibold text-slate-600 truncate pr-2">{item.label}</span>
               <span
                 className="text-xs font-extrabold tabular-nums"
-                style={{ color: item.score >= 80 ? '#34D399' : item.score >= 65 ? '#FBBF24' : '#F87171' }}
+                style={{
+                  color: item.score >= 80 ? '#10B981' : item.score >= 60 ? '#F59E0B' : item.score > 0 ? '#EF4444' : '#94A3B8',
+                }}
               >
-                {item.score}%
+                {item.score > 0 ? `${item.score}%` : 'Unassessed'}
               </span>
             </div>
             <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
