@@ -26,6 +26,7 @@ import {
   X,
 } from 'lucide-react';
 import { SEED_ASSESSMENTS } from '@/lib/assessment/assessment-bank';
+import { usePracticeStore } from '@/store/usePracticeStore';
 
 type CategoryId =
   | 'dbms'
@@ -48,7 +49,6 @@ const categories: {
   badgeClass: string;
   icon: typeof Database;
   iconClass: string;
-  done: number;
   total: number;
 }[] = [
   {
@@ -59,7 +59,6 @@ const categories: {
     badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
     icon: Database,
     iconClass: 'bg-blue-50 text-blue-600 border-blue-100',
-    done: 28,
     total: 40,
   },
   {
@@ -70,7 +69,6 @@ const categories: {
     badgeClass: 'bg-violet-50 text-violet-700 border-violet-200',
     icon: GitBranch,
     iconClass: 'bg-violet-50 text-violet-600 border-violet-100',
-    done: 94,
     total: 150,
   },
   {
@@ -81,7 +79,6 @@ const categories: {
     badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
     icon: Layers,
     iconClass: 'bg-sky-50 text-sky-600 border-sky-100',
-    done: 18,
     total: 30,
   },
   {
@@ -92,7 +89,6 @@ const categories: {
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
     icon: Cpu,
     iconClass: 'bg-amber-50 text-amber-600 border-amber-100',
-    done: 22,
     total: 35,
   },
   {
@@ -103,7 +99,6 @@ const categories: {
     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     icon: Network,
     iconClass: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    done: 15,
     total: 25,
   },
   {
@@ -114,7 +109,6 @@ const categories: {
     badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
     icon: Globe,
     iconClass: 'bg-rose-50 text-rose-600 border-rose-100',
-    done: 34,
     total: 50,
   },
   {
@@ -125,7 +119,6 @@ const categories: {
     badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     icon: Boxes,
     iconClass: 'bg-indigo-50 text-indigo-600 border-indigo-100',
-    done: 12,
     total: 20,
   },
   {
@@ -136,12 +129,12 @@ const categories: {
     badgeClass: 'bg-teal-50 text-teal-700 border-teal-200',
     icon: Brain,
     iconClass: 'bg-teal-50 text-teal-600 border-teal-100',
-    done: 45,
     total: 60,
   },
 ];
 
 export default function PracticePage() {
+  const { categoryStats } = usePracticeStore();
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvContent, setCsvContent] = useState('');
   const [importStatus, setImportStatus] = useState<'idle' | 'previewing' | 'committing' | 'done'>('idle');
@@ -305,7 +298,8 @@ export default function PracticePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {categories.map((category) => {
             const Icon = category.icon;
-            const percent = Math.round((category.done / category.total) * 100);
+            const done = categoryStats[category.id]?.totalSolved || 0;
+            const percent = category.total > 0 ? Math.round((done / category.total) * 100) : 0;
 
             return (
               <Link
@@ -329,7 +323,7 @@ export default function PracticePage() {
                   </div>
                   <div className="mt-2 flex items-center justify-between text-[11px] font-bold">
                     <span className="text-slate-500">
-                      {category.done} / {category.total} Done
+                      {done} / {category.total} Done
                     </span>
                     <span className="text-slate-900">{percent}%</span>
                   </div>

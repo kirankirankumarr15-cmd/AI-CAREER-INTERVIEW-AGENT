@@ -85,15 +85,27 @@ interface PracticeState {
 }
 
 const defaultCategoryStats: Record<string, CategoryStats> = {
-  dbms: { category: 'dbms', totalSolved: 8, totalQuestions: 40, accuracy: 72, skillScore: 68 },
-  dsa: { category: 'dsa', totalSolved: 24, totalQuestions: 80, accuracy: 65, skillScore: 62 },
-  java: { category: 'java', totalSolved: 12, totalQuestions: 35, accuracy: 78, skillScore: 74 },
-  oop: { category: 'oop', totalSolved: 6, totalQuestions: 20, accuracy: 80, skillScore: 76 },
-  os: { category: 'os', totalSolved: 5, totalQuestions: 25, accuracy: 58, skillScore: 55 },
-  cn: { category: 'cn', totalSolved: 4, totalQuestions: 20, accuracy: 52, skillScore: 48 },
-  aptitude: { category: 'aptitude', totalSolved: 18, totalQuestions: 50, accuracy: 84, skillScore: 80 },
-  hr: { category: 'hr', totalSolved: 3, totalQuestions: 15, accuracy: 70, skillScore: 65 },
+  dbms: { category: 'dbms', totalSolved: 0, totalQuestions: 40, accuracy: 0, skillScore: 0 },
+  dsa: { category: 'dsa', totalSolved: 0, totalQuestions: 150, accuracy: 0, skillScore: 0 },
+  java: { category: 'java', totalSolved: 0, totalQuestions: 35, accuracy: 0, skillScore: 0 },
+  oop: { category: 'oop', totalSolved: 0, totalQuestions: 30, accuracy: 0, skillScore: 0 },
+  os: { category: 'os', totalSolved: 0, totalQuestions: 35, accuracy: 0, skillScore: 0 },
+  cn: { category: 'cn', totalSolved: 0, totalQuestions: 25, accuracy: 0, skillScore: 0 },
+  web: { category: 'web', totalSolved: 0, totalQuestions: 50, accuracy: 0, skillScore: 0 },
+  backend: { category: 'backend', totalSolved: 0, totalQuestions: 20, accuracy: 0, skillScore: 0 },
+  aptitude: { category: 'aptitude', totalSolved: 0, totalQuestions: 60, accuracy: 0, skillScore: 0 },
+  hr: { category: 'hr', totalSolved: 0, totalQuestions: 15, accuracy: 0, skillScore: 0 },
 };
+
+// Clear legacy fake mock data from localStorage if present
+if (typeof window !== 'undefined') {
+  try {
+    const legacy = localStorage.getItem('careerpilot-practice-store');
+    if (legacy && (legacy.includes('"totalSolved":80') || legacy.includes('"totalSolved":24') || legacy.includes('"totalSolved":28'))) {
+      localStorage.removeItem('careerpilot-practice-store');
+    }
+  } catch {}
+}
 
 export const usePracticeStore = create<PracticeState>()(
   persist(
@@ -103,13 +115,13 @@ export const usePracticeStore = create<PracticeState>()(
       categoryStats: defaultCategoryStats,
       bookmarkedIds: [],
       currentSession: null,
-      totalSolved: 80,
-      totalPoints: 6200,
-      dailyStreak: 5,
+      totalSolved: 0,
+      totalPoints: 0,
+      dailyStreak: 0,
       lastPracticeDate: new Date().toISOString().split('T')[0],
       weeklyGoal: 50,
-      weeklyProgress: 28,
-      weakAreas: ['cn', 'os', 'dsa'],
+      weeklyProgress: 0,
+      weakAreas: [],
       recommendedQuestionId: null,
 
       recordAttempt: (questionId, category, topic, passed, score, hintsUsed, timeSeconds, pts) =>
