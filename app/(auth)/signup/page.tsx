@@ -188,21 +188,9 @@ export default function StudentSignUpPage() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 py-12 font-sans bg-slate-900 overflow-y-auto">
-      {/* Background Image with Overlay */}
-      <div className="fixed inset-0 z-0">
-        <Image
-          src="/images/pes_shivamogga.png"
-          alt="Campus Background"
-          fill
-          className="object-cover object-center opacity-40 blur-sm"
-          priority
-        />
-        <div className="absolute inset-0 bg-slate-900/40" />
-      </div>
-
+    <div className="min-h-screen relative flex items-center justify-center p-4 py-12 font-sans bg-[#F8FAFC] overflow-y-auto">
       {/* Main Form Card */}
-      <div className="relative z-10 w-full max-w-[440px] bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in-up my-8">
+      <div className="relative z-10 w-full max-w-[440px] bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 animate-fade-in-up my-8">
         {/* Header Section */}
         <div className="flex flex-col items-center mb-6">
           <div className="h-12 w-12 rounded-[14px] bg-blue-50 flex items-center justify-center mb-4 shadow-sm border border-blue-100">

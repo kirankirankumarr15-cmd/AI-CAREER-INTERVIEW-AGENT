@@ -123,22 +123,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 py-12 font-sans bg-slate-900 overflow-y-auto">
-      {/* Background Image with Overlay */}
-      <div className="fixed inset-0 z-0">
-        <Image
-          src="/images/pes_shivamogga.png"
-          alt="Campus Background"
-          fill
-          className="object-cover object-center opacity-40 blur-sm"
-          priority
-        />
-        <div className="absolute inset-0 bg-slate-900/40" />
-      </div>
-
+    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 py-12 font-sans bg-[#F8FAFC] overflow-y-auto">
       {/* Main Container */}
       <div className="relative z-10 w-full max-w-[440px] my-auto">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 p-8 sm:p-10 space-y-6">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 sm:p-10 space-y-6">
 
           {/* College Header */}
           <div className="text-center space-y-2">
