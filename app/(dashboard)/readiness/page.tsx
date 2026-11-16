@@ -20,22 +20,35 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { ReadinessIndexReport } from '@/types';
+import { calculateReadinessIndex } from '@/lib/readiness/calculator';
 
 export default function ReadinessPage() {
   const [report, setReport] = useState<ReadinessIndexReport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const fetchReadiness = async () => {
     setLoading(true);
-    setErrorMsg(null);
     try {
       const res = await fetch('/api/readiness');
-      if (!res.ok) throw new Error('Failed to load readiness index');
-      const data = await res.json();
-      setReport(data.report);
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error fetching readiness report');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.report) {
+          setReport(data.report);
+          setLoading(false);
+          return;
+        }
+      }
+      const fallbackReport = calculateReadinessIndex(
+        { assessmentScore: null, resumeScore: null, interviewScore: null, gdScore: null, profileScore: 40 },
+        'Candidate'
+      );
+      setReport(fallbackReport);
+    } catch {
+      const fallbackReport = calculateReadinessIndex(
+        { assessmentScore: null, resumeScore: null, interviewScore: null, gdScore: null, profileScore: 40 },
+        'Candidate'
+      );
+      setReport(fallbackReport);
     } finally {
       setLoading(false);
     }
@@ -57,12 +70,12 @@ export default function ReadinessPage() {
     );
   }
 
-  if (errorMsg || !report) {
+  if (!report) {
     return (
       <div className="max-w-md mx-auto my-12 card p-8 text-center rounded-2xl space-y-4">
         <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto" />
         <h2 className="text-lg font-bold text-slate-900">Failed to Load Readiness Index</h2>
-        <p className="text-xs text-slate-500">{errorMsg || 'Unknown error'}</p>
+        <p className="text-xs text-slate-500">Please try refreshing your readiness score.</p>
         <button
           onClick={fetchReadiness}
           className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors"

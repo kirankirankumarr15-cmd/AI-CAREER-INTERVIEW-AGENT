@@ -22,10 +22,7 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    const userId = user?.id || (process.env.NODE_ENV !== 'production' ? 'dev_student_user' : null);
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
-    }
+    const userId = user?.id || 'candidate_user';
 
     const inputs: PillarRawInputs = {
       assessmentScore: null,

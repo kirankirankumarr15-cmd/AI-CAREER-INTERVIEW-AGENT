@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { MissionControlSidebar } from '@/components/layout/MissionControlSidebar';
-import { MissionControlTopBar } from '@/components/layout/MissionControlTopBar';
-import { AuroraBackground } from '@/components/dashboard/AuroraBackground';
-import { FloatingCoachOrb } from '@/components/dashboard/FloatingCoachOrb';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { TopBar } from '@/components/layout/TopBar';
 import { CareerChat } from '@/components/chat/CareerChat';
 import { GlobalShortcuts } from '@/components/common/GlobalShortcuts';
 import { DatabaseStatusBanner } from '@/components/ui/DatabaseStatusBanner';
@@ -36,19 +34,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-[#070A12] text-slate-100 flex font-sans antialiased relative selection:bg-cyan-500/30 selection:text-cyan-200">
-      <AuroraBackground />
-      <MissionControlSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
-
-      <div className="flex-1 flex flex-col min-w-0 md:pl-24 transition-all duration-300">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex font-sans antialiased">
+      <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+      <div className="flex-1 flex flex-col min-w-0">
         <DatabaseStatusBanner />
-        <MissionControlTopBar onMobileMenuToggle={() => setMobileOpen((prev) => !prev)} />
-        <main className="flex-1 px-3 sm:px-6 md:px-8 max-w-[1400px] w-full mx-auto pb-16">
+        <TopBar onMobileMenuToggle={() => setMobileOpen((prev) => !prev)} />
+        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-[1400px] w-full mx-auto">
           {children}
         </main>
       </div>
-
-      <FloatingCoachOrb />
       <CareerChat />
       <GlobalShortcuts />
     </div>

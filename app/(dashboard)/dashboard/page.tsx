@@ -1,108 +1,64 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { motion, useReducedMotion, type Variants } from 'framer-motion';
-import { HeroMissionControl } from '@/components/dashboard/HeroMissionControl';
-import { QuickActionsHUD } from '@/components/dashboard/QuickActionsHUD';
-import { InteractiveSkillRadar } from '@/components/dashboard/InteractiveSkillRadar';
-import { PlacementForecastCard } from '@/components/dashboard/PlacementForecastCard';
-import { MissionQuestCard } from '@/components/dashboard/MissionQuestCard';
-import { WeakAreasHUDCard } from '@/components/dashboard/WeakAreasHUDCard';
-import { StreakXPCard } from '@/components/dashboard/StreakXPCard';
+import { ReadinessCard } from '@/components/dashboard/ReadinessCard';
+import { WeakAreasCard } from '@/components/dashboard/WeakAreasCard';
+import { TodayMissionCard } from '@/components/dashboard/TodayMissionCard';
+import { RecommendedNextStep } from '@/components/dashboard/RecommendedNextStep';
+import { Sparkles, Mic, FileText } from 'lucide-react';
+import Link from 'next/link';
 import { useProfileStore } from '@/store/useProfileStore';
-import { useProgressStore } from '@/store/useProgressStore';
 
 export default function DashboardPage() {
-  const [mounted, setMounted] = useState(false);
-  const shouldReduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Skeleton Loader Shimmer while mounting
-  if (!mounted) {
-    return (
-      <div className="space-y-6 pb-12 animate-pulse font-sans">
-        {/* Hero Skeleton */}
-        <div className="h-64 rounded-3xl bg-white/[0.03] border border-white/10" />
-
-        {/* Quick Actions Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 rounded-3xl bg-white/[0.03] border border-white/10" />
-          ))}
-        </div>
-
-        {/* Bento Row 1 Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 h-[420px] rounded-3xl bg-white/[0.03] border border-white/10" />
-          <div className="lg:col-span-5 h-[420px] rounded-3xl bg-white/[0.03] border border-white/10" />
-        </div>
-      </div>
-    );
-  }
-
-  // Motion variants for staggered HUD entrance
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.08,
-      },
-    },
-  };
-
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 18 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.45,
-        ease: 'easeOut',
-      },
-    },
-  };
+  const { profile } = useProfileStore();
+  const firstName = profile.fullName ? profile.fullName.split(' ')[0] : 'Student';
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-6 pb-12 font-sans"
-    >
-      {/* 1. Hero Cockpit Row (Animated Readiness Orb, Greeting, Streak & Typewriter Directive) */}
-      <motion.section variants={itemVariants}>
-        <HeroMissionControl />
-      </motion.section>
+    <div className="space-y-6 pb-12 animate-fade-in-up">
+      {/* Header Banner */}
+      <div className="card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-extrabold text-blue-600 uppercase tracking-[0.15em] flex items-center gap-1.5 mb-1">
+            <Sparkles className="h-3.5 w-3.5" /> Dashboard Overview
+          </span>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            Welcome back, {firstName}! 👋
+          </h1>
+          <p className="text-xs text-slate-500 mt-1 font-medium">
+            Your AI Career Profile is active. Target role set to{' '}
+            <strong className="text-slate-900">{profile.targetRole || 'Full Stack Developer'}</strong>.
+          </p>
+        </div>
 
-      {/* 2. Quick Actions Cyber HUD Matrix */}
-      <motion.section variants={itemVariants}>
-        <QuickActionsHUD />
-      </motion.section>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/interview"
+            className="btn-shine px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-600/25 transition-all duration-300 hover:scale-105 active:scale-95"
+          >
+            <Mic className="h-4 w-4" />
+            <span>Launch Mock Interview</span>
+          </Link>
+          <Link
+            href="/resume"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-xs font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 shadow-sm"
+          >
+            <FileText className="h-4 w-4 text-blue-600" />
+            <span>Build Resume</span>
+          </Link>
+        </div>
+      </div>
 
-      {/* 3. Bento Grid - Row 1: Interactive Skill Radar & Placement Velocity Forecast */}
-      <motion.section variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        <div className="lg:col-span-7 flex flex-col">
-          <InteractiveSkillRadar />
-        </div>
-        <div className="lg:col-span-5 flex flex-col">
-          <PlacementForecastCard />
-        </div>
-      </motion.section>
+      {/* Top Priority Action */}
+      <RecommendedNextStep />
 
-      {/* 4. Bento Grid - Row 2: Quest Daily Mission & Diagnostics / Mastery */}
-      <motion.section variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        <div className="lg:col-span-7 flex flex-col">
-          <MissionQuestCard />
-        </div>
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <WeakAreasHUDCard />
-          <StreakXPCard />
-        </div>
-      </motion.section>
-    </motion.div>
+      {/* Main Readiness Gauge + Breakdown */}
+      <ReadinessCard />
+
+      {/* Two Column Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <WeakAreasCard />
+        <TodayMissionCard />
+      </div>
+    </div>
   );
 }

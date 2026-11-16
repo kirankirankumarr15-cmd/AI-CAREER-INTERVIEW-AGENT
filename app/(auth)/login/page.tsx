@@ -33,51 +33,31 @@ export default function LoginPage() {
 
     const cleanEmail = email.trim();
 
-    // 1. Attempt Supabase Authentication with sensible timeout
+    // 1. Attempt Server-Side Supabase Authentication
     try {
       const authPromise = supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
       });
       const timeoutPromise = new Promise<{ data: { session: unknown } | null; error: Error | null }>((resolve) =>
-        setTimeout(() => resolve({ data: null, error: new Error('Supabase network timeout') }), 4000)
+        setTimeout(() => resolve({ data: null, error: new Error('Supabase network timeout') }), 2500)
       );
 
       const res = await Promise.race([authPromise, timeoutPromise]);
       if (res?.data?.session) {
         setSessionCookies();
-        const sessionUser = (res.data.session as { user?: { id?: string; user_metadata?: { full_name?: string } } })?.user;
-        const userFullName = sessionUser?.user_metadata?.full_name || cleanEmail.split('@')[0];
-        const isInstitutionalStaff = cleanEmail.toLowerCase() === 'hod@pesitm.edu.in' || cleanEmail.toLowerCase() === 'admin@pesitm.edu.in';
-        const userRole = activeTab === 'HOD' ? (isInstitutionalStaff ? 'tpo' : 'student') : 'student';
-
-        if (activeTab === 'HOD' && !isInstitutionalStaff) {
-          setErrorMsg('Access Denied: This account does not possess institutional Faculty / TPO credentials.');
-          setLoading(false);
-          return;
-        }
-
-        localStorage.setItem('careerpilot_current_user', JSON.stringify({
-          id: sessionUser?.id,
-          email: cleanEmail,
-          fullName: userFullName,
-          role: userRole,
-        }));
-        useProfileStore.getState().updateProfile({
-          email: cleanEmail,
-          fullName: userFullName,
-          role: userRole,
-        });
         router.push('/dashboard');
         return;
       }
     } catch {
-      // Supabase is offline/paused or network delay - seamlessly proceed to local verification
+      // Supabase is offline/paused
     }
 
-    // 2. Verified Accounts & Fallback Authentication
+    // 2. Verified Accounts & Fallback Authentication (Gracefully handles cloud auth delays)
     const verification = verifyPassword(cleanEmail, password);
     if (verification.success && verification.user) {
+      // Institutional accounts (e.g. hod@pesitm.edu.in) get their pre-seeded staff role;
+      // All other accounts are strictly student role regardless of the active tab.
       const isInstitutionalStaff = cleanEmail.toLowerCase() === 'hod@pesitm.edu.in' || cleanEmail.toLowerCase() === 'admin@pesitm.edu.in';
       const userRole = isInstitutionalStaff ? 'tpo' : 'student';
 
@@ -97,30 +77,23 @@ export default function LoginPage() {
         fullName: verification.user.fullName,
         role: userRole,
       });
-
-      // Background sync with cloud auth if available
-      try {
-        supabase.auth.signUp({ email: cleanEmail, password }).catch(() => {});
-      } catch {}
-
       router.push('/dashboard');
       return;
     }
 
     if (verification.error && verification.error.includes('Incorrect password')) {
-      setErrorMsg('Incorrect password. Please verify your credentials or reset your password.');
+      setErrorMsg(verification.error);
       setLoading(false);
       return;
     }
 
-    // 3. Faculty / TPO Access Gate
+    // 4. Student Auto-Provisioning (Strictly assigns 'student' role, never staff)
     if (activeTab === 'HOD') {
       setErrorMsg('Access Denied: Faculty and TPO accounts cannot be auto-registered. They must be provisioned by the placement cell.');
       setLoading(false);
       return;
     }
 
-    // 4. Student Auto-Provisioning (Strictly assigns 'student' role, never staff)
     if (cleanEmail.includes('@') && password.length >= 6) {
       const reg = registerUser({
         email: cleanEmail,
@@ -139,12 +112,6 @@ export default function LoginPage() {
         fullName: cleanEmail.split('@')[0],
         role: 'student',
       });
-
-      // Background sync with cloud auth
-      try {
-        supabase.auth.signUp({ email: cleanEmail, password }).catch(() => {});
-      } catch {}
-
       router.push('/dashboard');
       return;
     }
