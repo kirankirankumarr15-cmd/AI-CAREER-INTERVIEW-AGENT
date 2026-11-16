@@ -100,10 +100,7 @@ const defaultCategoryStats: Record<string, CategoryStats> = {
 // Clear legacy fake mock data from localStorage if present
 if (typeof window !== 'undefined') {
   try {
-    const legacy = localStorage.getItem('careerpilot-practice-store');
-    if (legacy && (legacy.includes('"totalSolved":80') || legacy.includes('"totalSolved":24') || legacy.includes('"totalSolved":28'))) {
-      localStorage.removeItem('careerpilot-practice-store');
-    }
+    localStorage.removeItem('careerpilot-practice-store');
   } catch {}
 }
 
@@ -236,7 +233,21 @@ export const usePracticeStore = create<PracticeState>()(
         }),
     }),
     {
-      name: 'careerpilot-practice-store',
+      name: 'careerpilot-practice-store-v2',
+      version: 2,
+      migrate: (persistedState: any) => {
+        // Reset categoryStats to 0 unless student actually completed questions
+        if (!persistedState?.attempts || Object.keys(persistedState.attempts).length === 0) {
+          return {
+            ...persistedState,
+            categoryStats: defaultCategoryStats,
+            totalSolved: 0,
+            totalPoints: 0,
+            weeklyProgress: 0,
+          };
+        }
+        return persistedState;
+      },
       storage: createJSONStorage(() =>
         typeof window !== 'undefined' ? localStorage : {
           getItem: () => null,

@@ -134,7 +134,7 @@ const categories: {
 ];
 
 export default function PracticePage() {
-  const { categoryStats } = usePracticeStore();
+  const { categoryStats, attempts } = usePracticeStore();
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvContent, setCsvContent] = useState('');
   const [importStatus, setImportStatus] = useState<'idle' | 'previewing' | 'committing' | 'done'>('idle');
@@ -298,7 +298,9 @@ export default function PracticePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {categories.map((category) => {
             const Icon = category.icon;
-            const done = categoryStats[category.id]?.totalSolved || 0;
+            // Only count if user actually has question attempts recorded
+            const hasAttempts = Object.keys(attempts || {}).length > 0;
+            const done = hasAttempts ? (categoryStats[category.id]?.totalSolved || 0) : 0;
             const percent = category.total > 0 ? Math.round((done / category.total) * 100) : 0;
 
             return (

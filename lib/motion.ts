@@ -22,3 +22,4 @@ export const slideUp = {
 };
 
 export default { fadeIn, staggerContainer, slideUp };
+
