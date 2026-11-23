@@ -100,14 +100,23 @@ export async function generatePrismAI(options: AIGenerationOptions): Promise<str
   // 3. Fallback to Gemini
   const gemini = getGeminiClient();
   if (gemini) {
-    try {
-      const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-      const model = gemini.getGenerativeModel({ model: modelName });
-      const prompt = `${systemPrompt}\n\n${userPrompt}`;
-      const result = await model.generateContent(prompt);
-      return result.response.text().trim();
-    } catch (err) {
-      console.warn('[PRISM AI] Gemini fallback call failed:', err instanceof Error ? err.message : err);
+    const candidateModels = [
+      process.env.GEMINI_MODEL,
+      'gemini-2.0-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-flash-latest',
+      'gemini-1.5-flash',
+    ].filter(Boolean) as string[];
+
+    for (const modelName of candidateModels) {
+      try {
+        const model = gemini.getGenerativeModel({ model: modelName });
+        const prompt = `${systemPrompt}\n\n${userPrompt}`;
+        const result = await model.generateContent(prompt);
+        return result.response.text().trim();
+      } catch (err) {
+        // try next candidate
+      }
     }
   }
 

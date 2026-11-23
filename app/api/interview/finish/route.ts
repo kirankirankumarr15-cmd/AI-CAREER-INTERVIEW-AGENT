@@ -16,6 +16,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { getAuthenticatedUser } from '@/lib/auth/serverAuth';
+import { practiceDb } from '@/lib/db/nodeDb';
 import { generatePrismJSON } from '@/lib/ai/claude';
 
 export interface MetricEvaluation {
@@ -72,38 +74,27 @@ export async function POST(req: Request) {
     }
 
     const { sessionId, transcript: clientTranscript } = parsed.data;
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const authUser = await getAuthenticatedUser();
+    const userId = authUser?.id || 'student-demo';
 
-    // 1. Fetch session from Supabase
+    // 1. Fetch session info from SQLite and Supabase
     let sessionRole = 'Software Developer (SDE)';
     let sessionType = 'Technical';
     let previousSessions: Array<{ created_at: string; overall_score: number; target_role: string }> = [];
 
-    if (user) {
-      const { data: s } = await supabase
-        .from('interview_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .maybeSingle();
-
-      if (s) {
-        sessionRole = s.target_role || sessionRole;
-        sessionType = s.interview_type || sessionType;
+    try {
+      const sqliteSession = practiceDb.getInterviewSession(sessionId);
+      if (sqliteSession) {
+        sessionRole = sqliteSession.targetRole || sessionRole;
+        sessionType = sqliteSession.interviewType || sessionType;
       }
-
-      // Fetch historical attempts for trend comparison
-      const { data: prevs } = await supabase
-        .from('interview_sessions')
-        .select('created_at, overall_score, target_role')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (prevs) {
-        previousSessions = prevs;
-      }
-    }
+      const prevs = practiceDb.getUserInterviewSessions(userId);
+      previousSessions = prevs.map((p: any) => ({
+        created_at: p.createdAt || p.completedAt || new Date().toISOString(),
+        overall_score: p.overallScore || 70,
+        target_role: p.targetRole,
+      }));
+    } catch {}
 
     // 2. Build complete transcript
     const turns = clientTranscript || [];
@@ -265,8 +256,26 @@ Return ONLY valid JSON matching this schema:
       changeFromLast,
     };
 
-    // 5. Update Database Record
-    if (user) {
+    // 5. Update Database Record in SQLite
+    try {
+      practiceDb.updateInterviewSession(sessionId, {
+        status: 'Completed',
+        overallScore: evaluationResult.overallScore,
+        communicationScore: evaluationResult.communication.score,
+        technicalAccuracyScore: evaluationResult.technicalAccuracy.score,
+        structureScore: evaluationResult.structure.score,
+        confidenceScore: evaluationResult.estimatedConfidence.score,
+        feedbackSummary: evaluationResult,
+        transcript: questionTurns,
+        completedAt: new Date().toISOString(),
+      });
+    } catch (dbErr) {
+      console.warn('[InterviewFinish] SQLite update warning:', dbErr);
+    }
+
+    // 6. Best effort Supabase sync
+    try {
+      const supabase = await createClient();
       await supabase
         .from('interview_sessions')
         .update({
@@ -287,7 +296,7 @@ Return ONLY valid JSON matching this schema:
           session_history: questionTurns,
         })
         .eq('id', sessionId);
-    }
+    } catch {}
 
     return NextResponse.json({
       report: evaluationResult,

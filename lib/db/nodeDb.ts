@@ -108,6 +108,45 @@ function getDb(): DatabaseSync {
     CREATE INDEX IF NOT EXISTS idx_practice_attempts_user ON practice_attempts(user_id);
     CREATE INDEX IF NOT EXISTS idx_practice_attempts_subject ON practice_attempts(subject_id);
     CREATE INDEX IF NOT EXISTS idx_practice_attempts_user_subject ON practice_attempts(user_id, subject_id);
+
+    CREATE TABLE IF NOT EXISTS interview_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      target_role TEXT NOT NULL,
+      interview_type TEXT NOT NULL,
+      difficulty TEXT NOT NULL,
+      interviewer_mode TEXT DEFAULT 'Professional',
+      company_name TEXT,
+      status TEXT DEFAULT 'In Progress',
+      overall_score INTEGER,
+      communication_score INTEGER,
+      technical_accuracy_score INTEGER,
+      structure_score INTEGER,
+      confidence_score INTEGER,
+      feedback_summary TEXT,
+      transcript TEXT,
+      duration_seconds INTEGER DEFAULT 900,
+      started_at TEXT,
+      deadline_at TEXT,
+      completed_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS interview_turns (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      turn_index INTEGER NOT NULL,
+      question_text TEXT NOT NULL,
+      category TEXT NOT NULL,
+      student_answer TEXT,
+      answer_score INTEGER,
+      evaluation TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_interview_sessions_user ON interview_sessions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_interview_turns_session ON interview_turns(session_id);
   `);
 
   // Seed default subjects if not already seeded
@@ -544,4 +583,187 @@ export const nodeDb = {
       };
     });
   },
+
+  // ─── Interview Sessions & Turns ──────────────────────────────────────────────
+  saveInterviewSession(session: {
+    id: string;
+    userId: string;
+    targetRole: string;
+    interviewType: string;
+    difficulty: string;
+    mode?: string;
+    companyName?: string;
+    durationSeconds?: number;
+    startedAt?: string;
+    deadlineAt?: string;
+  }) {
+    const db = getDb();
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO interview_sessions (
+        id, user_id, target_role, interview_type, difficulty, interviewer_mode,
+        company_name, status, duration_seconds, started_at, deadline_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'In Progress', ?, ?, ?)
+    `);
+    stmt.run(
+      session.id,
+      session.userId,
+      session.targetRole,
+      session.interviewType,
+      session.difficulty,
+      session.mode || 'Professional',
+      session.companyName || null,
+      session.durationSeconds || 900,
+      session.startedAt || new Date().toISOString(),
+      session.deadlineAt || null
+    );
+  },
+
+  updateInterviewSession(
+    sessionId: string,
+    updates: {
+      status?: string;
+      overallScore?: number;
+      communicationScore?: number;
+      technicalAccuracyScore?: number;
+      structureScore?: number;
+      confidenceScore?: number;
+      feedbackSummary?: any;
+      transcript?: any;
+      completedAt?: string;
+    }
+  ) {
+    const db = getDb();
+    const stmt = db.prepare(`
+      UPDATE interview_sessions SET
+        status = COALESCE(?, status),
+        overall_score = COALESCE(?, overall_score),
+        communication_score = COALESCE(?, communication_score),
+        technical_accuracy_score = COALESCE(?, technical_accuracy_score),
+        structure_score = COALESCE(?, structure_score),
+        confidence_score = COALESCE(?, confidence_score),
+        feedback_summary = COALESCE(?, feedback_summary),
+        transcript = COALESCE(?, transcript),
+        completed_at = COALESCE(?, completed_at)
+      WHERE id = ?
+    `);
+    stmt.run(
+      updates.status || null,
+      updates.overallScore ?? null,
+      updates.communicationScore ?? null,
+      updates.technicalAccuracyScore ?? null,
+      updates.structureScore ?? null,
+      updates.confidenceScore ?? null,
+      updates.feedbackSummary ? JSON.stringify(updates.feedbackSummary) : null,
+      updates.transcript ? JSON.stringify(updates.transcript) : null,
+      updates.completedAt || new Date().toISOString(),
+      sessionId
+    );
+  },
+
+  getInterviewSession(sessionId: string) {
+    const db = getDb();
+    const row = db.prepare('SELECT * FROM interview_sessions WHERE id = ?').get(sessionId) as any;
+    if (!row) return null;
+    return {
+      id: row.id,
+      userId: row.user_id,
+      targetRole: row.target_role,
+      interviewType: row.interview_type,
+      difficulty: row.difficulty,
+      mode: row.interviewer_mode,
+      companyName: row.company_name,
+      status: row.status,
+      overallScore: row.overall_score,
+      communicationScore: row.communication_score,
+      technicalAccuracyScore: row.technical_accuracy_score,
+      structureScore: row.structure_score,
+      confidenceScore: row.confidence_score,
+      feedbackSummary: row.feedback_summary ? JSON.parse(row.feedback_summary) : null,
+      transcript: row.transcript ? JSON.parse(row.transcript) : [],
+      durationSeconds: row.duration_seconds,
+      startedAt: row.started_at,
+      deadlineAt: row.deadline_at,
+      completedAt: row.completed_at,
+      createdAt: row.created_at,
+    };
+  },
+
+  getUserInterviewSessions(userId: string) {
+    const db = getDb();
+    const rows = db.prepare(`
+      SELECT * FROM interview_sessions 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC 
+      LIMIT 20
+    `).all(userId) as any[];
+
+    return rows.map((r) => ({
+      id: r.id,
+      userId: r.user_id,
+      targetRole: r.target_role,
+      interviewType: r.interview_type,
+      difficulty: r.difficulty,
+      mode: r.interviewer_mode,
+      status: r.status,
+      overallScore: r.overall_score,
+      communicationScore: r.communication_score,
+      technicalAccuracyScore: r.technical_accuracy_score,
+      confidenceScore: r.confidence_score,
+      structureScore: r.structure_score,
+      feedbackSummary: r.feedback_summary ? JSON.parse(r.feedback_summary) : null,
+      completedAt: r.completed_at,
+      createdAt: r.created_at,
+    }));
+  },
+
+  saveInterviewTurn(turn: {
+    id?: string;
+    sessionId: string;
+    userId: string;
+    turnIndex: number;
+    questionText: string;
+    category: string;
+    studentAnswer?: string;
+    answerScore?: number;
+    evaluation?: any;
+  }) {
+    const db = getDb();
+    const turnId = turn.id || `turn-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const stmt = db.prepare(`
+      INSERT INTO interview_turns (
+        id, session_id, user_id, turn_index, question_text, category, student_answer, answer_score, evaluation
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      turnId,
+      turn.sessionId,
+      turn.userId,
+      turn.turnIndex,
+      turn.questionText,
+      turn.category,
+      turn.studentAnswer || null,
+      turn.answerScore ?? null,
+      turn.evaluation ? JSON.stringify(turn.evaluation) : null
+    );
+    return turnId;
+  },
+
+  getInterviewTurns(sessionId: string) {
+    const db = getDb();
+    const rows = db.prepare('SELECT * FROM interview_turns WHERE session_id = ? ORDER BY turn_index ASC').all(sessionId) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      sessionId: r.session_id,
+      userId: r.user_id,
+      turnIndex: r.turn_index,
+      questionText: r.question_text,
+      category: r.category,
+      studentAnswer: r.student_answer,
+      answerScore: r.answer_score,
+      evaluation: r.evaluation ? JSON.parse(r.evaluation) : null,
+      createdAt: r.created_at,
+    }));
+  },
 };
+
+export const practiceDb = nodeDb;
