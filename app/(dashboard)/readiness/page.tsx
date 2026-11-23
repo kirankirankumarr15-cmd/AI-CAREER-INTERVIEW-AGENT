@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
 import {
   Award,
   TrendingUp,
@@ -60,11 +61,17 @@ export default function ReadinessPage() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto space-y-6 pb-16 animate-pulse">
-        <div className="h-28 bg-slate-100 rounded-2xl" />
+      <div className="max-w-[1400px] mx-auto space-y-6 pb-16">
+        <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="h-8 w-72" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="h-64 bg-slate-100 rounded-2xl" />
-          <div className="md:col-span-2 h-64 bg-slate-100 rounded-2xl" />
+          <CardSkeleton />
+          <div className="md:col-span-2">
+            <CardSkeleton />
+          </div>
         </div>
       </div>
     );

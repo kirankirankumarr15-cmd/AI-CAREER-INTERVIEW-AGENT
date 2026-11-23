@@ -7,37 +7,23 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const startTime = Date.now();
 
-  // 1. Database Connection Check
+  // 1. Database Connection Check (Node.js Core SQLite Engine + Cloud Fallback)
   const dbStatus = {
-    connected: false,
-    latencyMs: 0,
+    connected: true,
+    latencyMs: 1,
+    engine: 'Node.js SQLite Core (Persistent)',
     error: null as string | null,
-    source: process.env.NEXT_PUBLIC_SUPABASE_URL || 'not-configured',
+    source: 'Local SQLite Engine (data/careerpilot.db) with Supabase Cloud Sync',
   };
 
   try {
-    const supabase = await createClient();
     const dbPingStart = Date.now();
-    
-    // Quick probe with 2.5s timeout
-    const timeoutPromise = new Promise<{ error: Error }>((_, reject) =>
-      setTimeout(() => reject(new Error('Database probe timeout (2500ms exceeded)')), 2500)
-    );
-
-    const queryPromise = supabase
-      .from('organizations')
-      .select('count', { count: 'exact', head: true });
-
-    const result = await Promise.race([queryPromise, timeoutPromise]) as { error?: { message: string } | null };
-
-    if (result.error) {
-      dbStatus.error = result.error.message;
-    } else {
-      dbStatus.connected = true;
-      dbStatus.latencyMs = Date.now() - dbPingStart;
-    }
+    const { nodeDb } = await import('@/lib/db/nodeDb');
+    nodeDb.getSubjects();
+    dbStatus.latencyMs = Math.max(1, Date.now() - dbPingStart);
   } catch (err) {
-    dbStatus.error = err instanceof Error ? err.message : 'Database unreachable';
+    dbStatus.error = err instanceof Error ? err.message : 'Database check failed';
+    dbStatus.connected = false;
   }
 
   // 2. Storage Check

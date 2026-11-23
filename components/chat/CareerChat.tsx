@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProfileStore } from '@/store/useProfileStore';
 import { ttsEngine } from '@/lib/speech/text-to-speech';
 import { getVectorDBStats } from '@/lib/rag/sync';
+import { EASINGS } from '@/lib/motion';
 import ReactMarkdown from 'react-markdown';
 import {
   Send,
@@ -360,20 +362,29 @@ export function CareerChat() {
     ]);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[100] transition-opacity duration-300"
-        onClick={() => setIsOpen(false)}
-      />
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop with smooth fade */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-[100]"
+            onClick={() => setIsOpen(false)}
+          />
 
-      {/* RAG Jarvis Side Drawer */}
-      <div className="fixed top-0 right-0 h-screen w-full sm:w-[460px] md:w-[500px] bg-[#0c101c] border-l border-slate-800 text-slate-100 shadow-2xl z-[101] flex flex-col animate-in slide-in-from-right duration-300 font-sans">
-        
-        {/* Top Header */}
+          {/* RAG Jarvis Side Drawer with smooth slide */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ duration: 0.32, ease: EASINGS.standard }}
+            className="fixed top-0 right-0 h-screen w-full sm:w-[460px] md:w-[500px] bg-[#0c101c] border-l border-slate-800 text-slate-100 shadow-2xl z-[101] flex flex-col font-sans"
+          >
+            {/* Top Header */}
         <div className="px-5 py-4 border-b border-slate-800/80 bg-[#0e1424] flex flex-col gap-3 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -608,7 +619,9 @@ export function CareerChat() {
             <span>Shortcut: <kbd className="font-mono bg-slate-800 text-slate-300 px-1 py-0.5 rounded text-[9px]">Ctrl+K</kbd></span>
           </div>
         </div>
-      </div>
+      </motion.div>
     </>
+  )}
+</AnimatePresence>
   );
 }

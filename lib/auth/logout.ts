@@ -9,12 +9,23 @@ export async function clientLogout() {
   }
 
   if (typeof document !== 'undefined') {
-    document.cookie = 'careerpilot_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    document.cookie = 'sb-careerpilot-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    const cookieNames = [
+      'careerpilot_session',
+      'sb-careerpilot-auth-token',
+      'careerpilot_user_id',
+      'careerpilot_user_email',
+      'careerpilot_user_role',
+    ];
+
+    for (const name of cookieNames) {
+      document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+      document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    }
   }
 
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem('careerpilot_current_user');
+    localStorage.removeItem('careerpilot-profile-store');
+    localStorage.removeItem('careerpilot-practice-store');
   }
 }
-

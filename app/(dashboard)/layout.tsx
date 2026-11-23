@@ -7,6 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { CareerChat } from '@/components/chat/CareerChat';
 import { GlobalShortcuts } from '@/components/common/GlobalShortcuts';
 import { DatabaseStatusBanner } from '@/components/ui/DatabaseStatusBanner';
+import { PageTransition } from '@/components/ui/PageTransition';
 import { useProfileStore } from '@/store/useProfileStore';
 import { useProgressStore } from '@/store/useProgressStore';
 
@@ -34,13 +35,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex font-sans antialiased">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex font-sans antialiased transition-colors duration-200">
       <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <DatabaseStatusBanner />
         <TopBar onMobileMenuToggle={() => setMobileOpen((prev) => !prev)} />
         <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-[1400px] w-full mx-auto">
-          {children}
+          <PageTransition key={pathname}>
+            {children}
+          </PageTransition>
         </main>
       </div>
       <CareerChat />

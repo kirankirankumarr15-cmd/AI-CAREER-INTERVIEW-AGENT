@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePracticeStore } from '@/store/usePracticeStore';
 import { Question } from '@/lib/practice/questions';
@@ -12,11 +12,15 @@ interface ProblemListProps {
 }
 
 export function ProblemList({ questions }: ProblemListProps) {
-  const { attempts, bookmarkedIds, toggleBookmark } = usePracticeStore();
+  const { attempts, bookmarkedIds, toggleBookmark, fetchProgress } = usePracticeStore();
   const [filterTopic, setFilterTopic] = useState<string>('all');
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterLanguage, setFilterLanguage] = useState<string>('all');
+
+  useEffect(() => {
+    fetchProgress();
+  }, [fetchProgress]);
 
   // Extract unique topics for filtering
   const topics = Array.from(new Set(questions.map(q => q.topic))).sort();
@@ -28,7 +32,7 @@ export function ProblemList({ questions }: ProblemListProps) {
     
     if (filterStatus !== 'all') {
       const attempt = attempts[q.id];
-      const isSolved = attempt?.status === 'solved' || attempt?.status === 'mastered';
+      const isSolved = attempt?.status === 'solved' || attempt?.isCorrect;
       if (filterStatus === 'solved' && !isSolved) return false;
       if (filterStatus === 'unsolved' && isSolved) return false;
     }
@@ -115,7 +119,7 @@ export function ProblemList({ questions }: ProblemListProps) {
       <div className="grid grid-cols-1 gap-3">
         {filteredQuestions.map((q) => {
           const attempt = attempts[q.id];
-          const isSolved = attempt?.status === 'solved' || attempt?.status === 'mastered';
+          const isSolved = attempt?.status === 'solved' || attempt?.isCorrect === true;
           const isBookmarked = bookmarkedIds.includes(q.id);
 
           return (

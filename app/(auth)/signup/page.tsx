@@ -155,18 +155,21 @@ export default function StudentSignUpPage() {
         // Supabase offline — proceed with local session
       }
 
-      // 3. Set session cookies so middleware allows dashboard access
-      document.cookie = 'careerpilot_session=active; path=/; max-age=604800; SameSite=Lax';
-      document.cookie = 'sb-careerpilot-auth-token=demo; path=/; max-age=604800; SameSite=Lax';
-
-      // 4. Update localStorage fallback store
-      registerUser({
+      // 3. Register user and set session cookies
+      const reg = registerUser({
         email: email.trim(),
         fullName: fullName.trim(),
         password,
         college: 'PESITM Shivamogga',
         provider: 'credentials',
       });
+
+      document.cookie = 'careerpilot_session=active; path=/; max-age=604800; SameSite=Lax';
+      if (reg.user?.id) {
+        document.cookie = `careerpilot_user_id=${encodeURIComponent(reg.user.id)}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `careerpilot_user_email=${encodeURIComponent(email.trim())}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `careerpilot_user_role=student; path=/; max-age=604800; SameSite=Lax`;
+      }
 
       // 5. Sync profile store
       localStorage.setItem('careerpilot_current_user', JSON.stringify({

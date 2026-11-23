@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { useInterviewStore } from '@/store/useInterviewStore';
 import { useProfileStore } from '@/store/useProfileStore';
 import { InterviewType, InterviewDifficulty, InterviewMode } from '@/types';
@@ -153,8 +154,10 @@ export default function InterviewSetupPage() {
           </h2>
           <div className="flex flex-wrap gap-2.5">
             {targetRoles.map((role) => (
-              <button
+              <motion.button
                 key={role}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setTargetRole(role)}
                 className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
                   targetRole === role
@@ -163,7 +166,7 @@ export default function InterviewSetupPage() {
                 }`}
               >
                 {role}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -179,8 +182,10 @@ export default function InterviewSetupPage() {
               const isSelected = interviewType === type.id;
               const Icon = type.icon;
               return (
-                <div
+                <motion.div
                   key={type.id}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.99 }}
                   onClick={() => setInterviewType(type.id)}
                   className={`cursor-pointer rounded-2xl p-5 border transition-all flex flex-col justify-between ${
                     isSelected
@@ -202,7 +207,7 @@ export default function InterviewSetupPage() {
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed">{type.description}</p>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -355,13 +360,15 @@ export default function InterviewSetupPage() {
 
         {/* Launch Button */}
         <div className="pt-2 text-center">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleLaunch}
-            className="w-full sm:w-auto px-10 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-md shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto"
+            className="w-full sm:w-auto px-10 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-extrabold text-sm shadow-md shadow-blue-600/25 transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer"
           >
             <Play className="h-4 w-4 fill-white" />
             Enter Interview Simulation Room
-          </button>
+          </motion.button>
         </div>
       </div>
     </div>

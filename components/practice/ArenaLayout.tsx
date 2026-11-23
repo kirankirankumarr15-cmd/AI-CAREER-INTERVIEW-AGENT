@@ -15,10 +15,16 @@ interface ArenaLayoutProps {
 }
 
 export function ArenaLayout({ categoryId, categoryTitle, description, colorTheme, children }: ArenaLayoutProps) {
-  const { categoryStats } = usePracticeStore();
+  const { subjectStats } = usePracticeStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'problems' | 'study-plan' | 'submissions'>('problems');
 
-  const stats = categoryStats[categoryId] || { totalSolved: 0, totalQuestions: 0, accuracy: 0, skillScore: 0 };
+  const rawStats = subjectStats[categoryId];
+  const stats = {
+    totalSolved: rawStats?.solved ?? 0,
+    totalQuestions: rawStats?.total ?? 0,
+    accuracy: rawStats?.accuracy ?? 0,
+    skillScore: rawStats ? Math.round((rawStats.solved / Math.max(1, rawStats.total)) * 100) : 0,
+  };
   const allQuestions = getQuestionsByCategory(categoryId);
 
   const getThemeClasses = () => {

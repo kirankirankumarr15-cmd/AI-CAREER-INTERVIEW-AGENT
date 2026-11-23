@@ -10,7 +10,7 @@ import { createClient } from '@/utils/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-export const DPDP_PURPOSES = [
+const DPDP_PURPOSES = [
   { id: 'profile_processing', title: 'Career Profile Processing', description: 'Mandatory processing of academic background and target role.', isMandatory: true },
   { id: 'resume_analysis', title: 'Resume ATS Analysis & Extraction', description: 'Parsing resume text to compute 34-checkpoint ATS scores.', isMandatory: false },
   { id: 'ai_interview', title: 'AI Mock Interview Voice Processing', description: 'Transcribing interview audio responses and generating feedback.', isMandatory: false },

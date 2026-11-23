@@ -15,6 +15,8 @@ const categoriesInfo: Record<string, { title: string; description: string; color
   web: { title: 'Frontend & Web', description: 'React, JavaScript, CSS layout, accessibility, and browser rendering.', colorTheme: 'emerald' },
   backend: { title: 'Backend & APIs', description: 'REST, auth, databases, caching, and production debugging patterns.', colorTheme: 'blue' },
   aptitude: { title: 'Aptitude & Reasoning', description: 'Quantitative, logical, and verbal drills used in campus placement rounds.', colorTheme: 'amber' },
+  verbal: { title: 'Verbal Ability & English', description: 'Grammar, vocabulary, reading comprehension, idioms, and sentence correction.', colorTheme: 'rose' },
+  microcontrollers: { title: 'Microcontrollers & Embedded', description: '8051, ARM Cortex, Timers, Interrupts, I2C, SPI, UART, and Embedded C.', colorTheme: 'indigo' },
   communication: { title: 'Communication', description: 'Elevator pitches, clarity, filler-word control, and spoken technical answers.', colorTheme: 'rose' },
   hr: { title: 'HR & Behavioral', description: 'STAR stories, strengths, conflict, and leadership interview questions.', colorTheme: 'orange' },
   'system-design': { title: 'System Design Basics', description: 'Scalability, databases vs caches, load balancing, and trade-off reasoning.', colorTheme: 'slate' },

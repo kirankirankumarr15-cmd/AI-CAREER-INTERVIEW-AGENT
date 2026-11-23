@@ -1,71 +1,61 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { QuestionStatus } from '@/lib/practice/questions';
 
 export interface QuestionAttempt {
   questionId: string;
-  status: QuestionStatus;
-  score: number;
-  hintsUsed: number;
-  attempts: number;
-  lastAttemptAt: string;
-  timeSpentSeconds: number;
-  correctCount: number;
-  incorrectCount: number;
+  subjectId: string;
+  status: 'solved' | 'attempted';
+  isCorrect: boolean;
+  selectedAnswer: string | null;
+  attemptsCount: number;
+  attemptedAt: string;
 }
 
-export interface TopicProgress {
-  topicId: string;
-  topicLabel: string;
-  category: string;
-  totalQuestions: number;
+export interface SubjectProgressStat {
+  subjectId: string;
+  name: string;
   solved: number;
-  accuracy: number; // 0-100
-  lastPracticed?: string;
-}
-
-export interface PracticeSession {
-  id: string;
-  startedAt: string;
-  endedAt?: string;
-  questionIds: string[];
-  completed: number;
-  score: number;
-  mode: string;
-}
-
-export interface CategoryStats {
-  category: string;
-  totalSolved: number;
-  totalQuestions: number;
+  attempted: number;
+  total: number;
   accuracy: number;
-  skillScore: number; // 0-100
+}
+
+export interface RecentActivityItem {
+  questionId: string;
+  questionTitle: string;
+  subjectId: string;
+  subjectName: string;
+  isCorrect: boolean;
+  attemptedAt: string;
 }
 
 interface PracticeState {
-  // Per-question tracking
-  attempts: Record<string, QuestionAttempt>;
-  // Per-topic progress
-  topicProgress: Record<string, TopicProgress>;
-  // Per-category aggregates
-  categoryStats: Record<string, CategoryStats>;
-  // Bookmark list
-  bookmarkedIds: string[];
-  // Current practice session
-  currentSession: PracticeSession | null;
-  // Overall stats
+  isLoading: boolean;
+  userId: string | null;
   totalSolved: number;
-  totalPoints: number;
-  dailyStreak: number;
-  lastPracticeDate: string;
-  weeklyGoal: number;
-  weeklyProgress: number;
-  // Weak areas (category ids sorted by accuracy asc)
-  weakAreas: string[];
-  // Last recommendation
-  recommendedQuestionId: string | null;
+  totalAttempted: number;
+  totalQuestions: number;
+  accuracy: number;
+  streak: number;
+  subjectStats: Record<string, SubjectProgressStat>;
+  recentActivity: RecentActivityItem[];
+  attempts: Record<string, QuestionAttempt>;
+  bookmarkedIds: string[];
 
-  // Actions
+  // Core Actions
+  fetchProgress: () => Promise<void>;
+  submitAnswer: (params: {
+    questionId: string;
+    subjectId: string;
+    selectedAnswer: string;
+    timeTakenSeconds?: number;
+    isCodingOrText?: boolean;
+  }) => Promise<{
+    success: boolean;
+    isCorrect: boolean;
+    correctAnswer: string;
+    explanation: string;
+  }>;
+  toggleBookmark: (questionId: string) => void;
   recordAttempt: (
     questionId: string,
     category: string,
@@ -75,217 +65,132 @@ interface PracticeState {
     hintsUsed: number,
     timeSeconds: number,
     totalPoints: number
-  ) => void;
-  toggleBookmark: (questionId: string) => void;
-  startSession: (mode: string, questionIds: string[]) => string;
-  endSession: (sessionId: string, completed: number, score: number) => void;
-  updateCategoryStats: (category: string, stats: Partial<CategoryStats>) => void;
-  setRecommendation: (questionId: string) => void;
-  resetProgress: () => void;
+  ) => Promise<void>;
 }
 
-const defaultCategoryStats: Record<string, CategoryStats> = {
-  dbms: { category: 'dbms', totalSolved: 0, totalQuestions: 40, accuracy: 0, skillScore: 0 },
-  dsa: { category: 'dsa', totalSolved: 0, totalQuestions: 150, accuracy: 0, skillScore: 0 },
-  java: { category: 'java', totalSolved: 0, totalQuestions: 35, accuracy: 0, skillScore: 0 },
-  oop: { category: 'oop', totalSolved: 0, totalQuestions: 30, accuracy: 0, skillScore: 0 },
-  os: { category: 'os', totalSolved: 0, totalQuestions: 35, accuracy: 0, skillScore: 0 },
-  cn: { category: 'cn', totalSolved: 0, totalQuestions: 25, accuracy: 0, skillScore: 0 },
-  web: { category: 'web', totalSolved: 0, totalQuestions: 50, accuracy: 0, skillScore: 0 },
-  backend: { category: 'backend', totalSolved: 0, totalQuestions: 20, accuracy: 0, skillScore: 0 },
-  aptitude: { category: 'aptitude', totalSolved: 0, totalQuestions: 60, accuracy: 0, skillScore: 0 },
-  hr: { category: 'hr', totalSolved: 0, totalQuestions: 15, accuracy: 0, skillScore: 0 },
-};
+export const usePracticeStore = create<PracticeState>()((set, get) => ({
+  isLoading: true,
+  userId: null,
+  totalSolved: 0,
+  totalAttempted: 0,
+  totalQuestions: 70,
+  accuracy: 0,
+  streak: 0,
+  subjectStats: {},
+  recentActivity: [],
+  attempts: {},
+  bookmarkedIds: [],
 
-// Clear legacy fake mock data from localStorage if present
-if (typeof window !== 'undefined') {
-  try {
-    localStorage.removeItem('careerpilot-practice-store');
-  } catch {}
-}
+  fetchProgress: async () => {
+    try {
+      set({ isLoading: true });
+      const res = await fetch('/api/practice/progress', {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
 
-export const usePracticeStore = create<PracticeState>()(
-  persist(
-    (set) => ({
-      attempts: {},
-      topicProgress: {},
-      categoryStats: defaultCategoryStats,
-      bookmarkedIds: [],
-      currentSession: null,
-      totalSolved: 0,
-      totalPoints: 0,
-      dailyStreak: 0,
-      lastPracticeDate: new Date().toISOString().split('T')[0],
-      weeklyGoal: 50,
-      weeklyProgress: 0,
-      weakAreas: [],
-      recommendedQuestionId: null,
+      if (!res.ok) {
+        throw new Error(`Failed to fetch student progress (Status ${res.status})`);
+      }
 
-      recordAttempt: (questionId, category, topic, passed, score, hintsUsed, timeSeconds, pts) =>
-        set((state) => {
-          const prev = state.attempts[questionId];
-          const newAttempt: QuestionAttempt = {
-            questionId,
-            status: passed ? (prev?.correctCount >= 2 ? 'mastered' : 'solved') : 'attempted',
-            score,
-            hintsUsed,
-            attempts: (prev?.attempts || 0) + 1,
-            lastAttemptAt: new Date().toISOString(),
-            timeSpentSeconds: (prev?.timeSpentSeconds || 0) + timeSeconds,
-            correctCount: (prev?.correctCount || 0) + (passed ? 1 : 0),
-            incorrectCount: (prev?.incorrectCount || 0) + (passed ? 0 : 1),
-          };
-
-          const prevCat = state.categoryStats[category] || defaultCategoryStats[category] || {
-            category, totalSolved: 0, totalQuestions: 20, accuracy: 0, skillScore: 0,
-          };
-
-          const newSolved = passed && !prev ? prevCat.totalSolved + 1 : prevCat.totalSolved;
-          const totalAttempts = (prevCat.totalSolved > 0 ? prevCat.totalSolved : 0) + (passed ? 1 : 0) + (prev?.incorrectCount || 0) + 1;
-          const newAccuracy = Math.round((newSolved / Math.max(1, totalAttempts)) * 100);
-
-          const updatedCategoryStats = {
-            ...state.categoryStats,
-            [category]: {
-              ...prevCat,
-              totalSolved: newSolved,
-              accuracy: newAccuracy,
-              skillScore: Math.min(100, Math.round(newAccuracy * 0.7 + (newSolved / Math.max(1, prevCat.totalQuestions)) * 30)),
-            },
-          };
-
-          // Recompute weak areas
-          const weakAreas = Object.values(updatedCategoryStats)
-            .sort((a, b) => a.skillScore - b.skillScore)
-            .slice(0, 3)
-            .map(s => s.category);
-
-          const today = new Date().toISOString().split('T')[0];
-          const isNewDay = state.lastPracticeDate !== today;
-
-          return {
-            attempts: { ...state.attempts, [questionId]: newAttempt },
-            categoryStats: updatedCategoryStats,
-            totalSolved: passed && !prev ? state.totalSolved + 1 : state.totalSolved,
-            totalPoints: state.totalPoints + (passed ? pts : Math.round(pts * 0.1)),
-            dailyStreak: isNewDay ? state.dailyStreak + 1 : state.dailyStreak,
-            lastPracticeDate: today,
-            weeklyProgress: state.weeklyProgress + (passed ? 1 : 0),
-            weakAreas,
-          };
-        }),
-
-      toggleBookmark: (questionId) =>
-        set((state) => ({
-          bookmarkedIds: state.bookmarkedIds.includes(questionId)
-            ? state.bookmarkedIds.filter(id => id !== questionId)
-            : [...state.bookmarkedIds, questionId],
-        })),
-
-      startSession: (mode, questionIds) => {
-        const sessionId = `session-${Date.now()}`;
-        const session: PracticeSession = {
-          id: sessionId,
-          startedAt: new Date().toISOString(),
-          questionIds,
-          completed: 0,
-          score: 0,
-          mode,
-        };
-        set({ currentSession: session });
-        return sessionId;
-      },
-
-      endSession: (sessionId, completed, score) =>
-        set((state) => {
-          if (state.currentSession?.id !== sessionId) return state;
-          return {
-            currentSession: {
-              ...state.currentSession!,
-              endedAt: new Date().toISOString(),
-              completed,
-              score,
-            },
-          };
-        }),
-
-      updateCategoryStats: (category, stats) =>
-        set((state) => ({
-          categoryStats: {
-            ...state.categoryStats,
-            [category]: { ...(state.categoryStats[category] || {}), ...stats } as CategoryStats,
-          },
-        })),
-
-      setRecommendation: (questionId) => set({ recommendedQuestionId: questionId }),
-
-      resetProgress: () =>
+      const data = await res.json();
+      if (data.authenticated) {
         set({
-          attempts: {},
-          topicProgress: {},
-          categoryStats: defaultCategoryStats,
+          isLoading: false,
+          userId: data.userId || null,
+          totalSolved: data.totalSolved ?? 0,
+          totalAttempted: data.totalAttempted ?? 0,
+          totalQuestions: data.totalQuestions ?? 70,
+          accuracy: data.accuracy ?? 0,
+          streak: data.streak ?? 0,
+          subjectStats: data.subjectStats || {},
+          recentActivity: data.recentActivity || [],
+          attempts: data.attempts || {},
+        });
+      } else {
+        set({
+          isLoading: false,
+          userId: null,
           totalSolved: 0,
-          totalPoints: 0,
-          dailyStreak: 0,
-          weeklyProgress: 0,
-          weakAreas: ['cn', 'os', 'dsa'],
-          recommendedQuestionId: null,
-        }),
-    }),
-    {
-      name: 'careerpilot-practice-store-v2',
-      version: 2,
-      migrate: (persistedState: any) => {
-        // Reset categoryStats to 0 unless student actually completed questions
-        if (!persistedState?.attempts || Object.keys(persistedState.attempts).length === 0) {
-          return {
-            ...persistedState,
-            categoryStats: defaultCategoryStats,
-            totalSolved: 0,
-            totalPoints: 0,
-            weeklyProgress: 0,
-          };
-        }
-        return persistedState;
-      },
-      storage: createJSONStorage(() =>
-        typeof window !== 'undefined' ? localStorage : {
-          getItem: () => null,
-          setItem: () => {},
-          removeItem: () => {},
-        }
-      ),
+          totalAttempted: 0,
+          accuracy: 0,
+          streak: 0,
+          subjectStats: {},
+          recentActivity: [],
+          attempts: {},
+        });
+      }
+    } catch (err) {
+      console.error('Error in fetchProgress:', err);
+      set({ isLoading: false });
     }
-  )
-);
+  },
 
-// Derived selectors
-export function selectOverallReadiness(stats: Record<string, CategoryStats>): number {
-  const weights: Record<string, number> = {
-    dsa: 0.25, dbms: 0.20, java: 0.15, oop: 0.12, os: 0.10,
-    cn: 0.08, aptitude: 0.05, hr: 0.05,
-  };
-  let total = 0;
-  let weightSum = 0;
-  for (const [cat, weight] of Object.entries(weights)) {
-    const s = stats[cat];
-    if (s) { total += s.skillScore * weight; weightSum += weight; }
-  }
-  return weightSum > 0 ? Math.round(total / weightSum) : 0;
-}
+  submitAnswer: async ({ questionId, subjectId, selectedAnswer, timeTakenSeconds = 0, isCodingOrText = false }) => {
+    const res = await fetch('/api/practice/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        questionId,
+        subjectId,
+        selectedAnswer,
+        timeTakenSeconds,
+        isCodingOrText,
+      }),
+    });
 
-export function selectReadinessLevel(score: number): number {
-  if (score >= 85) return 5;
-  if (score >= 70) return 4;
-  if (score >= 55) return 3;
-  if (score >= 35) return 2;
-  return 1;
-}
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const errorMsg = errData.error || `Server failed to save answer (HTTP ${res.status})`;
+      throw new Error(errorMsg);
+    }
 
-export const READINESS_LABELS: Record<number, string> = {
-  1: 'Foundation',
-  2: 'Developing',
-  3: 'Interview Ready',
-  4: 'Strong Candidate',
-  5: 'Placement Ready',
-};
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Server reported failure recording answer');
+    }
+
+    if (data.progress) {
+      set({
+        totalSolved: data.progress.totalSolved ?? 0,
+        totalAttempted: data.progress.totalAttempted ?? 0,
+        totalQuestions: data.progress.totalQuestions ?? 70,
+        accuracy: data.progress.accuracy ?? 0,
+        streak: data.progress.streak ?? 0,
+        subjectStats: data.progress.subjectStats || {},
+        recentActivity: data.progress.recentActivity || [],
+        attempts: data.progress.attempts || {},
+      });
+    }
+
+    return {
+      success: true,
+      isCorrect: data.isCorrect,
+      correctAnswer: data.correctAnswer,
+      explanation: data.explanation,
+    };
+  },
+
+  toggleBookmark: (questionId: string) => {
+    set((state) => ({
+      bookmarkedIds: state.bookmarkedIds.includes(questionId)
+        ? state.bookmarkedIds.filter((id) => id !== questionId)
+        : [...state.bookmarkedIds, questionId],
+    }));
+  },
+
+  recordAttempt: async (questionId, category, _topic, passed, _score, _hints, timeSeconds) => {
+    // Adapter for code execution and legacy pages
+    try {
+      await get().submitAnswer({
+        questionId,
+        subjectId: category,
+        selectedAnswer: passed ? 'CODE_PASSED' : 'CODE_ATTEMPTED',
+        timeTakenSeconds: timeSeconds,
+        isCodingOrText: true,
+      });
+    } catch (err) {
+      console.error('Error in recordAttempt adapter:', err);
+    }
+  },
+}));

@@ -2,9 +2,10 @@
 // All questions are original, curated educational content
 import { webProblems, backendProblems, cnProblems, systemDesignProblems } from './more-questions.ts';
 import { generatedProblems } from './generated-questions.ts';
+import { PRACTICE_QUESTIONS } from './practiceBank.ts';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
-export type QuestionType = 'sql' | 'coding' | 'conceptual' | 'aptitude' | 'hr';
+export type QuestionType = 'sql' | 'coding' | 'conceptual' | 'aptitude' | 'hr' | 'mcq';
 export type QuestionStatus = 'unsolved' | 'attempted' | 'solved' | 'mastered';
 
 export type FrequencyLevel = 'very-high' | 'high' | 'medium' | 'low';
@@ -57,6 +58,8 @@ export interface Question {
   tags: string[];
   roleRelevance: string[];
   points: number;
+  options?: { label: string; text: string }[];
+  correctAnswer?: string;
 }
 
 // ─────────────────────────────────────────────────────
@@ -1616,7 +1619,34 @@ AVOID:
 // COMBINED EXPORT
 // ─────────────────────────────────────────────────────
 
+export const practiceBankQuestions: Question[] = PRACTICE_QUESTIONS.map((pq, idx) => ({
+  id: pq.id,
+  number: 200 + idx + 1,
+  title: pq.title,
+  slug: pq.id,
+  type: 'mcq' as QuestionType,
+  category: pq.subjectId,
+  topic: pq.topic,
+  subtopic: pq.subtopic || pq.topic,
+  difficulty: pq.difficulty,
+  description: pq.description,
+  examples: [],
+  hints: [],
+  solution: pq.correctAnswer,
+  explanation: pq.explanation,
+  options: pq.options,
+  correctAnswer: pq.correctAnswer,
+  testCases: [],
+  companies: ['TCS', 'Infosys', 'Wipro', 'Accenture', 'Cognizant'],
+  frequencyLevel: 'high',
+  frequencyNote: 'Standard campus placement interview & screening question.',
+  tags: [pq.subjectId, pq.topic],
+  roleRelevance: ['Software Engineer', 'Systems Engineer', 'Embedded Developer'],
+  points: pq.points || 10,
+}));
+
 export const allQuestions: Question[] = [
+  ...practiceBankQuestions,
   ...sqlProblems,
   ...dsaProblems,
   ...conceptualQuestions,

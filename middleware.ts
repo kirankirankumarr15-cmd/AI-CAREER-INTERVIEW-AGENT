@@ -15,12 +15,13 @@ const PROTECTED_PATHS = [
   '/progress',
   '/onboarding',
   '/roadmap',
+  '/settings',
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Fast-path: public auth routes never need Supabase session refresh
+  // Fast-path: public auth routes never need session refresh
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/signup') ||
@@ -29,25 +30,42 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Root route check: unauthenticated requests go to /login, active sessions go to /dashboard
+  if (pathname === '/') {
+    const sessionCookie = request.cookies.get('careerpilot_session')?.value;
+    const userIdCookie = request.cookies.get('careerpilot_user_id')?.value;
+    if (sessionCookie === 'active' && userIdCookie && userIdCookie.trim() !== '') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
   const isProtected = PROTECTED_PATHS.some((path) => pathname.startsWith(path));
 
-  // If hitting a protected route, check auth status
+  // If hitting a protected route, verify valid authentication
   if (isProtected) {
-    const cookies = request.cookies.getAll();
-    const hasLocalSession = cookies.some(
-      (c) => c.name === 'careerpilot_session' || c.name === 'sb-careerpilot-auth-token'
-    );
+    // 1. Check verified local session
+    const sessionCookie = request.cookies.get('careerpilot_session')?.value;
+    const userIdCookie = request.cookies.get('careerpilot_user_id')?.value;
+    const hasValidLocalSession =
+      sessionCookie === 'active' && Boolean(userIdCookie && userIdCookie.trim() !== '');
 
-    // Fast-path for verified local / demo session: allow immediately
-    if (hasLocalSession) {
+    if (hasValidLocalSession) {
       return NextResponse.next();
     }
 
+    // 2. Check for genuine Supabase auth cookie
+    const cookies = request.cookies.getAll();
     const hasSupabaseCookie = cookies.some(
       (c) =>
         c.name.startsWith('sb-') &&
         c.name.includes('-auth-token') &&
-        c.name !== 'sb-careerpilot-auth-token'
+        c.name !== 'sb-careerpilot-auth-token' &&
+        Boolean(c.value && c.value.trim() !== '' && c.value !== 'demo')
     );
 
     // Fast-path: without auth cookies, redirect to login immediately without network delay
@@ -57,21 +75,21 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    const { createServerClient } = await import('@supabase/ssr');
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll() {},
-        },
-      }
-    );
-
     try {
+      const { createServerClient } = await import('@supabase/ssr');
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
+            },
+            setAll() {},
+          },
+        }
+      );
+
       const userPromise = supabase.auth.getUser();
       const timeoutPromise = new Promise<{ data: { user: null }; error: Error }>((_, reject) =>
         setTimeout(() => reject(new Error('Supabase auth timeout')), 1500)

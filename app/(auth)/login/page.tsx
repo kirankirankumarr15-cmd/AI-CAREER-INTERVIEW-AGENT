@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, GraduationCap, Shield, Loader2 } from 'lucide-react';
+import { EASINGS } from '@/lib/motion';
 import { createClient } from '@/utils/supabase/client';
 import { verifyPassword, registerUser } from '@/lib/auth/userStore';
 import { useProfileStore } from '@/store/useProfileStore';
@@ -21,9 +23,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const setSessionCookies = () => {
+  const setSessionCookies = (userId?: string, userEmail?: string, userRole?: string) => {
     document.cookie = 'careerpilot_session=active; path=/; max-age=604800; SameSite=Lax';
-    document.cookie = 'sb-careerpilot-auth-token=demo; path=/; max-age=604800; SameSite=Lax';
+    if (userId) {
+      document.cookie = `careerpilot_user_id=${encodeURIComponent(userId)}; path=/; max-age=604800; SameSite=Lax`;
+    }
+    if (userEmail) {
+      document.cookie = `careerpilot_user_email=${encodeURIComponent(userEmail)}; path=/; max-age=604800; SameSite=Lax`;
+    }
+    if (userRole) {
+      document.cookie = `careerpilot_user_role=${encodeURIComponent(userRole)}; path=/; max-age=604800; SameSite=Lax`;
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -45,7 +55,8 @@ export default function LoginPage() {
 
       const res = await Promise.race([authPromise, timeoutPromise]);
       if (res?.data?.session) {
-        setSessionCookies();
+        const u = (res.data.session as any).user;
+        setSessionCookies(u?.id, u?.email, 'student');
         router.push('/dashboard');
         return;
       }
@@ -67,7 +78,7 @@ export default function LoginPage() {
         return;
       }
 
-      setSessionCookies();
+      setSessionCookies(verification.user.id, verification.user.email, userRole);
       localStorage.setItem('careerpilot_current_user', JSON.stringify({
         ...verification.user,
         role: userRole,
@@ -102,7 +113,7 @@ export default function LoginPage() {
         college: 'PESITM Shivamogga',
         provider: 'credentials',
       });
-      setSessionCookies();
+      setSessionCookies(reg.user?.id, reg.user?.email, 'student');
       localStorage.setItem('careerpilot_current_user', JSON.stringify({
         ...reg.user,
         role: 'student',
@@ -138,31 +149,45 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Role Navigation Tabs (UI filter only, role is server-verified) */}
-          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+          {/* Role Navigation Tabs with Smooth Floating Pill */}
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 relative">
             <button
               type="button"
               onClick={() => { setActiveTab('STUDENT'); setErrorMsg(''); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors relative z-10 ${
                 activeTab === 'STUDENT'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                  ? 'text-blue-600 dark:text-blue-400'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <GraduationCap className="h-4 w-4" />
               Student
+              {activeTab === 'STUDENT' && (
+                <motion.div
+                  layoutId="loginTabPill"
+                  className="absolute inset-0 bg-white dark:bg-slate-900 rounded-xl shadow-sm z-[-1]"
+                  transition={{ duration: 0.22, ease: EASINGS.standard }}
+                />
+              )}
             </button>
             <button
               type="button"
               onClick={() => { setActiveTab('HOD'); setErrorMsg(''); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors relative z-10 ${
                 activeTab === 'HOD'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  ? 'text-indigo-600 dark:text-indigo-400'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Shield className="h-4 w-4" />
               Faculty / TPO
+              {activeTab === 'HOD' && (
+                <motion.div
+                  layoutId="loginTabPill"
+                  className="absolute inset-0 bg-white dark:bg-slate-900 rounded-xl shadow-sm z-[-1]"
+                  transition={{ duration: 0.22, ease: EASINGS.standard }}
+                />
+              )}
             </button>
           </div>
 
@@ -175,12 +200,19 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Error Message */}
-          {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-medium">
-              {errorMsg}
-            </div>
-          )}
+          {/* Error Message with smooth entry */}
+          <AnimatePresence>
+            {errorMsg && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-medium"
+              >
+                {errorMsg}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
@@ -224,7 +256,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button
+            <motion.button
+              whileHover={{ scale: loading ? 1 : 1.01 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
               type="submit"
               disabled={loading}
               className={`w-full py-3 rounded-xl text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 ${
@@ -241,7 +275,7 @@ export default function LoginPage() {
               ) : (
                 `Sign In as ${activeTab === 'HOD' ? 'Faculty / TPO' : 'Student'}`
               )}
-            </button>
+            </motion.button>
           </form>
 
           {/* Footer Signup Link */}

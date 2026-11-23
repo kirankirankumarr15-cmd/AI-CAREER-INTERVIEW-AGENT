@@ -3,8 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProfileStore } from '@/store/useProfileStore';
 import { clientLogout } from '@/lib/auth/logout';
+import { dropdownVariants } from '@/lib/motion';
 import {
   Bell, Target, ChevronDown, Flame, Award, LogOut,
   Mic, FileText, BookOpen, CheckCircle2, AlertCircle, Info, X, Menu, Keyboard,
@@ -129,29 +131,39 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
             <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${showRoles ? 'rotate-180' : ''}`} />
           </button>
 
-          {showRoles && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowRoles(false)} />
-              <div className="absolute left-0 mt-2 w-60 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1.5">
-                <p className="px-3 py-2 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  Select Career Track
-                </p>
-                {roles.map((role) => (
-                  <button
-                    key={role}
-                    onClick={() => { updateProfile({ targetRole: role }); setShowRoles(false); }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                      profile.targetRole === role
-                        ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200'
-                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    {role}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          <AnimatePresence>
+            {showRoles && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowRoles(false)} />
+                <motion.div
+                  variants={dropdownVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  className="absolute left-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 p-2"
+                >
+                  <p className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">
+                    Select Career Track
+                  </p>
+                  <div className="space-y-0.5">
+                    {roles.map((role) => (
+                      <button
+                        key={role}
+                        onClick={() => { updateProfile({ targetRole: role }); setShowRoles(false); }}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                          profile.targetRole === role
+                            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold border border-blue-200/80 dark:border-blue-800/80'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {role}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -198,75 +210,85 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
             )}
           </button>
 
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in">
-              <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <div>
-                  <h3 className="font-bold text-xs text-slate-900">Notifications</h3>
-                  <p className="text-[10px] text-slate-400">{unreadCount} unread</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="text-[10px] text-blue-600 font-semibold hover:underline">
-                      Mark all read
-                    </button>
-                  )}
-                  <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-700">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="max-h-72 overflow-y-auto custom-scrollbar">
-                {notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    onClick={() => {
-                      markRead(notif.id);
-                      if (notif.link) { router.push(notif.link); setShowNotifications(false); }
-                    }}
-                    className={`p-3 border-b border-slate-100 flex gap-3 cursor-pointer transition-colors ${
-                      notif.read ? 'hover:bg-slate-50' : 'bg-blue-50/70 hover:bg-blue-50'
-                    }`}
-                  >
-                    <div className="shrink-0 mt-0.5">{notifIcon(notif.type)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className={`text-xs font-bold truncate ${notif.read ? 'text-slate-600' : 'text-slate-900'}`}>
-                          {notif.title}
-                        </p>
-                        {!notif.read && <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />}
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{notif.message}</p>
-                      <p className="text-[10px] text-slate-400 mt-1 font-medium">{notif.time}</p>
-                    </div>
+          <AnimatePresence>
+            {showNotifications && (
+              <motion.div
+                variants={dropdownVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 overflow-hidden"
+              >
+                <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+                  <div>
+                    <h3 className="font-bold text-xs text-slate-900 dark:text-white">Notifications</h3>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{unreadCount} unread</p>
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <button onClick={markAllRead} className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+                        Mark all read
+                      </button>
+                    )}
+                    <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
 
-              {/* Quick action shortcuts */}
-              <div className="p-2.5 bg-slate-50 border-t border-slate-100">
-                <p className="text-[10px] uppercase font-bold text-slate-400 px-1 mb-1.5 tracking-wider">Quick Actions</p>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[
-                    { label: 'Interview', href: '/interview', icon: Mic },
-                    { label: 'Resume', href: '/resume', icon: FileText },
-                    { label: 'Learn', href: '/learn', icon: BookOpen },
-                  ].map(({ label, href, icon: Icon }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      onClick={() => setShowNotifications(false)}
-                      className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
+                <div className="max-h-72 overflow-y-auto custom-scrollbar">
+                  {notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      onClick={() => {
+                        markRead(notif.id);
+                        if (notif.link) { router.push(notif.link); setShowNotifications(false); }
+                      }}
+                      className={`p-3 border-b border-slate-100 dark:border-slate-800/60 flex gap-3 cursor-pointer transition-colors ${
+                        notif.read
+                          ? 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                          : 'bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-50 dark:hover:bg-blue-950/60'
+                      }`}
                     >
-                      <Icon className="h-3.5 w-3.5 text-emerald-500" />
-                      <span className="text-[10px] font-semibold text-slate-600">{label}</span>
-                    </Link>
+                      <div className="shrink-0 mt-0.5">{notifIcon(notif.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={`text-xs font-bold truncate ${notif.read ? 'text-slate-600 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>
+                            {notif.title}
+                          </p>
+                          {!notif.read && <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />}
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{notif.message}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">{notif.time}</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
+
+                {/* Quick action shortcuts */}
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 px-1 mb-1.5 tracking-wider">Quick Actions</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { label: 'Interview', href: '/interview', icon: Mic },
+                      { label: 'Resume', href: '/resume', icon: FileText },
+                      { label: 'Learn', href: '/learn', icon: BookOpen },
+                    ].map(({ label, href, icon: Icon }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setShowNotifications(false)}
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                      >
+                        <Icon className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                        <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">{label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Logout */}
