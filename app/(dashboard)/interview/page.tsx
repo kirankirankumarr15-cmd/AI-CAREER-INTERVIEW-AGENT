@@ -36,6 +36,8 @@ export default function InterviewSetupPage() {
   const { startInterview } = useInterviewStore();
 
   const [targetRole, setTargetRole] = useState(profile.targetRole || 'Software Developer (SDE)');
+  const [companyName, setCompanyName] = useState('General Tech');
+  const [experienceLevel, setExperienceLevel] = useState<'Fresh Graduate' | 'Junior (1-2 yrs)' | 'Mid-Level (3+ yrs)'>('Fresh Graduate');
   const [interviewType, setInterviewType] = useState<InterviewType>('Technical');
   const [technicalSubject, setTechnicalSubject] = useState(TECHNICAL_SUBJECTS[0]);
   const [difficulty, setDifficulty] = useState<InterviewDifficulty>('Intermediate');
@@ -48,6 +50,8 @@ export default function InterviewSetupPage() {
       interviewType,
       difficulty,
       mode,
+      companyName: companyName === 'General Tech' ? undefined : companyName,
+      experienceLevel,
       technicalSubject: interviewType === 'Technical' ? technicalSubject : undefined,
       durationMinutes,
     });
@@ -168,6 +172,65 @@ export default function InterviewSetupPage() {
                 {role}
               </motion.button>
             ))}
+          </div>
+        </div>
+
+        {/* 1.5 Target Company & Experience Level */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Target Company Style
+            </h2>
+            <div className="grid grid-cols-3 gap-2">
+              {['General Tech', 'Google', 'Amazon', 'Microsoft', 'TCS', 'Infosys'].map((comp) => (
+                <button
+                  type="button"
+                  key={comp}
+                  onClick={() => setCompanyName(comp)}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-center ${
+                    companyName === comp
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                      : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-400'
+                  }`}
+                >
+                  {comp}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Candidate Experience Level
+            </h2>
+            <div className="space-y-2">
+              {[
+                { id: 'Fresh Graduate' as const, label: 'Fresh Graduate / Final Year', desc: 'Core fundamentals & university projects' },
+                { id: 'Junior (1-2 yrs)' as const, label: 'Junior Engineer (1-2 yrs)', desc: 'Production debugging & API mechanics' },
+                { id: 'Mid-Level (3+ yrs)' as const, label: 'Mid-Level Engineer (3+ yrs)', desc: 'Distributed scaling & system architecture' },
+              ].map((lvl) => (
+                <div
+                  key={lvl.id}
+                  onClick={() => setExperienceLevel(lvl.id)}
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                    experienceLevel === lvl.id
+                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/30'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                  }`}
+                >
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">{lvl.label}</span>
+                    <p className="text-[10px] text-slate-500">{lvl.desc}</p>
+                  </div>
+                  <input
+                    type="radio"
+                    checked={experienceLevel === lvl.id}
+                    onChange={() => setExperienceLevel(lvl.id)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

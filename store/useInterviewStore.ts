@@ -10,6 +10,7 @@ interface InterviewState {
   difficulty: InterviewDifficulty;
   mode: InterviewMode;
   companyName: string;
+  experienceLevel?: 'Fresh Graduate' | 'Junior (1-2 yrs)' | 'Mid-Level (3+ yrs)';
   technicalSubject?: string;
   durationMinutes?: number;
   currentQuestionIndex: number;
@@ -37,6 +38,7 @@ interface InterviewState {
     difficulty: InterviewDifficulty;
     mode: InterviewMode;
     companyName?: string;
+    experienceLevel?: 'Fresh Graduate' | 'Junior (1-2 yrs)' | 'Mid-Level (3+ yrs)';
     technicalSubject?: string;
     durationMinutes?: number;
   }) => void;
@@ -73,6 +75,7 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
       difficulty: config.difficulty,
       mode: config.mode,
       companyName: config.companyName || '',
+      experienceLevel: config.experienceLevel || 'Fresh Graduate',
       technicalSubject: config.technicalSubject,
       durationMinutes: config.durationMinutes || 15,
       currentQuestionIndex: 0,

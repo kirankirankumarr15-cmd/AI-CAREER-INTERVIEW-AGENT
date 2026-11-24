@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { DatabaseSync } from 'node:sqlite';
 import { PRACTICE_SUBJECTS, PRACTICE_QUESTIONS, type PracticeQuestion } from '../practice/practiceBank.ts';
+import { INTERVIEW_QUESTION_BANK, type InterviewBankQuestion } from '../interview/questionBank';
 
 export interface UserProgressData {
   totalSolved: number;
@@ -147,7 +148,56 @@ function getDb(): DatabaseSync {
 
     CREATE INDEX IF NOT EXISTS idx_interview_sessions_user ON interview_sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_interview_turns_session ON interview_turns(session_id);
+
+    CREATE TABLE IF NOT EXISTS interview_question_bank (
+      id TEXT PRIMARY KEY,
+      role TEXT NOT NULL,
+      company_tag TEXT,
+      interview_type TEXT NOT NULL,
+      category TEXT NOT NULL,
+      difficulty TEXT NOT NULL,
+      question_text TEXT NOT NULL,
+      expected_concepts TEXT,
+      evaluation_criteria TEXT,
+      model_answer TEXT NOT NULL,
+      adaptive_harder TEXT,
+      adaptive_easier TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_iqb_role ON interview_question_bank(role);
+    CREATE INDEX IF NOT EXISTS idx_iqb_difficulty ON interview_question_bank(difficulty);
   `);
+
+  // Seed default interview question bank if not already seeded
+  const countBankStmt = db.prepare('SELECT COUNT(*) as count FROM interview_question_bank');
+  const bankCount = (countBankStmt.get() as { count: number })?.count || 0;
+
+  if (bankCount === 0) {
+    const insertBankQ = db.prepare(`
+      INSERT OR REPLACE INTO interview_question_bank (
+        id, role, company_tag, interview_type, category, difficulty,
+        question_text, expected_concepts, evaluation_criteria, model_answer,
+        adaptive_harder, adaptive_easier
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const q of INTERVIEW_QUESTION_BANK) {
+      insertBankQ.run(
+        q.id,
+        q.role,
+        q.companyTag || null,
+        q.interviewType,
+        q.category,
+        q.difficulty,
+        q.questionText,
+        JSON.stringify(q.expectedConcepts),
+        JSON.stringify(q.evaluationCriteria),
+        q.modelAnswer,
+        q.adaptiveHarder || null,
+        q.adaptiveEasier || null
+      );
+    }
+  }
 
   // Seed default subjects if not already seeded
   const countSubjectsStmt = db.prepare('SELECT COUNT(*) as count FROM practice_subjects');
@@ -763,6 +813,65 @@ export const nodeDb = {
       evaluation: r.evaluation ? JSON.parse(r.evaluation) : null,
       createdAt: r.created_at,
     }));
+  },
+
+  getInterviewBankQuestions(role?: string, interviewType?: string, difficulty?: string, companyTag?: string) {
+    const db = getDb();
+    let query = 'SELECT * FROM interview_question_bank WHERE 1=1';
+    const params: any[] = [];
+
+    if (role && role !== 'All') {
+      query += ' AND (LOWER(role) = LOWER(?) OR role = "Software Developer (SDE)")';
+      params.push(role);
+    }
+    if (interviewType && interviewType !== 'All-Round' && interviewType !== 'Resume-based') {
+      query += ' AND LOWER(interview_type) = LOWER(?)';
+      params.push(interviewType);
+    }
+    if (difficulty && difficulty !== 'All') {
+      query += ' AND LOWER(difficulty) = LOWER(?)';
+      params.push(difficulty);
+    }
+    if (companyTag && companyTag !== 'All') {
+      query += ' AND LOWER(company_tag) = LOWER(?)';
+      params.push(companyTag);
+    }
+
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      role: r.role,
+      companyTag: r.company_tag,
+      interviewType: r.interview_type,
+      category: r.category,
+      difficulty: r.difficulty,
+      questionText: r.question_text,
+      expectedConcepts: r.expected_concepts ? JSON.parse(r.expected_concepts) : [],
+      evaluationCriteria: r.evaluation_criteria ? JSON.parse(r.evaluation_criteria) : {},
+      modelAnswer: r.model_answer,
+      adaptiveHarder: r.adaptive_harder,
+      adaptiveEasier: r.adaptive_easier,
+    }));
+  },
+
+  getInterviewQuestionById(id: string) {
+    const db = getDb();
+    const r = db.prepare('SELECT * FROM interview_question_bank WHERE id = ?').get(id) as any;
+    if (!r) return null;
+    return {
+      id: r.id,
+      role: r.role,
+      companyTag: r.company_tag,
+      interviewType: r.interview_type,
+      category: r.category,
+      difficulty: r.difficulty,
+      questionText: r.question_text,
+      expectedConcepts: r.expected_concepts ? JSON.parse(r.expected_concepts) : [],
+      evaluationCriteria: r.evaluation_criteria ? JSON.parse(r.evaluation_criteria) : {},
+      modelAnswer: r.model_answer,
+      adaptiveHarder: r.adaptive_harder,
+      adaptiveEasier: r.adaptive_easier,
+    };
   },
 };
 

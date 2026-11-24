@@ -26,6 +26,7 @@ const StartSchema = z.object({
   difficulty:       z.enum(['Beginner','Intermediate','Advanced']),
   mode:             z.enum(['Friendly','Professional','Strict','Pressure']),
   companyName:      z.string().max(200).optional(),
+  experienceLevel:  z.enum(['Fresh Graduate', 'Junior (1-2 yrs)', 'Mid-Level (3+ yrs)']).optional().default('Fresh Graduate'),
   totalTurns:       z.number().int().min(3).max(20).default(6),
   isFirstTimerMode: z.boolean().optional().default(false),
   sessionMode:      z.enum(['solo','panel','peer','first_timer']).optional().default('solo'),
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
 
     const {
       targetRole, interviewType, difficulty, mode,
-      companyName, totalTurns, isFirstTimerMode, sessionMode,
+      companyName, experienceLevel, totalTurns, isFirstTimerMode, sessionMode,
       panelConfig, profile, projects,
     } = parsed.data;
 
@@ -133,7 +134,7 @@ export async function POST(req: Request) {
         panel_config: panelConfig ? JSON.stringify(panelConfig) : null,
         dialog_state: 'greeting',
         turn_count: 0,
-        session_metadata: { totalTurns, isFirstTimerMode },
+        session_metadata: { totalTurns, isFirstTimerMode, experienceLevel },
         started_at: startedAt.toISOString(),
         deadline_at: deadlineAt.toISOString(),
         duration_seconds: durationSeconds,

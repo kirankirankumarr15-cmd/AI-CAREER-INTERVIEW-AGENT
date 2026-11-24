@@ -22,8 +22,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { getAuthenticatedUser } from '@/lib/auth/serverAuth';
 import { practiceDb } from '@/lib/db/nodeDb';
-import { computeNextTurn } from '@/lib/ai/dialog-manager';
-import { evaluateStudentAnswer } from '@/lib/ai/agents/interview-agent';
+import { evaluateAnswerIntelligently, computeAdaptiveNextQuestion } from '@/lib/ai/interview-intelligence';
 
 const TurnSchema = z.object({
   sessionId: z.string().min(1),
@@ -38,6 +37,7 @@ const TurnSchema = z.object({
   mode: z.enum(['Friendly', 'Professional', 'Strict', 'Pressure']),
   targetRole: z.string(),
   companyName: z.string().optional(),
+  experienceLevel: z.string().optional(),
   panelInterviewerName: z.string().optional(),
   isFirstTimerMode: z.boolean().optional().default(false),
   profile: z.object({
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       sessionId, turnIndex, totalTurns, studentAnswer,
       lastQuestion, lastQuestionCategory, lastQuestionId,
       interviewType, difficulty, mode, targetRole,
-      companyName, panelInterviewerName, isFirstTimerMode,
+      companyName, experienceLevel, panelInterviewerName, isFirstTimerMode,
       profile, projects,
     } = parsed.data;
 
@@ -92,58 +92,30 @@ export async function POST(req: Request) {
       }
     } catch {}
 
-    // 2. Run Dialog Manager to determine next question & conversational move
-    const next = await computeNextTurn({
+    // 2. Intelligent Multi-Rubric Evaluation (Technical accuracy, Relevance, Communication, Structure, Problem-solving)
+    const evaluation = await evaluateAnswerIntelligently({
+      questionText: lastQuestion,
+      category: lastQuestionCategory,
+      studentAnswer,
+      difficulty,
+      targetRole,
+    });
+
+    // 3. Adaptive Question Progression Engine
+    const adaptiveResult = await computeAdaptiveNextQuestion({
       sessionId,
       turnIndex,
       totalTurns,
-      interviewType: interviewType as Parameters<typeof computeNextTurn>[0]['interviewType'],
-      difficulty: difficulty as Parameters<typeof computeNextTurn>[0]['difficulty'],
-      mode: mode as Parameters<typeof computeNextTurn>[0]['mode'],
       targetRole,
-      profile: profile as Parameters<typeof computeNextTurn>[0]['profile'],
-      projects: projects as Parameters<typeof computeNextTurn>[0]['projects'],
+      interviewType,
+      companyName,
+      currentDifficulty: difficulty,
       lastQuestion,
       lastQuestionCategory,
       studentAnswer,
-      topicsAsked,
       questionsAsked,
-      weakAreasDetected,
-      strongAreasDetected,
-      isFirstTurn: turnIndex === 0,
-      silenceCount: 0,
-      offTopicCount: 0,
-      companyName,
-      panelInterviewerName,
-      isFirstTimerMode,
+      evaluation,
     });
-
-    // 3. Real Evaluation of the student's answer
-    let evaluation = null;
-    if (studentAnswer.trim().length > 3 && next.answerQuality !== 'silence') {
-      try {
-        evaluation = await evaluateStudentAnswer(lastQuestion, studentAnswer, lastQuestionCategory);
-      } catch (e) {
-        console.warn('[InterviewTurn] Eval fallback:', e);
-      }
-    }
-
-    if (!evaluation) {
-      const words = studentAnswer.trim().split(/\s+/).filter(Boolean).length;
-      evaluation = {
-        answerScore: Math.min(92, Math.max(60, 65 + Math.min(25, words))),
-        technicalAccuracy: Math.min(94, Math.max(60, 68 + Math.min(20, Math.floor(words * 0.8)))),
-        relevance: 85,
-        structureScore: Math.min(90, Math.max(60, 65 + Math.min(20, Math.floor(words * 0.7)))),
-        communicationScore: Math.min(95, Math.max(65, 75 + Math.min(15, Math.floor(words * 0.5)))),
-        estimatedConfidence: Math.min(90, Math.max(60, 70 + Math.min(15, Math.floor(words * 0.6)))),
-        speakingSpeed: words > 100 ? 'Too Fast' : words < 25 ? 'Brief' : 'Optimal',
-        fillerWords: [],
-        feedbackGood: 'Clear engagement with the core technical prompt.',
-        feedbackImprovement: 'Provide concrete examples and quantify the impact or architecture decisions.',
-        starStructureScore: 75,
-      };
-    }
 
     // 4. Save current turn to SQLite
     const currentTurnId = `turn_${sessionId}_${turnIndex}`;
@@ -156,19 +128,19 @@ export async function POST(req: Request) {
         questionText: lastQuestion,
         category: lastQuestionCategory,
         studentAnswer,
-        answerScore: evaluation.answerScore,
+        answerScore: evaluation.overallScore,
         evaluation,
       });
 
-      // Also record the next question if not complete
-      if (!next.isInterviewComplete) {
+      // Record next adaptive question if interview continues
+      if (!adaptiveResult.isInterviewComplete) {
         practiceDb.saveInterviewTurn({
           id: `turn_${sessionId}_${turnIndex + 1}`,
           sessionId,
           userId,
           turnIndex: turnIndex + 1,
-          questionText: next.questionText,
-          category: next.category,
+          questionText: adaptiveResult.nextQuestionText,
+          category: adaptiveResult.category,
         });
       }
     } catch (dbErr) {
@@ -181,20 +153,21 @@ export async function POST(req: Request) {
       allTurns = practiceDb.getInterviewTurns(sessionId).filter((t: any) => t.studentAnswer);
     } catch {}
 
-    const evalScores: number[] = allTurns.map((t: any) => t.evaluation?.answerScore || 70);
+    const evalScores: number[] = allTurns.map((t: any) => t.evaluation?.overallScore || t.answerScore || 70);
     const avgScore = evalScores.length > 0
       ? Math.round(evalScores.reduce((a: number, b: number) => a + b, 0) / evalScores.length)
-      : evaluation.answerScore;
+      : evaluation.overallScore;
 
-    const commScore = evaluation.communicationScore || 75;
-    const techScore = evaluation.technicalAccuracy || 70;
-    const confScore = evaluation.estimatedConfidence || 72;
-    const clarityScore = evaluation.structureScore || 70;
+    const commScore = evaluation.communicationClarity;
+    const techScore = evaluation.technicalAccuracy;
+    const clarityScore = evaluation.answerStructure;
+    const problemSolvingScore = evaluation.problemSolving;
+    const confScore = Math.min(95, Math.max(60, Math.round(commScore * 0.5 + clarityScore * 0.5)));
 
     // Competency breakdown
     const competencies = {
       technicalKnowledge: techScore,
-      problemSolving: Math.round((techScore + clarityScore) / 2),
+      problemSolving: problemSolvingScore,
       communication: commScore,
       leadership: Math.min(95, Math.max(60, Math.round((commScore + confScore) / 2))),
       teamwork: Math.min(95, Math.max(65, Math.round((commScore * 0.6 + clarityScore * 0.4)))),
@@ -202,14 +175,18 @@ export async function POST(req: Request) {
 
     // Actionable suggestions based on real answer
     const actionableSuggestions = [
-      evaluation.feedbackImprovement || 'Structure your answer with clear problem, action, and result.',
-      techScore < 75 ? 'Mention specific algorithmic trade-offs or DB schema choices.' : 'Quantify your measurable impact on the project.',
-      commScore < 75 ? 'Use strategic pauses instead of rushing through technical descriptions.' : 'Explicitly articulate why alternative approaches were rejected.',
+      evaluation.feedbackImprovement,
+      evaluation.conceptsMissed.length > 0
+        ? `Remember to touch upon ${evaluation.conceptsMissed.slice(0, 2).join(' and ')}.`
+        : 'Quantify your measurable impact and address performance trade-offs.',
+      evaluation.answerStructure < 75
+        ? 'Structure answers with problem context, technical action, and tangible outcome.'
+        : 'State assumptions explicitly before proposing system architecture.',
     ].slice(0, 3);
 
     let mentorMessage = "You're doing well. Keep your answers focused on real technical decisions.";
-    if (avgScore >= 85) mentorMessage = "Exceptional depth! Continue giving structured, authoritative answers.";
-    else if (techScore < 70) mentorMessage = "Try to elaborate more on the exact technical mechanics and architecture.";
+    if (evaluation.isExcelling) mentorMessage = "Exceptional depth! Pushing into advanced architectural constraints.";
+    else if (evaluation.isStruggling) mentorMessage = "Try to elaborate more on the exact technical mechanics and architecture.";
     else if (commScore < 70) mentorMessage = "Good points. Focus on speaking with steady cadence and fewer pauses.";
 
     // 6. Best effort Supabase sync
@@ -220,15 +197,23 @@ export async function POST(req: Request) {
         user_id: userId,
         turn_index: turnIndex + 1,
         event_type: 'answer_received',
-        event_data: { answerWordCount: studentAnswer.split(/\s+/).length },
+        event_data: {
+          answerWordCount: studentAnswer.split(/\s+/).length,
+          adaptiveLevel: adaptiveResult.currentDifficulty,
+          overallScore: evaluation.overallScore,
+        },
         latency_ms: Date.now() - startMs,
       });
     } catch {}
 
     return NextResponse.json({
       next: {
-        ...next,
+        questionText: adaptiveResult.nextQuestionText,
+        category: adaptiveResult.category,
+        isInterviewComplete: adaptiveResult.isInterviewComplete,
+        expectedKeyPoints: adaptiveResult.expectedConcepts,
         questionId: `turn_${sessionId}_${turnIndex + 1}`,
+        currentDifficulty: adaptiveResult.currentDifficulty,
       },
       evaluation,
       runningScores: {
@@ -237,15 +222,17 @@ export async function POST(req: Request) {
         technicalKnowledge: techScore,
         confidence: confScore,
         answerClarity: clarityScore,
+        problemSolving: problemSolvingScore,
         mentorMessage,
         competencies,
         actionableSuggestions,
         answeredTurnsCount: allTurns.length,
+        currentDifficulty: adaptiveResult.currentDifficulty,
       },
       memory: {
-        topicsAsked: [...topicsAsked, next.category],
-        weakAreasDetected: next.weakArea ? [...weakAreasDetected, next.weakArea] : weakAreasDetected,
-        strongAreasDetected,
+        topicsAsked: [...topicsAsked, adaptiveResult.category],
+        weakAreasDetected: evaluation.isStruggling ? [...weakAreasDetected, lastQuestionCategory] : weakAreasDetected,
+        strongAreasDetected: evaluation.isExcelling ? [...strongAreasDetected, lastQuestionCategory] : strongAreasDetected,
         totalTurns: turnIndex + 1,
       },
     });

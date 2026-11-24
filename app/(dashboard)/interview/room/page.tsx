@@ -79,6 +79,7 @@ export default function InterviewRoomPage() {
     difficulty,
     mode,
     companyName,
+    experienceLevel,
     technicalSubject,
     durationMinutes = 15,
     setAiSpeaking,
@@ -264,6 +265,7 @@ export default function InterviewRoomPage() {
             difficulty,
             mode,
             companyName: companyName || undefined,
+            experienceLevel: experienceLevel || 'Fresh Graduate',
             totalTurns,
             isFirstTimerMode: false,
             sessionMode: 'solo',
@@ -471,6 +473,7 @@ export default function InterviewRoomPage() {
           mode,
           targetRole: targetRole || profile.targetRole || 'Software Developer (SDE)',
           companyName: companyName || undefined,
+          experienceLevel: experienceLevel || 'Fresh Graduate',
           isFirstTimerMode: false,
           profile: {
             id: profile.id || 'student-demo',

@@ -81,6 +81,7 @@ export async function POST(req: Request) {
     let sessionRole = 'Software Developer (SDE)';
     let sessionType = 'Technical';
     let previousSessions: Array<{ created_at: string; overall_score: number; target_role: string }> = [];
+    let dbTurns: any[] = [];
 
     try {
       const sqliteSession = practiceDb.getInterviewSession(sessionId);
@@ -88,6 +89,7 @@ export async function POST(req: Request) {
         sessionRole = sqliteSession.targetRole || sessionRole;
         sessionType = sqliteSession.interviewType || sessionType;
       }
+      dbTurns = practiceDb.getInterviewTurns(sessionId);
       const prevs = practiceDb.getUserInterviewSessions(userId);
       previousSessions = prevs.map((p: any) => ({
         created_at: p.createdAt || p.completedAt || new Date().toISOString(),
@@ -178,43 +180,69 @@ Return ONLY valid JSON matching this schema:
 }
 `;
 
+    const turnsWithEval = dbTurns.filter((t: any) => t.evaluation && typeof t.evaluation.overallScore === 'number');
+    const hasEvaluations = turnsWithEval.length > 0;
+
+    const baseTech = hasEvaluations
+      ? Math.round(turnsWithEval.reduce((sum: number, t: any) => sum + (t.evaluation.technicalAccuracy ?? 70), 0) / turnsWithEval.length)
+      : 70;
+    const baseComm = hasEvaluations
+      ? Math.round(turnsWithEval.reduce((sum: number, t: any) => sum + (t.evaluation.communicationClarity ?? 72), 0) / turnsWithEval.length)
+      : 72;
+    const baseStruct = hasEvaluations
+      ? Math.round(turnsWithEval.reduce((sum: number, t: any) => sum + (t.evaluation.answerStructure ?? 70), 0) / turnsWithEval.length)
+      : 70;
+    const baseConfidence = hasEvaluations
+      ? Math.round(turnsWithEval.reduce((sum: number, t: any) => sum + (t.evaluation.problemSolving ?? 70), 0) / turnsWithEval.length)
+      : 70;
+    const baseOverall = hasEvaluations
+      ? Math.round(turnsWithEval.reduce((sum: number, t: any) => sum + (t.evaluation.overallScore ?? 70), 0) / turnsWithEval.length)
+      : (questionTurns.length > 0 ? 70 : 50);
+
+    const firstEvidence = turnsWithEval.find((t: any) => t.evaluation?.evidenceQuote)?.evaluation?.evidenceQuote || 'Candidate answered questions in a comprehensible manner.';
+    const firstImprovement = turnsWithEval.find((t: any) => t.evaluation?.constructiveImprovement)?.evaluation?.constructiveImprovement || 'Deepen knowledge of underlying mechanics and edge-case behaviors.';
+    const accumulatedTips = Array.from(new Set(turnsWithEval.flatMap((t: any) => t.evaluation?.actionableSuggestions || []))).slice(0, 3);
+
     const fallbackReport: PrismFinalReport = {
-      overallScore: questionTurns.length > 0 ? 70 : 50,
+      overallScore: baseOverall,
       communication: {
-        score: 72,
-        evidence: 'Candidate answered questions in a comprehensible manner.',
+        score: baseComm,
+        evidence: firstEvidence,
         howToImprove: 'Provide more structured framing before detailing technical points.',
       },
       technicalAccuracy: {
-        score: 68,
-        evidence: 'Identified core concepts with minor gaps in architectural specifics.',
-        howToImprove: 'Deepen knowledge of underlying runtime mechanics and edge-case behaviors.',
+        score: baseTech,
+        evidence: firstEvidence,
+        howToImprove: firstImprovement,
       },
       structure: {
-        score: 70,
+        score: baseStruct,
         evidence: 'Followed a sequential progression from problem to solution.',
         howToImprove: 'Use the STAR technique for behavioral answers and state complexity upfront.',
       },
       estimatedConfidence: {
-        score: 70,
+        score: baseConfidence,
         evidence: 'Observable steady pace with moderate pauses between questions.',
         howToImprove: 'Reduce hesitation pauses when formulating system design trade-offs.',
       },
       strongAreas: ['Core Concepts', 'Clear Communication'],
       weakAreas: ['Edge-case Analysis', 'Quantitative Trade-offs'],
-      recommendations: [
+      recommendations: accumulatedTips.length > 0 ? accumulatedTips : [
         'Review core fundamentals in the Practice Hub before your next session.',
         'Practice aloud to build fluent phrasing under countdown pressure.',
       ],
-      questionEvaluations: questionTurns.map((qt, idx) => ({
-        questionId: qt.qId,
-        questionText: qt.qText,
-        studentAnswer: qt.aText,
-        category: qt.category,
-        score: 70,
-        feedback: 'Good fundamental attempt. Could be reinforced with concrete performance metrics.',
-        modelAnswer: `For ${sessionRole}, an ideal answer articulates the core principle, specifies concrete trade-offs, and validates runtime efficiency with O(N) or architectural boundaries.`,
-      })),
+      questionEvaluations: questionTurns.map((qt, idx) => {
+        const matchingDbTurn = turnsWithEval.find((t: any) => t.turnIndex === idx || t.questionText === qt.qText);
+        return {
+          questionId: qt.qId,
+          questionText: qt.qText,
+          studentAnswer: qt.aText,
+          category: qt.category,
+          score: matchingDbTurn ? matchingDbTurn.evaluation.overallScore : baseOverall,
+          feedback: matchingDbTurn?.evaluation?.constructiveImprovement || 'Good fundamental attempt. Could be reinforced with concrete performance metrics.',
+          modelAnswer: `For ${sessionRole}, an ideal answer articulates the core principle, specifies concrete trade-offs, and validates runtime efficiency with O(N) or architectural boundaries.`,
+        };
+      }),
       totalTurns: questionTurns.length,
       completedAt: new Date().toISOString(),
     };
