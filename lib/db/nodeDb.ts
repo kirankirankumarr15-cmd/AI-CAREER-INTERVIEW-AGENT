@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { DatabaseSync } from 'node:sqlite';
 import { PRACTICE_SUBJECTS, PRACTICE_QUESTIONS, type PracticeQuestion } from '../practice/practiceBank.ts';
-import { INTERVIEW_QUESTION_BANK, type InterviewBankQuestion } from '../interview/questionBank';
+import { INTERVIEW_QUESTION_BANK, type InterviewBankQuestion } from '../interview/questionBank.ts';
 
 export interface UserProgressData {
   totalSolved: number;
@@ -119,6 +119,12 @@ function getDb(): DatabaseSync {
       interviewer_mode TEXT DEFAULT 'Professional',
       company_name TEXT,
       status TEXT DEFAULT 'In Progress',
+      dialog_state TEXT DEFAULT 'NOT_STARTED',
+      current_question_number INTEGER DEFAULT 0,
+      current_question TEXT,
+      questions_asked TEXT,
+      topics_covered TEXT,
+      last_evaluation TEXT,
       overall_score INTEGER,
       communication_score INTEGER,
       technical_accuracy_score INTEGER,
@@ -146,8 +152,21 @@ function getDb(): DatabaseSync {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS interview_messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      speaker TEXT NOT NULL CHECK (speaker IN ('ai', 'user', 'system')),
+      message TEXT NOT NULL,
+      question_number INTEGER,
+      metadata TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE INDEX IF NOT EXISTS idx_interview_sessions_user ON interview_sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_interview_turns_session ON interview_turns(session_id);
+    CREATE INDEX IF NOT EXISTS idx_interview_messages_session ON interview_messages(session_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_interview_messages_user ON interview_messages(user_id);
 
     CREATE TABLE IF NOT EXISTS interview_question_bank (
       id TEXT PRIMARY KEY,
@@ -167,6 +186,65 @@ function getDb(): DatabaseSync {
 
     CREATE INDEX IF NOT EXISTS idx_iqb_role ON interview_question_bank(role);
     CREATE INDEX IF NOT EXISTS idx_iqb_difficulty ON interview_question_bank(difficulty);
+  `);
+
+  // Phase 2 safe migrations for existing local DBs
+  const safeAlter = (sql: string) => { try { db.exec(sql); } catch {} };
+  safeAlter(`ALTER TABLE interview_sessions ADD COLUMN dialog_state TEXT DEFAULT 'NOT_STARTED'`);
+  safeAlter(`ALTER TABLE interview_sessions ADD COLUMN current_question_number INTEGER DEFAULT 0`);
+  safeAlter(`ALTER TABLE interview_sessions ADD COLUMN current_question TEXT`);
+  safeAlter(`ALTER TABLE interview_sessions ADD COLUMN questions_asked TEXT`);
+  safeAlter(`ALTER TABLE interview_sessions ADD COLUMN topics_covered TEXT`);
+  safeAlter(`ALTER TABLE interview_sessions ADD COLUMN last_evaluation TEXT`);
+  safeAlter(`ALTER TABLE interview_sessions ADD COLUMN difficulty_policy TEXT DEFAULT 'ADAPTIVE'`);
+  safeAlter(`ALTER TABLE interview_sessions ADD COLUMN initial_difficulty TEXT`);
+
+  // Phase 4: adaptive engine tables
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS interview_topic_performance (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      session_id TEXT,
+      topic TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      average_score REAL NOT NULL DEFAULT 0,
+      latest_score REAL NOT NULL DEFAULT 0,
+      recent_scores TEXT NOT NULL DEFAULT '[]',
+      level TEXT NOT NULL DEFAULT 'average',
+      trend TEXT NOT NULL DEFAULT 'stable',
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, session_id, topic)
+    );
+
+    CREATE TABLE IF NOT EXISTS interview_difficulty_changes (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      topic TEXT,
+      previous_difficulty TEXT NOT NULL,
+      next_difficulty TEXT NOT NULL,
+      reason TEXT,
+      question_number INTEGER,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS interview_question_history (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      question_number INTEGER,
+      question_text TEXT NOT NULL,
+      topic TEXT,
+      difficulty TEXT,
+      source TEXT DEFAULT 'gemini',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_itp_user_session ON interview_topic_performance(user_id, session_id);
+    CREATE INDEX IF NOT EXISTS idx_itp_user_topic ON interview_topic_performance(user_id, topic);
+    CREATE INDEX IF NOT EXISTS idx_idc_session ON interview_difficulty_changes(session_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_iqh_session ON interview_question_history(session_id, created_at);
   `);
 
   // Seed default interview question bank if not already seeded
@@ -646,13 +724,22 @@ export const nodeDb = {
     durationSeconds?: number;
     startedAt?: string;
     deadlineAt?: string;
+    dialogState?: string;
+    currentQuestionNumber?: number;
+    currentQuestion?: string;
+    questionsAsked?: string[];
+    topicsCovered?: string[];
+    difficultyPolicy?: string;
+    initialDifficulty?: string;
   }) {
     const db = getDb();
     const stmt = db.prepare(`
       INSERT OR REPLACE INTO interview_sessions (
         id, user_id, target_role, interview_type, difficulty, interviewer_mode,
-        company_name, status, duration_seconds, started_at, deadline_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'In Progress', ?, ?, ?)
+        company_name, status, dialog_state, current_question_number, current_question,
+        questions_asked, topics_covered, duration_seconds, started_at, deadline_at,
+        difficulty_policy, initial_difficulty
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'In Progress', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       session.id,
@@ -662,9 +749,16 @@ export const nodeDb = {
       session.difficulty,
       session.mode || 'Professional',
       session.companyName || null,
+      session.dialogState || 'NOT_STARTED',
+      session.currentQuestionNumber ?? 0,
+      session.currentQuestion || null,
+      session.questionsAsked ? JSON.stringify(session.questionsAsked) : JSON.stringify([]),
+      session.topicsCovered ? JSON.stringify(session.topicsCovered) : JSON.stringify([]),
       session.durationSeconds || 900,
       session.startedAt || new Date().toISOString(),
-      session.deadlineAt || null
+      session.deadlineAt || null,
+      session.difficultyPolicy || 'ADAPTIVE',
+      session.initialDifficulty || session.difficulty
     );
   },
 
@@ -672,6 +766,14 @@ export const nodeDb = {
     sessionId: string,
     updates: {
       status?: string;
+      difficulty?: string;
+      difficultyPolicy?: string;
+      dialogState?: string;
+      currentQuestionNumber?: number;
+      currentQuestion?: string;
+      questionsAsked?: string[];
+      topicsCovered?: string[];
+      lastEvaluation?: any;
       overallScore?: number;
       communicationScore?: number;
       technicalAccuracyScore?: number;
@@ -686,6 +788,14 @@ export const nodeDb = {
     const stmt = db.prepare(`
       UPDATE interview_sessions SET
         status = COALESCE(?, status),
+        difficulty = COALESCE(?, difficulty),
+        difficulty_policy = COALESCE(?, difficulty_policy),
+        dialog_state = COALESCE(?, dialog_state),
+        current_question_number = COALESCE(?, current_question_number),
+        current_question = COALESCE(?, current_question),
+        questions_asked = COALESCE(?, questions_asked),
+        topics_covered = COALESCE(?, topics_covered),
+        last_evaluation = COALESCE(?, last_evaluation),
         overall_score = COALESCE(?, overall_score),
         communication_score = COALESCE(?, communication_score),
         technical_accuracy_score = COALESCE(?, technical_accuracy_score),
@@ -698,6 +808,14 @@ export const nodeDb = {
     `);
     stmt.run(
       updates.status || null,
+      updates.difficulty || null,
+      updates.difficultyPolicy || null,
+      updates.dialogState || null,
+      updates.currentQuestionNumber ?? null,
+      updates.currentQuestion || null,
+      updates.questionsAsked ? JSON.stringify(updates.questionsAsked) : null,
+      updates.topicsCovered ? JSON.stringify(updates.topicsCovered) : null,
+      updates.lastEvaluation ? JSON.stringify(updates.lastEvaluation) : null,
       updates.overallScore ?? null,
       updates.communicationScore ?? null,
       updates.technicalAccuracyScore ?? null,
@@ -705,7 +823,7 @@ export const nodeDb = {
       updates.confidenceScore ?? null,
       updates.feedbackSummary ? JSON.stringify(updates.feedbackSummary) : null,
       updates.transcript ? JSON.stringify(updates.transcript) : null,
-      updates.completedAt || new Date().toISOString(),
+      updates.completedAt ?? null,
       sessionId
     );
   },
@@ -723,6 +841,14 @@ export const nodeDb = {
       mode: row.interviewer_mode,
       companyName: row.company_name,
       status: row.status,
+      dialogState: row.dialog_state || 'NOT_STARTED',
+      currentQuestionNumber: row.current_question_number ?? 0,
+      currentQuestion: row.current_question || '',
+      questionsAsked: row.questions_asked ? JSON.parse(row.questions_asked) : [],
+      topicsCovered: row.topics_covered ? JSON.parse(row.topics_covered) : [],
+      lastEvaluation: row.last_evaluation ? JSON.parse(row.last_evaluation) : null,
+      difficultyPolicy: row.difficulty_policy || 'ADAPTIVE',
+      initialDifficulty: row.initial_difficulty || row.difficulty,
       overallScore: row.overall_score,
       communicationScore: row.communication_score,
       technicalAccuracyScore: row.technical_accuracy_score,
@@ -812,6 +938,176 @@ export const nodeDb = {
       answerScore: r.answer_score,
       evaluation: r.evaluation ? JSON.parse(r.evaluation) : null,
       createdAt: r.created_at,
+    }));
+  },
+
+  saveInterviewMessage(message: {
+    id?: string;
+    sessionId: string;
+    userId: string;
+    speaker: 'ai' | 'user' | 'system';
+    message: string;
+    questionNumber?: number;
+    metadata?: any;
+  }) {
+    const db = getDb();
+    const id = message.id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    db.prepare(`
+      INSERT INTO interview_messages (id, session_id, user_id, speaker, message, question_number, metadata)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      message.sessionId,
+      message.userId,
+      message.speaker,
+      message.message,
+      message.questionNumber ?? null,
+      message.metadata ? JSON.stringify(message.metadata) : null
+    );
+    return id;
+  },
+
+  getInterviewMessages(sessionId: string, limit = 100) {
+    const db = getDb();
+    const rows = db.prepare(`
+      SELECT * FROM interview_messages
+      WHERE session_id = ?
+      ORDER BY created_at ASC, rowid ASC
+      LIMIT ?
+    `).all(sessionId, limit) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      sessionId: r.session_id,
+      userId: r.user_id,
+      speaker: r.speaker,
+      message: r.message,
+      questionNumber: r.question_number,
+      metadata: r.metadata ? JSON.parse(r.metadata) : null,
+      createdAt: r.created_at,
+    }));
+  },
+
+  getTopicPerformance(userId: string, sessionId?: string) {
+    const db = getDb();
+    const rows = sessionId
+      ? db.prepare('SELECT * FROM interview_topic_performance WHERE user_id = ? AND session_id = ? ORDER BY updated_at DESC').all(userId, sessionId)
+      : db.prepare('SELECT * FROM interview_topic_performance WHERE user_id = ? ORDER BY updated_at DESC').all(userId);
+    return (rows as any[]).map((r) => ({
+      id: r.id, userId: r.user_id, sessionId: r.session_id, topic: r.topic,
+      attempts: r.attempts, averageScore: r.average_score, latestScore: r.latest_score,
+      recentScores: r.recent_scores ? JSON.parse(r.recent_scores) : [],
+      level: r.level, trend: r.trend, updatedAt: r.updated_at,
+    }));
+  },
+
+  getRecentTopicEvaluationScores(userId: string, topic: string, limit = 3, sessionId?: string) {
+    const db = getDb();
+    // Use interview_turns as source of truth for evaluations
+    const rows = sessionId
+      ? db.prepare(`
+          SELECT answer_score, evaluation, created_at, turn_index
+          FROM interview_turns
+          WHERE user_id = ? AND session_id = ? AND student_answer IS NOT NULL
+          ORDER BY turn_index DESC LIMIT 50
+        `).all(userId, sessionId)
+      : db.prepare(`
+          SELECT answer_score, evaluation, created_at, turn_index
+          FROM interview_turns
+          WHERE user_id = ? AND student_answer IS NOT NULL
+          ORDER BY created_at DESC LIMIT 50
+        `).all(userId);
+    const out: Array<{ score: number; createdAt: string; turnIndex: number }> = [];
+    for (const r of rows as any[]) {
+      const ev = r.evaluation ? JSON.parse(r.evaluation) : null;
+      const cat = ev?.topic || ev?.category || null;
+      // if category not in evaluation, we can't perfectly match; include when topic matches loosely by checking question category is stored separately - fallback to including all recent in session
+      const score = typeof ev?.overallScore === 'number' ? ev.overallScore : (typeof r.answer_score === 'number' ? r.answer_score : null);
+      if (score == null) continue;
+      // We'll filter by topic at caller by passing turns; simpler: return recent scored turns and let caller filter by category from turns.
+      out.push({ score, createdAt: r.created_at, turnIndex: r.turn_index });
+    }
+    return out.slice(0, limit);
+  },
+
+  getRecentTopicEvaluationScoresByCategory(userId: string, sessionId: string, topic: string, limit = 3) {
+    const db = getDb();
+    const rows = db.prepare(`
+      SELECT turn_index, answer_score, evaluation, category, created_at
+      FROM interview_turns
+      WHERE user_id = ? AND session_id = ? AND student_answer IS NOT NULL
+      ORDER BY turn_index DESC LIMIT 100
+    `).all(userId, sessionId) as any[];
+    const needle = topic.toLowerCase();
+    const matched = rows.filter((r) => String(r.category || '').toLowerCase() === needle || String(r.category || '').toLowerCase().includes(needle) || needle.includes(String(r.category || '').toLowerCase()));
+    const scores = matched.map((r) => {
+      const ev = r.evaluation ? JSON.parse(r.evaluation) : null;
+      return { score: typeof ev?.overallScore === 'number' ? ev.overallScore : (typeof r.answer_score === 'number' ? r.answer_score : null), turnIndex: r.turn_index, createdAt: r.created_at };
+    }).filter((x) => typeof x.score === 'number');
+    return scores.slice(0, limit) as Array<{ score: number; turnIndex: number; createdAt: string }>;
+  },
+
+  recordTopicPerformance(entry: { userId: string; sessionId: string; topic: string; score: number }) {
+    const db = getDb();
+    const topic = entry.topic.trim().slice(0, 80) || 'General';
+    const existing = db.prepare('SELECT * FROM interview_topic_performance WHERE user_id = ? AND session_id = ? AND topic = ?').get(entry.userId, entry.sessionId, topic) as any;
+    const prevScores = existing?.recent_scores ? JSON.parse(existing.recent_scores) : [];
+    const recentScores = [...prevScores, entry.score].slice(-10);
+    const avg = recentScores.reduce((a: number, b: number) => a + b, 0) / recentScores.length;
+    const level = avg >= 75 ? 'strong' : avg < 50 ? 'weak' : 'average';
+    let trend = 'stable';
+    if (recentScores.length >= 3) {
+      const last = recentScores[recentScores.length - 1];
+      const prevAvg = (recentScores[recentScores.length - 2] + recentScores[recentScores.length - 3]) / 2;
+      if (last - prevAvg >= 8) trend = 'improving';
+      else if (prevAvg - last >= 8) trend = 'declining';
+    }
+    const id = existing?.id || `tp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    db.prepare(`
+      INSERT INTO interview_topic_performance (id, user_id, session_id, topic, attempts, average_score, latest_score, recent_scores, level, trend, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id, session_id, topic) DO UPDATE SET
+        attempts=excluded.attempts, average_score=excluded.average_score, latest_score=excluded.latest_score,
+        recent_scores=excluded.recent_scores, level=excluded.level, trend=excluded.trend, updated_at=CURRENT_TIMESTAMP
+    `).run(id, entry.userId, entry.sessionId, topic, recentScores.length, avg, entry.score, JSON.stringify(recentScores), level, trend);
+    return { topic, attempts: recentScores.length, averageScore: avg, latestScore: entry.score, recentScores, level, trend };
+  },
+
+  recordDifficultyChange(entry: { sessionId: string; userId: string; topic?: string; previousDifficulty: string; nextDifficulty: string; reason?: string; questionNumber?: number }) {
+    const db = getDb();
+    const id = `dc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    db.prepare(`
+      INSERT INTO interview_difficulty_changes (id, session_id, user_id, topic, previous_difficulty, next_difficulty, reason, question_number)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, entry.sessionId, entry.userId, entry.topic || null, entry.previousDifficulty, entry.nextDifficulty, entry.reason || null, entry.questionNumber ?? null);
+    return id;
+  },
+
+  getLastDifficultyChange(sessionId: string) {
+    const db = getDb();
+    const row = db.prepare('SELECT * FROM interview_difficulty_changes WHERE session_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1').get(sessionId) as any;
+    if (!row) return null;
+    return {
+      id: row.id, sessionId: row.session_id, userId: row.user_id, topic: row.topic,
+      previousDifficulty: row.previous_difficulty, nextDifficulty: row.next_difficulty,
+      reason: row.reason, questionNumber: row.question_number, createdAt: row.created_at,
+    };
+  },
+
+  recordQuestionHistory(entry: { sessionId: string; userId: string; questionNumber?: number; questionText: string; topic?: string; difficulty?: string; source?: string }) {
+    const db = getDb();
+    const id = `qh-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    db.prepare(`
+      INSERT INTO interview_question_history (id, session_id, user_id, question_number, question_text, topic, difficulty, source)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, entry.sessionId, entry.userId, entry.questionNumber ?? null, entry.questionText, entry.topic || null, entry.difficulty || null, entry.source || 'gemini');
+    return id;
+  },
+
+  getInterviewQuestionHistory(sessionId: string) {
+    const db = getDb();
+    return (db.prepare('SELECT * FROM interview_question_history WHERE session_id = ? ORDER BY created_at ASC').all(sessionId) as any[]).map((r) => ({
+      id: r.id, sessionId: r.session_id, userId: r.user_id, questionNumber: r.question_number,
+      questionText: r.question_text, topic: r.topic, difficulty: r.difficulty, source: r.source, createdAt: r.created_at,
     }));
   },
 
