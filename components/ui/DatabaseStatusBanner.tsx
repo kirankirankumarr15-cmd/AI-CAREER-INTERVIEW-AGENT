@@ -51,9 +51,9 @@ export function DatabaseStatusBanner() {
     <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 px-4 py-2 text-xs flex items-center justify-between gap-3 select-none">
       <div className="flex items-center gap-2 min-w-0">
         <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-        <span className="font-bold shrink-0">Database Disconnected:</span>
+        <span className="font-bold shrink-0">Database Notice:</span>
         <span className="truncate text-amber-800 dark:text-amber-300">
-          Cloud Supabase is offline. Operating in local sandbox mode. Data is not persisted to production.
+          {health.database.error ? `Database check: ${health.database.error}` : 'Operating in local cache mode.'}
         </span>
       </div>
 

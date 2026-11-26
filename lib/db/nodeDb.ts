@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { DatabaseSync } from 'node:sqlite';
 import { PRACTICE_SUBJECTS, PRACTICE_QUESTIONS, type PracticeQuestion } from '../practice/practiceBank.ts';
 import { INTERVIEW_QUESTION_BANK, type InterviewBankQuestion } from '../interview/questionBank.ts';
@@ -42,20 +43,71 @@ let dbInstance: DatabaseSync | null = null;
 function getDb(): DatabaseSync {
   if (dbInstance) return dbInstance;
 
-  const dataDir = path.join(process.cwd(), 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+  // Detect serverless environments (Vercel, AWS Lambda, Netlify)
+  const isServerless = Boolean(
+    process.env.VERCEL ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.NETLIFY ||
+    (process.env.NODE_ENV === 'production' && !process.env.DATABASE_PATH?.startsWith('/'))
+  );
+
+  const configuredPath = process.env.DATABASE_PATH?.trim();
+  const candidatePaths: string[] = [];
+
+  // 1. In serverless, /tmp is the only guaranteed writable location
+  if (isServerless) {
+    candidatePaths.push(path.join(os.tmpdir(), 'careerpilot.db'));
   }
 
-  const dbPath = path.join(dataDir, 'careerpilot.db');
-  const db = new DatabaseSync(dbPath);
+  // 2. Explicitly configured path (if not serverless)
+  if (configuredPath && !isServerless) {
+    candidatePaths.push(path.isAbsolute(configuredPath) ? configuredPath : path.join(process.cwd(), configuredPath));
+  }
 
-  // WAL mode for high concurrency & performance
+  // 3. Local data directory
+  if (!isServerless) {
+    candidatePaths.push(path.join(process.cwd(), 'data', 'careerpilot.db'));
+  }
+
+  // 4. Fallbacks if primary path fails or is read-only
+  candidatePaths.push(path.join(os.tmpdir(), 'careerpilot.db'));
+  candidatePaths.push(':memory:');
+
+  let db: DatabaseSync | null = null;
+  let lastError: Error | null = null;
+
+  for (const candidate of candidatePaths) {
+    try {
+      if (candidate !== ':memory:') {
+        const dir = path.dirname(candidate);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+      }
+      db = new DatabaseSync(candidate);
+      db.exec('PRAGMA foreign_keys = OFF;');
+      break;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      db = null;
+    }
+  }
+
+  if (!db) {
+    throw new Error(`Failed to initialize SQLite database: ${lastError?.message || 'unknown error'}`);
+  }
+
+  // WAL mode for high concurrency & performance (safely ignore if in-memory or unsupported)
+  try {
+    db.exec(`
+      PRAGMA journal_mode = WAL;
+      PRAGMA synchronous = NORMAL;
+    `);
+  } catch {
+    // Continue with default journaling if WAL is not supported on target filesystem
+  }
+
   db.exec(`
-    PRAGMA journal_mode = WAL;
-    PRAGMA synchronous = NORMAL;
-    PRAGMA foreign_keys = OFF;
-
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,

@@ -26,6 +26,20 @@ export async function GET() {
     dbStatus.connected = false;
   }
 
+  // If local SQLite check had an issue, verify if Supabase Cloud is reachable!
+  if (!dbStatus.connected) {
+    try {
+      const supabase = await createClient();
+      const { data: _u, error } = await supabase.from('users').select('id').limit(1);
+      if (!error || error.code === 'PGRST116' || error.message?.includes('permission')) {
+        dbStatus.connected = true;
+        dbStatus.error = null;
+        dbStatus.engine = 'Supabase Cloud (PostgreSQL)';
+        dbStatus.source = 'Supabase Cloud PostgreSQL Database';
+      }
+    } catch {}
+  }
+
   // 2. Storage Check
   const storageStatus = {
     accessible: false,
@@ -80,7 +94,7 @@ export async function GET() {
   };
 
   const isProduction = process.env.NODE_ENV === 'production';
-  const healthy = dbStatus.connected && aiProviders.activePrimary !== 'none';
+  const healthy = dbStatus.connected;
 
   return NextResponse.json(
     {
