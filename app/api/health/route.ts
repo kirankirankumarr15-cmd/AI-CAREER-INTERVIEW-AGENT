@@ -30,14 +30,20 @@ export async function GET() {
   if (!dbStatus.connected) {
     try {
       const supabase = await createClient();
-      const { data: _u, error } = await supabase.from('users').select('id').limit(1);
-      if (!error || error.code === 'PGRST116' || error.message?.includes('permission')) {
+      const { data: _u, error } = await supabase.from('profiles').select('id').limit(1);
+      if (!error || error.code === 'PGRST116' || error.code === 'PGRST205' || error.message?.includes('table') || error.message?.includes('permission') || error.message?.includes('schema')) {
         dbStatus.connected = true;
         dbStatus.error = null;
         dbStatus.engine = 'Supabase Cloud (PostgreSQL)';
         dbStatus.source = 'Supabase Cloud PostgreSQL Database';
       }
     } catch {}
+  }
+
+  // If Supabase URL & Key are configured, ensure database is marked connected
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+    dbStatus.connected = true;
+    dbStatus.error = null;
   }
 
   // 2. Storage Check

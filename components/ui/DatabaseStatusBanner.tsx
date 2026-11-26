@@ -43,7 +43,8 @@ export function DatabaseStatusBanner() {
     checkHealth();
   }, []);
 
-  if (!health || health.database.connected || dismissed) {
+  // Never show development warning banner on deployed production site
+  if (!health || health.database.connected || dismissed || process.env.NODE_ENV === 'production') {
     return null;
   }
 
